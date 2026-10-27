@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { useTheme } from 'next-themes';
 import { BrainDocNode, BrainGraphData, getBrainData } from '../lib/brain-parser';
 
 export interface Brain3DProps {
@@ -11,6 +12,7 @@ export interface Brain3DProps {
   autoSpin?: boolean;
   isBackground?: boolean;
   divingIn?: boolean;
+  theme?: 'dark' | 'light';
   onNodeHover?: (node: BrainDocNode | null) => void;
   onNodeClick?: (node: BrainDocNode | null) => void;
   onReady?: () => void;
@@ -23,12 +25,16 @@ export default function Brain3D({
   autoSpin = true,
   isBackground = false,
   divingIn = false,
+  theme: themeProp,
   onNodeHover,
   onNodeClick,
   onReady,
   onFpsUpdate,
 }: Brain3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { resolvedTheme } = useTheme();
+  const currentTheme = themeProp || (resolvedTheme as 'dark' | 'light') || 'dark';
+  const isLight = currentTheme === 'light';
 
   // Latest prop refs for use inside the 60fps animation & event loop
   const autoSpinRef = useRef<boolean>(autoSpin);
@@ -107,8 +113,9 @@ export default function Brain3D({
 
     // 1. Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x050505);
-    scene.fog = new THREE.FogExp2(0x050505, 0.0022);
+    const bgColor = isLight ? 0xf8fafc : 0x050505;
+    scene.background = new THREE.Color(bgColor);
+    scene.fog = new THREE.FogExp2(bgColor, isLight ? 0.0018 : 0.0022);
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 1500);
@@ -137,11 +144,12 @@ export default function Brain3D({
     controls.minDistance = 28;
     controls.maxDistance = 340;
     controls.target.set(0, 0, 0);
+    // Keep brain strictly centered — disable panning so users cannot accidentally shove the constellation off-screen
+    controls.enablePan = false;
 
     if (isBackgroundRef.current) {
       controls.enableRotate = false;
       controls.enableZoom = false;
-      controls.enablePan = false;
     }
 
     // 5. Ambient Deep-Space Starfield & Tactical Orbital Rings
@@ -152,10 +160,10 @@ export default function Brain3D({
     const ringGeo1 = new THREE.RingGeometry(78, 78.35, 96);
     ringGeo1.rotateX(Math.PI / 2);
     const ringMat1 = new THREE.MeshBasicMaterial({
-      color: 0x1e3a8a,
+      color: isLight ? 0x94a3b8 : 0x1e3a8a,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.28,
+      opacity: isLight ? 0.35 : 0.28,
     });
     const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
     ring1.position.y = -32;
@@ -164,20 +172,25 @@ export default function Brain3D({
     const ringGeo2 = new THREE.RingGeometry(102, 102.25, 128);
     ringGeo2.rotateX(Math.PI / 2);
     const ringMat2 = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
+      color: isLight ? 0x0284c7 : 0x00ffff,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.12,
+      opacity: isLight ? 0.22 : 0.12,
     });
     const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
     ring2.position.y = -32;
     environmentGroup.add(ring2);
 
     // Polar crosshairs on the tactical floor plane
-    const gridHelper = new THREE.GridHelper(220, 28, 0x1e3a8a, 0x0f172a);
+    const gridHelper = new THREE.GridHelper(
+      220,
+      28,
+      isLight ? 0x94a3b8 : 0x1e3a8a,
+      isLight ? 0xcbd5e1 : 0x0f172a
+    );
     gridHelper.position.y = -32.2;
     (gridHelper.material as THREE.Material).transparent = true;
-    (gridHelper.material as THREE.Material).opacity = 0.25;
+    (gridHelper.material as THREE.Material).opacity = isLight ? 0.35 : 0.25;
     environmentGroup.add(gridHelper);
 
     // Ambient background dust particles
@@ -194,10 +207,10 @@ export default function Brain3D({
     const starGeo = new THREE.BufferGeometry();
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     const starMat = new THREE.PointsMaterial({
-      color: 0x38bdf8,
-      size: 0.85,
+      color: isLight ? 0x64748b : 0x38bdf8,
+      size: isLight ? 0.95 : 0.85,
       transparent: true,
-      opacity: 0.35,
+      opacity: isLight ? 0.32 : 0.35,
     });
     const starField = new THREE.Points(starGeo, starMat);
     environmentGroup.add(starField);
@@ -216,6 +229,9 @@ export default function Brain3D({
     const ruleCoreGeo = new THREE.SphereGeometry(0.68, 12, 12);
     const ruleHaloGeo = new THREE.SphereGeometry(2.1, 14, 14);
 
+    const agentColor = isLight ? 0x0284c7 : 0x00ffff;
+    const ruleColor = isLight ? 0x0f172a : 0xffffff;
+
     graphData.nodes.forEach((node) => {
       nodeById.set(String(node.id), node);
       if (node.id === 'hub') return;
@@ -226,20 +242,28 @@ export default function Brain3D({
       const isAgent = node.group === 1;
 
       const coreMat = new THREE.MeshBasicMaterial({
-        color: isAgent ? 0x00ffff : 0xffffff,
+        color: isAgent ? agentColor : ruleColor,
       });
       const mesh = new THREE.Mesh(isAgent ? agentCoreGeo : ruleCoreGeo, coreMat);
       mesh.position.set(nx, ny, nz);
       mesh.userData = { node };
       brainGroup.add(mesh);
       meshById.set(String(node.id), mesh);
-      pickableMeshes.push(mesh);
+
+      // Generous invisible hit target so mouse hover & click register reliably
+      const hitTargetGeo = new THREE.SphereGeometry(isAgent ? 5.2 : 3.6, 12, 12);
+      const hitTargetMat = new THREE.MeshBasicMaterial({ visible: false });
+      const hitMesh = new THREE.Mesh(hitTargetGeo, hitTargetMat);
+      hitMesh.position.set(nx, ny, nz);
+      hitMesh.userData = { node };
+      brainGroup.add(hitMesh);
+      pickableMeshes.push(hitMesh);
 
       // Outer glow halo (visible by default for Group 1 Agents, and shown on hover/select for Group 2)
       const haloMat = new THREE.MeshBasicMaterial({
-        color: 0x00ffff,
+        color: agentColor,
         transparent: true,
-        opacity: isAgent ? 0.24 : 0.0,
+        opacity: isAgent ? (isLight ? 0.3 : 0.24) : 0.0,
         depthWrite: false,
       });
       const halo = new THREE.Mesh(isAgent ? agentHaloGeo : ruleHaloGeo, haloMat);
@@ -275,9 +299,9 @@ export default function Brain3D({
     const baseLineGeo = new THREE.BufferGeometry();
     baseLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(baseLineCoords, 3));
     const baseLineMat = new THREE.LineBasicMaterial({
-      color: 0x1e3a8a,
+      color: isLight ? 0x94a3b8 : 0x1e3a8a,
       transparent: true,
-      opacity: 0.42,
+      opacity: isLight ? 0.48 : 0.42,
     });
     const baseLineSegments = new THREE.LineSegments(baseLineGeo, baseLineMat);
     brainGroup.add(baseLineSegments);
@@ -285,9 +309,9 @@ export default function Brain3D({
     // Dynamic highlighted links connected to hovered/selected node
     const highlightLineGeo = new THREE.BufferGeometry();
     const highlightLineMat = new THREE.LineBasicMaterial({
-      color: 0x00ffff,
+      color: isLight ? 0x0284c7 : 0x00ffff,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.92,
     });
     const highlightLineSegments = new THREE.LineSegments(highlightLineGeo, highlightLineMat);
     brainGroup.add(highlightLineSegments);
@@ -308,18 +332,18 @@ export default function Brain3D({
         const haloMat = halo?.material as THREE.MeshBasicMaterial | undefined;
 
         if (isActive) {
-          mat.color.setHex(0x00ffff);
+          mat.color.setHex(isLight ? 0x0284c7 : 0x00ffff);
           mesh.scale.setScalar(isAgent ? 1.45 : 1.9);
           if (halo && haloMat) {
             halo.scale.setScalar(1.35);
-            haloMat.opacity = 0.45;
+            haloMat.opacity = isLight ? 0.55 : 0.45;
           }
         } else {
-          mat.color.setHex(isAgent ? 0x00ffff : 0xffffff);
+          mat.color.setHex(isAgent ? agentColor : ruleColor);
           mesh.scale.setScalar(1.0);
           if (halo && haloMat) {
             halo.scale.setScalar(1.0);
-            haloMat.opacity = isAgent ? 0.22 : 0.0;
+            haloMat.opacity = isAgent ? (isLight ? 0.28 : 0.22) : 0.0;
           }
         }
       });
@@ -403,14 +427,25 @@ export default function Brain3D({
         if (intersects.length > 0) {
           const clickedNode = intersects[0].object.userData.node as BrainDocNode;
           onNodeClickRef.current?.(clickedNode);
+        } else if (selectedNodeRef.current) {
+          // Clicking empty space deselects node and closes sidebar
+          onNodeClickRef.current?.(null);
         }
       }
+    };
+
+    const handleDblClick = () => {
+      desiredTargetPosRef.current.set(0, 0, 0);
+      desiredCameraPosRef.current = new THREE.Vector3(0, 26, 165);
+      isReturningHomeRef.current = true;
+      onNodeClickRef.current?.(null);
     };
 
     if (!isBackgroundRef.current) {
       renderer.domElement.addEventListener('mousemove', handlePointerMove);
       renderer.domElement.addEventListener('mousedown', handlePointerDown);
       renderer.domElement.addEventListener('mouseup', handlePointerUp);
+      renderer.domElement.addEventListener('dblclick', handleDblClick);
     }
 
     // 8. 60fps Animation Loop (Auto-Spin + Camera Focus Lerp + Agent Pulse)
@@ -498,22 +533,24 @@ export default function Brain3D({
         renderer.domElement.removeEventListener('mousemove', handlePointerMove);
         renderer.domElement.removeEventListener('mousedown', handlePointerDown);
         renderer.domElement.removeEventListener('mouseup', handlePointerUp);
+        renderer.domElement.removeEventListener('dblclick', handleDblClick);
       }
       cancelAnimationFrame(animId);
       controls.dispose();
       renderer.dispose();
     };
-  }, [graphData]);
+  }, [graphData, isLight]);
 
   return (
     <div
       ref={containerRef}
-      className="relative w-full h-full bg-[#050505] overflow-hidden select-none"
+      className={`relative w-full h-full overflow-hidden select-none transition-colors duration-300 ${
+        isLight ? 'bg-slate-50' : 'bg-[#050505]'
+      }`}
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
-        backgroundColor: '#050505',
         overflow: 'hidden',
       }}
     />

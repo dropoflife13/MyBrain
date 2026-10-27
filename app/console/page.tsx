@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Brain3D from '../../components/Brain3D';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import {
   BrainDocNode,
   BrainGraphData,
@@ -354,6 +355,8 @@ export default function Home() {
               <span>Blank Fork (0 Rules)</span>
             </button>
           </div>
+
+          <ThemeToggle />
 
           <button
             type="button"
