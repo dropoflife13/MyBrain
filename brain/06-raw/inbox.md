@@ -1,40 +1,26 @@
 ---
 type: inbox
-version: 5
+version: 6
 status: active
 ---
 # Inbox — Unprocessed Candidates
 
 Candidates only (`status: candidate`). Promotion is a human act (CV-03). Format: CV-02 with `CAND-nn` IDs. Every candidate at `conf ≥ 3` must have a concrete `breaks:` condition and real project `ev:`.
 
-## Active Candidates (Extracted from A-01..A-05 & Session S-01)
+## Active Candidates
+_Inbox clear. All 13 initial candidates (`CAND-01..13`) were promoted to `status: active` in Session `S-01`. Append new discoveries from future projects below starting at `CAND-14`._
 
-- **CAND-01** WHEN storing critical domain entities (prices, attendance, financial ledgers, grades, audit logs) → DO revoke UPDATE/DELETE/TRUNCATE at DB level and record revisions as new rows with supersedes_id and timestamp | why: non-repudiation and audit integrity | breaks: high-frequency streaming telemetry exceeding write-scaling budget (>10k writes/sec without log compaction) OR statutory right-to-be-forgotten deletion mandates where cryptographic shredding is disallowed | conf: 3 | ev: A-01 (DB-01), A-02 (Sec 9.4, 12.3), A-05 (CITEMAS Treasurer) | status: candidate #append-only ^cand-01
-
-- **CAND-02** WHEN high-impact status transitions occur (price outlier approval, partnership activation, intern journal signoff, adviser verification) → DO enforce submitter ≠ approver and restrict approval action exclusively to recipient or elevated role | why: eliminate self-approval fraud and single-actor collusion | breaks: single-operator / solo pilot deployments (`active_staff_count == 1`) stamped with `approval_mode: solo_operator_waiver` OR emergency break-glass procedures | conf: 3 | ev: A-01 (SEC-05), A-02 (Sec 12.3), A-03 (Sec 6.1), A-05 (CITEMAS VP/Treasurer) | status: candidate #two-party ^cand-02
-
-- **CAND-03** WHEN authoring reusable UI primitives (buttons, tables, cards, dialogs, badges) → DO keep them pure, data-driven, and prop-controlled with zero DB, Supabase, or fetch logic and never fake saves | why: strict separation of concerns, testability, and honest data states | breaks: self-contained encapsulated widget micro-apps (e.g. standalone 3D interactive viewer canvas, embeddable feedback tools) where prop-drilling through deep trees creates severe coupling overhead | conf: 3 | ev: A-01 (UX-07), A-02 (Sec 10.1, 12.3.1), A-05 (Godot data-driven systems) | status: candidate #dumb-primitives ^cand-03
-
-- **CAND-04** WHEN implementing dark/light dual-theme engines → DO inject an uncompiled synchronous script in <head> to read storage and set class before initial paint | why: eliminate blinding white flashes (FOUC) on dark mode users | breaks: non-browser SSR pipelines without client storage (PDF generators, email rendering) OR hyper-strict CSP environments that reject all inline scripts without nonce/hash pipelines | conf: 3 | ev: A-01 (UX-01), A-02 (Sec 10.4), A-03 (Sec 4.4) | status: candidate #zero-fouc ^cand-04
-
-- **CAND-05** WHEN rendering interactive 3D web centerpieces or hover video reels under bandwidth constraints → DO use procedural code/math geometry (<50KB) or DOM-persistent preloaded containers (`grid-rows-[0fr]` → `[1fr]`) rather than heavy on-demand network mounts | why: instant 60fps first-paint and zero black-flash rebuffering | breaks: visual designs requiring photorealistic PBR surface texturing, skinned skeletal character animations, or long-form streaming video (>60s) where DOM preloading exhausts memory | conf: 3 | ev: A-03 (Sec 2.1, Sec 3), A-04 (brainGraph.ts) | status: candidate #procedural-3d ^cand-05
-
-- **CAND-06** WHEN displaying current operational balances (retail stock, current market prices, total approved OJT hours) → DO compute or materialize them exclusively from verified batch/transaction logs rather than overwriting a mutable summary integer in-place | why: prevents silent stock/hour drift and preserves expiration/audit lineage | breaks: non-auditable high-velocity ephemeral counters (e.g. live pageview tickers) where batch lineage has zero business value | conf: 3 | ev: A-05 (Agrivet), A-01 (DB-02), A-02 (Sec 12.3.1) | status: candidate #derived-state ^cand-06
-
-- **CAND-07** WHEN modeling multi-actor workflow lifecycles (partnership requests, org applications, offline sync queues) → DO enforce a strict finite state machine of canonical states (`requested → accepted | declined`) and reject arbitrary status strings or unauthorized jumps | why: eliminates impossible intermediate states and happy-path-only bugs | breaks: user-customizable kanban/workflow builders where end-users define ad-hoc stages at runtime | conf: 3 | ev: A-05 (Godot state machines), A-01 (IR-04), A-02 (Sec 12.3), A-03 (Sec 6) | status: candidate #state-machine ^cand-07
-
-- **CAND-08** WHEN kicking off a multi-contributor build or preparing a system for panel/judge defense → DO lock a module ownership matrix ("Owns" vs "Must not independently change") and build the mitigation for the panel's hardest attack directly into the MVP flow | why: prevents shared-codebase overwrites and pre-empts panel interrogation | breaks: solo 2-hour throwaway prototypes that will never be merged or defended | conf: 3 | ev: A-05 (FlexSpace Capstone, Shark Tank), A-01, A-02 (Sec 12, 14) | status: candidate #defense-preemption ^cand-08
-
-## Trade-Off Triad Razors (From S-01 Step 2)
-
-- **CAND-09** WHEN studio 3D WebGL or hover video showcases (`TA-02`) drop below 30fps or run under `prefers-reduced-motion` / low-end mobile constraints (`UX-13`) → DO prioritize 60fps usability (`UX-13 > TA-02`) by auto-downgrading to a crisp static SVG/blueprint fallback | why: a lagging interface destroys trust faster than a missing 3D effect | breaks: dedicated standalone 3D/CAD inspection tools where the 3D mesh itself is the sole functional task | conf: 3 | ev: S-01 (Triad 1), A-01 (UX-05, UX-13), A-03 (Sec 2) | status: candidate #triad-razor ^cand-09
-
-- **CAND-10** WHEN a teammate's backend endpoint breaks on the critical MVP path right before a defense and they are unreachable (`OP-02` vs `OP-05`) → DO isolate a minimal backend fix on your own working branch and disclose the cross-boundary intervention in the handoff log, rather than faking the save in UI (`OP-09`) or shipping a broken demo | why: honest working truth beats strict module silos in an emergency, while branch isolation and disclosure preserve team trust | breaks: when the teammate is reachable or when the fix requires production credentials/migrations you are not authorized to run | conf: 3 | ev: S-01 (Triad 2), A-02 (Sec 10.1, 12, 14) | status: candidate #triad-razor ^cand-10
-
-- **CAND-11** WHEN a two-party approval gate (`submitter ≠ approver`, `OP-08`) collides with a single-operator pilot organization (`active_staff_count == 1`) → DO allow self-approval only under an explicit `solo_operator_waiver` flag recorded on every row in the append-only audit log, and auto-enforce `submitter ≠ approver` the moment `active_staff_count >= 2` | why: unblocks Day-1 solo pilot onboarding without faking second accounts or weakening multi-user security | breaks: regulated financial/legal sign-offs where an external counter-party (e.g. school vs company) is legally required even if each org has only 1 staff member | conf: 3 | ev: S-01 (Triad 3), A-01 (SEC-05), A-02 (Sec 7, 12.3), A-05 (Agrivet) | status: candidate #triad-razor ^cand-11
-
-## Data/AI & Creative Synthesis Candidates (From S-01 Step 3)
-
-- **CAND-12** WHEN adding anomaly detection, validation, or AI assistance to a workflow → DO enforce deterministic math and statistical baselines first (z-score/median/MAD, regex, Zod) and keep AI strictly as a non-overlapping copilot that flags inconsistencies for human sign-off rather than autonomously mutating user data | why: deterministic math is fast, auditable, and predictable; human judgment owns the final state | breaks: purely generative creative sandboxes (e.g. drafting placeholder copy) where no canonical ground-truth record is mutated | conf: 3 | ev: S-01 (Step 3.1), A-01 (SEC-05), A-03 (Sec 6.2), A-05 (DICT-ITU AI/Data Science) | status: candidate #ai-boundary ^cand-12
-
-- **CAND-13** WHEN designing a user onboarding flow, media preview, or live product demo → DO storyboard it as a four-beat timeline (Problem → Friction → 'Aha' Action → Verified Outcome) and enforce a strict time cut (≤10s for media hooks, ≤3m for MVP demos) | why: eliminates dead air and cognitive fatigue for users and judges | breaks: deep reference documentation or full accreditation audit exports where exhaustive completeness matters more than narrative pacing | conf: 3 | ev: S-01 (Step 3.2), A-02 (Rule 3), A-03 (Sec 3), A-05 (Premiere Pro/Shark Tank) | status: candidate #storyboard-pacing ^cand-13
+## Promotion Ledger (Session S-01 — 2026-10-27)
+- `CAND-01` → Promoted to **`CS-03`** (`02-domains/cybersec.md`)
+- `CAND-02` → Promoted to **`CS-02`** (`02-domains/cybersec.md`)
+- `CAND-03` → Promoted to **`UI-01`** (`02-domains/ui-frontend.md`)
+- `CAND-04` → Promoted to **`UI-02`** (`02-domains/ui-frontend.md`)
+- `CAND-05` → Promoted to **`SO-04`** & **`UI-05`** (`02-domains/solutions.md`, `ui-frontend.md`)
+- `CAND-06` → Promoted to **`SO-01`** (`02-domains/solutions.md`)
+- `CAND-07` → Promoted to **`SO-02`** (`02-domains/solutions.md`)
+- `CAND-08` → Promoted to **`BA-01`** & **`BA-03`** (`02-domains/business-analysis.md`)
+- `CAND-09` → Promoted to **`UI-05`** & **`P-02`** (`02-domains/ui-frontend.md`, `03-heuristics/PATTERNS.md`)
+- `CAND-10` → Promoted to **`H-02`** (`03-heuristics/HEURISTICS.md`)
+- `CAND-11` → Promoted to **`CS-02`** & **`P-01`** (`02-domains/cybersec.md`, `03-heuristics/PATTERNS.md`)
+- `CAND-12` → Promoted to **`H-01`** (`03-heuristics/HEURISTICS.md`)
+- `CAND-13` → Promoted to **`P-03`** (`03-heuristics/PATTERNS.md`)

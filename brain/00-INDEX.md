@@ -1,6 +1,6 @@
 ---
 type: index
-version: 2
+version: 3
 status: active
 ---
 # Brain — Index
@@ -19,24 +19,25 @@ Files with `status: empty` or `draft` are skipped; only `status: active` lines c
 
 ## Brain ↔ Agent Suite Mapping
 Active rules from the brain feed directly into the execution checklists in `agents/`:
-- `01-identity/OPERATING-PRINCIPLES.md` (Tier 0) → Governs all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`).
-- `01-identity/TASTE.md` → Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`).
-- `02-domains/business-analysis.md` (`BA`) → Feeds `productmanageragent.md` (`PM`).
-- `02-domains/solutions.md` (`SO`) → Feeds `systemsdesignagent.md` (`SD`), `dbaagent.md` (`DB`), and `integrationagent.md` (`IR`).
-- `02-domains/cybersec.md` (`CS`) → Feeds `securityagent.md` (`SEC`) and `dbaagent.md` (`DB`).
-- `02-domains/ui-frontend.md` (`UI`) → Feeds `uiuxagent.md` (`UX`).
+- `01-identity/OPERATING-PRINCIPLES.md` (`OP-01..14`, Tier 0) → Governs all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`).
+- `01-identity/TASTE.md` (`TA-01..13`) → Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`).
+- `02-domains/business-analysis.md` (`BA-01..05`) → Feeds `productmanageragent.md` (`PM`).
+- `02-domains/solutions.md` (`SO-01..05`) → Feeds `systemsdesignagent.md` (`SD`), `dbaagent.md` (`DB`), and `integrationagent.md` (`IR`).
+- `02-domains/cybersec.md` (`CS-01..05`) → Feeds `securityagent.md` (`SEC`) and `dbaagent.md` (`DB`).
+- `02-domains/ui-frontend.md` (`UI-01..05`) → Feeds `uiuxagent.md` (`UX`).
 
 ## Domain Map
 | Domain | Prefix | File | Active rules | Avg conf | Coverage |
 |---|---|---|---|---|---|
-| Cybersecurity | CS | [[cybersec]] | 0 | – | thin |
-| Solutions | SO | [[solutions]] | 0 | – | thin |
-| Business Analysis | BA | [[business-analysis]] | 0 | – | thin |
-| UI & Frontend | UI | [[ui-frontend]] | 0 | – | thin |
+| Cybersecurity | CS | [[cybersec]] | 5 | 4.2 | ok |
+| Solutions | SO | [[solutions]] | 5 | 4.2 | ok |
+| Business Analysis | BA | [[business-analysis]] | 5 | 4.6 | ok |
+| UI & Frontend | UI | [[ui-frontend]] | 5 | 4.8 | ok |
+| Cross-Domain Heuristics | H / P / RF | [[HEURISTICS]] · [[PATTERNS]] · [[RED-FLAGS]] | 5 H · 4 P · 8 RF | 4.8 | rich |
 
 Counts are refreshed by GAP-FINDER. Add a domain: see [[EXTENDING]].
 
 ## Folders
-- `01-identity/` who I am as a practitioner · `02-domains/` per-specialty rules · `03-heuristics/` cross-domain judgment, red flags, patterns
-- `04-models/` mental models, one per file · `05-elicitation/` micro-triggers, artifact archaeology, fast diagnostics
-- `06-raw/` unprocessed candidates · `07-meta/` conventions, sync, extending, digest, brain agent
+- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`)
+- `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models
+- `05-elicitation/` fast micro-triggers, artifact archaeology, session logs · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest
