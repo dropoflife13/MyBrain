@@ -297,24 +297,24 @@ export default function Home() {
       <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-500/30 dark:border-cyan-400/30" />
       <div className="pointer-events-none fixed bottom-6 left-6 z-10 w-3 h-3 border-b border-l border-cyan-500/30 dark:border-cyan-400/30" />
 
-      {/* 3. Top Desktop Command Bar (Strict CSS Grid Alignment & Blueprint Light Mode Adaptation) */}
-      <header className="fixed top-4 left-4 right-4 md:left-6 md:right-6 z-30 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none gap-3">
-        {/* Left: Overview Link + Cortex Brand Pill */}
-        <div className="flex items-center justify-start gap-2 pointer-events-auto">
+      {/* 3. Top Desktop Command Bar (Horizontal Left-Aligned Gates & Telemetry) */}
+      <header className="fixed top-4 left-4 right-4 md:left-6 md:right-6 z-30 flex items-center justify-between pointer-events-none gap-2 sm:gap-3">
+        {/* Left: Overview Link + Cortex Brand Pill + Horizontal 7-Agent Gates */}
+        <div className="flex items-center justify-start gap-2 pointer-events-auto shrink-0">
           <Link
             href="/"
-            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
             title="Return to Landing Page"
           >
             <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
             <span className="hidden sm:inline">Overview</span>
           </Link>
 
-          <div className="h-10 flex items-center justify-center gap-2.5 px-3.5 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
+          <div className="h-10 flex items-center justify-center gap-2 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl shrink-0">
             <img
               src="/cortex-logo-cyan.svg"
               alt="Cortex Logo"
-              className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
+              className="w-5 h-5 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
             />
             <span className="text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white uppercase">
               CORTEX
@@ -322,15 +322,10 @@ export default function Home() {
             <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
               v2.4
             </span>
-            <span className="hidden xl:inline text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              {graphData.nodes.length - 1} Synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 139} Rules ({graphData.vaultAudit?.duplicateRuleIds.length ?? 0} Overlaps) • {fps} FPS
-            </span>
           </div>
-        </div>
 
-        {/* Center: 7-Agent Quick-Jump Dock */}
-        <div className="flex items-center justify-center pointer-events-auto">
-          <nav className="h-10 hidden lg:flex items-center justify-center gap-1 p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
+          {/* 7-Agent Horizontal Dock (Positioned on the Left) */}
+          <nav className="h-10 hidden md:flex items-center justify-start gap-0.5 sm:gap-1 p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl shrink-0">
             <span className="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
               Gates:
@@ -342,7 +337,7 @@ export default function Home() {
                   key={agent.id}
                   type="button"
                   onClick={() => handleSelectAgentFromDock(agent.id)}
-                  className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  className={`h-8 px-2 sm:px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     isActive
                       ? 'bg-cyan-500 dark:bg-[#00ffff] text-black font-bold shadow-[0_0_12px_rgba(0,255,255,0.4)]'
                       : 'text-slate-600 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10'
@@ -361,7 +356,7 @@ export default function Home() {
         </div>
 
         {/* Right: Search Palette Trigger + Vault State Switcher + Theme Toggle + Auto-Spin */}
-        <div className="flex items-center justify-end gap-2 pointer-events-auto">
+        <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
           {/* Governance Matrix & Contradiction Inspector (GR-04, X-01..05) */}
           <button
             type="button"

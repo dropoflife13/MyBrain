@@ -219,7 +219,7 @@ export default function LandingPage() {
           </nav>
         </div>
 
-        {/* Right: Search + Theme Toggle + Fork + Console CTA */}
+        {/* Right: Search Palette Trigger + Theme Toggle */}
         <div className="flex items-center justify-end gap-2 pointer-events-auto shrink-0">
           {/* Global Search Palette Button (GR-04) */}
           <button
@@ -229,32 +229,13 @@ export default function LandingPage() {
             title="Search Rules & Agents (Ctrl+K / ⌘K)"
           >
             <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span className="hidden xl:inline">Search</span>
+            <span className="hidden sm:inline">Search</span>
             <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
               ⌘K
             </kbd>
           </button>
 
           <ThemeToggle />
-
-          <button
-            type="button"
-            onClick={() => setIsShareOpen(true)}
-            className="h-10 hidden sm:flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/85 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-slate-200 dark:border-white/15 hover:border-cyan-400/40 text-xs font-mono text-slate-800 dark:text-zinc-200 transition-all shadow-xl cursor-pointer"
-            title="Fork this Brain"
-          >
-            <GitFork className="w-3.5 h-3.5 text-cyan-500 dark:text-[#00ffff]" />
-            <span className="hidden lg:inline">Fork this Brain</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenMind}
-            className="h-10 flex items-center justify-center gap-2 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.5)] cursor-pointer"
-          >
-            <span>Console</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
         </div>
       </header>
 
@@ -915,6 +896,19 @@ export default function LandingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Floating Bottom-Right Action: Fork this Brain */}
+      <div className="fixed bottom-6 right-6 z-30 pointer-events-auto">
+        <button
+          type="button"
+          onClick={() => setIsShareOpen(true)}
+          className="h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl bg-white/90 dark:bg-[#09090b]/90 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-white/15 hover:border-cyan-400/40 text-xs font-mono transition-all shadow-2xl backdrop-blur-xl cursor-pointer"
+          title="Fork this Brain Vault"
+        >
+          <GitFork className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+          <span>Fork this Brain</span>
+        </button>
+      </div>
 
       {/* Global Cmd+K Search Palette (GR-04) */}
       <CommandPalette
