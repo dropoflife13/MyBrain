@@ -1,15 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  /* Next.js 16 config — Tailwind v4 is handled via postcss.config.mjs (@tailwindcss/postcss) */
 };
 
 export default nextConfig;
-

@@ -1,269 +1,484 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { BrainGraphData, getBrainData } from '../lib/brain-parser';
-
-const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), {
-  ssr: false,
-});
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { BrainDocNode, BrainGraphData, getBrainData } from '../lib/brain-parser';
 
 export interface Brain3DProps {
   data?: BrainGraphData;
-  selectedNode?: any;
-  onNodeHover: (node: any) => void;
-  onNodeClick?: (node: any) => void;
+  selectedNode?: BrainDocNode | null;
+  autoSpin?: boolean;
+  onNodeHover: (node: BrainDocNode | null) => void;
+  onNodeClick?: (node: BrainDocNode | null) => void;
+  onReady?: () => void;
+  onFpsUpdate?: (fps: number) => void;
 }
 
 export default function Brain3D({
   data,
   selectedNode,
+  autoSpin = true,
   onNodeHover,
   onNodeClick,
+  onReady,
+  onFpsUpdate,
 }: Brain3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const fgRef = useRef<any>(null);
-  const angleRef = useRef<number>(0);
-  const isHoveredRef = useRef<boolean>(false);
-  const isLockedRef = useRef<boolean>(false);
 
-  const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
-    width: 1440,
-    height: 900,
-  });
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  // Latest prop refs for use inside the 60fps animation & event loop
+  const autoSpinRef = useRef<boolean>(autoSpin);
+  const selectedNodeRef = useRef<BrainDocNode | null>(selectedNode || null);
+  const hoveredNodeRef = useRef<BrainDocNode | null>(null);
+  const onNodeHoverRef = useRef(onNodeHover);
+  const onNodeClickRef = useRef(onNodeClick);
+  const onReadyRef = useRef(onReady);
+  const onFpsUpdateRef = useRef(onFpsUpdate);
+
+  // Camera lerp target refs when locking/unlocking focus
+  const desiredCameraPosRef = useRef<THREE.Vector3 | null>(null);
+  const desiredTargetPosRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
+  const isReturningHomeRef = useRef<boolean>(false);
+
+  // Highlight update callback ref
+  const applyVisualStateRef = useRef<((hoverId: string | null, selectId: string | null) => void) | null>(
+    null
+  );
 
   const graphData = useMemo(() => {
     return data && data.nodes?.length ? data : getBrainData({ nodeCount: 360 });
   }, [data]);
 
-  // Measure full-screen viewport cleanly
   useEffect(() => {
-    const updateSize = () => {
-      if (containerRef.current) {
-        const w = containerRef.current.clientWidth || window.innerWidth;
-        const h = containerRef.current.clientHeight || window.innerHeight;
-        setDimensions({ width: Math.max(w, 320), height: Math.max(h, 320) });
-      } else if (typeof window !== 'undefined') {
-        setDimensions({ width: window.innerWidth, height: window.innerHeight });
-      }
-    };
+    autoSpinRef.current = autoSpin;
+  }, [autoSpin]);
 
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    const observer =
-      typeof ResizeObserver !== 'undefined' && containerRef.current
-        ? new ResizeObserver(updateSize)
-        : null;
-    if (observer && containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('resize', updateSize);
-      if (observer) observer.disconnect();
-    };
-  }, []);
-
-  // 1. Slow Auto-Rotate Camera Loop around the center by default
   useEffect(() => {
-    const distance = 165;
-    let frameId: number;
+    onNodeHoverRef.current = onNodeHover;
+    onNodeClickRef.current = onNodeClick;
+    onReadyRef.current = onReady;
+    onFpsUpdateRef.current = onFpsUpdate;
+  }, [onNodeHover, onNodeClick, onReady, onFpsUpdate]);
 
-    const configureControls = () => {
-      if (fgRef.current) {
-        const controls = fgRef.current.controls?.();
-        if (controls) {
-          controls.enableDamping = true;
-          controls.dampingFactor = 0.06;
-          controls.autoRotate = !isHoveredRef.current && !isLockedRef.current;
-          controls.autoRotateSpeed = 0.55;
-        }
-      }
-    };
-
-    const initTimer = setTimeout(() => {
-      if (fgRef.current) {
-        fgRef.current.cameraPosition({ x: 0, y: 20, z: distance }, { x: 0, y: 0, z: 0 }, 0);
-        configureControls();
-      }
-    }, 150);
-
-    const tick = () => {
-      if (fgRef.current && !isHoveredRef.current && !isLockedRef.current) {
-        const controls = fgRef.current.controls?.();
-        if (controls) {
-          controls.autoRotate = true;
-          controls.autoRotateSpeed = 0.55;
-        } else {
-          angleRef.current += 0.0018;
-          fgRef.current.cameraPosition({
-            x: distance * Math.sin(angleRef.current),
-            y: 20,
-            z: distance * Math.cos(angleRef.current),
-          });
-        }
-      }
-      frameId = requestAnimationFrame(tick);
-    };
-
-    frameId = requestAnimationFrame(tick);
-
-    return () => {
-      clearTimeout(initTimer);
-      cancelAnimationFrame(frameId);
-    };
-  }, []);
-
-  // 2. Lock Camera onto Selected Node (or unlock when deselected via Escape / Close)
+  // Update camera lock target whenever selectedNode changes
   useEffect(() => {
-    isLockedRef.current = Boolean(selectedNode && selectedNode.id !== 'hub');
-
-    if (!fgRef.current) return;
-    const controls = fgRef.current.controls?.();
+    selectedNodeRef.current = selectedNode || null;
 
     if (selectedNode && selectedNode.id !== 'hub') {
-      if (controls) controls.autoRotate = false;
+      const nx = selectedNode.fx ?? selectedNode.x ?? 0;
+      const ny = selectedNode.fy ?? selectedNode.y ?? 0;
+      const nz = selectedNode.fz ?? selectedNode.z ?? 0;
+      const nodeVec = new THREE.Vector3(nx, ny, nz);
+      const dir = nodeVec.clone().normalize();
+      if (dir.lengthSq() < 0.001) dir.set(0, 0.2, 1).normalize();
 
-      const nx = selectedNode.x ?? selectedNode.fx ?? 0;
-      const ny = selectedNode.y ?? selectedNode.fy ?? 0;
-      const nz = selectedNode.z ?? selectedNode.fz ?? 0;
-      const dist = Math.hypot(nx, ny, nz) || 1;
-      const distanceRatio = 1 + 48 / dist;
-
-      fgRef.current.cameraPosition(
-        {
-          x: nx * distanceRatio,
-          y: ny * distanceRatio + 6,
-          z: nz * distanceRatio,
-        },
-        { x: nx, y: ny, z: nz },
-        900
-      );
+      desiredTargetPosRef.current.copy(nodeVec);
+      desiredCameraPosRef.current = nodeVec.clone().addScaledVector(dir, 52).add(new THREE.Vector3(0, 8, 0));
+      isReturningHomeRef.current = false;
     } else {
-      // Return to center orbit when deselected
-      if (controls) {
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.55;
-      }
-      fgRef.current.cameraPosition({ x: 0, y: 20, z: 165 }, { x: 0, y: 0, z: 0 }, 800);
+      // Unlock camera and smoothly return target to center (0,0,0)
+      desiredTargetPosRef.current.set(0, 0, 0);
+      desiredCameraPosRef.current = null;
+      isReturningHomeRef.current = true;
+    }
+
+    if (applyVisualStateRef.current) {
+      applyVisualStateRef.current(
+        hoveredNodeRef.current ? String(hoveredNodeRef.current.id) : null,
+        selectedNode && selectedNode.id !== 'hub' ? String(selectedNode.id) : null
+      );
     }
   }, [selectedNode]);
 
-  const handleNodeHover = useCallback(
-    (node: any) => {
-      const validHover = node && node.id !== 'hub' ? node : null;
-      isHoveredRef.current = Boolean(validHover);
-      setHoveredId(validHover ? String(validHover.id) : null);
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
 
-      if (typeof document !== 'undefined') {
-        document.body.style.cursor = validHover ? 'pointer' : 'default';
+    const width = Math.max(container.clientWidth || window.innerWidth, 320);
+    const height = Math.max(container.clientHeight || window.innerHeight, 320);
+
+    // 1. Scene
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
+    scene.fog = new THREE.FogExp2(0x050505, 0.0022);
+
+    // 2. Camera
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 1500);
+    camera.position.set(0, 26, 165);
+
+    // 3. WebGLRenderer
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.domElement.style.display = 'block';
+    renderer.domElement.style.width = '100%';
+    renderer.domElement.style.height = '100%';
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+
+    // 4. OrbitControls (Hardware-damped + Auto-Rotate)
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.055;
+    controls.autoRotate = autoSpinRef.current;
+    controls.autoRotateSpeed = 1.45;
+    controls.minDistance = 28;
+    controls.maxDistance = 340;
+    controls.target.set(0, 0, 0);
+
+    // 5. Ambient Deep-Space Starfield & Tactical Orbital Rings
+    const environmentGroup = new THREE.Group();
+    scene.add(environmentGroup);
+
+    // Subtle radial orbital rings around the brain cortex
+    const ringGeo1 = new THREE.RingGeometry(78, 78.35, 96);
+    ringGeo1.rotateX(Math.PI / 2);
+    const ringMat1 = new THREE.MeshBasicMaterial({
+      color: 0x1e3a8a,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.28,
+    });
+    const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
+    ring1.position.y = -32;
+    environmentGroup.add(ring1);
+
+    const ringGeo2 = new THREE.RingGeometry(102, 102.25, 128);
+    ringGeo2.rotateX(Math.PI / 2);
+    const ringMat2 = new THREE.MeshBasicMaterial({
+      color: 0x00ffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.12,
+    });
+    const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
+    ring2.position.y = -32;
+    environmentGroup.add(ring2);
+
+    // Polar crosshairs on the tactical floor plane
+    const gridHelper = new THREE.GridHelper(220, 28, 0x1e3a8a, 0x0f172a);
+    gridHelper.position.y = -32.2;
+    (gridHelper.material as THREE.Material).transparent = true;
+    (gridHelper.material as THREE.Material).opacity = 0.25;
+    environmentGroup.add(gridHelper);
+
+    // Ambient background dust particles
+    const starCount = 420;
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const r = 130 + Math.random() * 190;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      starPositions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+      starPositions[i * 3 + 2] = r * Math.cos(phi);
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({
+      color: 0x38bdf8,
+      size: 0.85,
+      transparent: true,
+      opacity: 0.35,
+    });
+    const starField = new THREE.Points(starGeo, starMat);
+    environmentGroup.add(starField);
+
+    // 6. Build Synaptic Constellation Nodes & Links
+    const brainGroup = new THREE.Group();
+    scene.add(brainGroup);
+
+    const nodeById = new Map<string, BrainDocNode>();
+    const meshById = new Map<string, THREE.Mesh>();
+    const haloById = new Map<string, THREE.Mesh>();
+    const pickableMeshes: THREE.Mesh[] = [];
+
+    const agentCoreGeo = new THREE.SphereGeometry(2.1, 20, 20);
+    const agentHaloGeo = new THREE.SphereGeometry(3.8, 20, 20);
+    const ruleCoreGeo = new THREE.SphereGeometry(0.68, 12, 12);
+    const ruleHaloGeo = new THREE.SphereGeometry(2.1, 14, 14);
+
+    graphData.nodes.forEach((node) => {
+      nodeById.set(String(node.id), node);
+      if (node.id === 'hub') return;
+
+      const nx = node.fx ?? node.x ?? 0;
+      const ny = node.fy ?? node.y ?? 0;
+      const nz = node.fz ?? node.z ?? 0;
+      const isAgent = node.group === 1;
+
+      const coreMat = new THREE.MeshBasicMaterial({
+        color: isAgent ? 0x00ffff : 0xffffff,
+      });
+      const mesh = new THREE.Mesh(isAgent ? agentCoreGeo : ruleCoreGeo, coreMat);
+      mesh.position.set(nx, ny, nz);
+      mesh.userData = { node };
+      brainGroup.add(mesh);
+      meshById.set(String(node.id), mesh);
+      pickableMeshes.push(mesh);
+
+      // Outer glow halo (visible by default for Group 1 Agents, and shown on hover/select for Group 2)
+      const haloMat = new THREE.MeshBasicMaterial({
+        color: 0x00ffff,
+        transparent: true,
+        opacity: isAgent ? 0.24 : 0.0,
+        depthWrite: false,
+      });
+      const halo = new THREE.Mesh(isAgent ? agentHaloGeo : ruleHaloGeo, haloMat);
+      halo.position.set(nx, ny, nz);
+      brainGroup.add(halo);
+      haloById.set(String(node.id), halo);
+    });
+
+    // Build Base Synaptic Links (#1E3A8A) + Highlight Overlay Links (#00ffff)
+    const validLinks: Array<{ src: BrainDocNode; tgt: BrainDocNode }> = [];
+    const baseLineCoords: number[] = [];
+
+    graphData.links.forEach((link) => {
+      const srcId = typeof link.source === 'object' ? (link.source as any).id : link.source;
+      const tgtId = typeof link.target === 'object' ? (link.target as any).id : link.target;
+      if (srcId === 'hub' || tgtId === 'hub') return;
+
+      const a = nodeById.get(String(srcId));
+      const b = nodeById.get(String(tgtId));
+      if (a && b) {
+        validLinks.push({ src: a, tgt: b });
+        baseLineCoords.push(
+          a.fx ?? a.x ?? 0,
+          a.fy ?? a.y ?? 0,
+          a.fz ?? a.z ?? 0,
+          b.fx ?? b.x ?? 0,
+          b.fy ?? b.y ?? 0,
+          b.fz ?? b.z ?? 0
+        );
+      }
+    });
+
+    const baseLineGeo = new THREE.BufferGeometry();
+    baseLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(baseLineCoords, 3));
+    const baseLineMat = new THREE.LineBasicMaterial({
+      color: 0x1e3a8a,
+      transparent: true,
+      opacity: 0.42,
+    });
+    const baseLineSegments = new THREE.LineSegments(baseLineGeo, baseLineMat);
+    brainGroup.add(baseLineSegments);
+
+    // Dynamic highlighted links connected to hovered/selected node
+    const highlightLineGeo = new THREE.BufferGeometry();
+    const highlightLineMat = new THREE.LineBasicMaterial({
+      color: 0x00ffff,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const highlightLineSegments = new THREE.LineSegments(highlightLineGeo, highlightLineMat);
+    brainGroup.add(highlightLineSegments);
+
+    // Function to update node scale/glow and active links on hover or select
+    const applyVisualState = (hoverId: string | null, selectId: string | null) => {
+      const activeId = hoverId || selectId;
+
+      meshById.forEach((mesh, id) => {
+        const node = mesh.userData.node as BrainDocNode;
+        const isAgent = node.group === 1;
+        const isHovered = id === hoverId;
+        const isSelected = id === selectId;
+        const isActive = isHovered || isSelected;
+
+        const mat = mesh.material as THREE.MeshBasicMaterial;
+        const halo = haloById.get(id);
+        const haloMat = halo?.material as THREE.MeshBasicMaterial | undefined;
+
+        if (isActive) {
+          mat.color.setHex(0x00ffff);
+          mesh.scale.setScalar(isAgent ? 1.45 : 1.9);
+          if (halo && haloMat) {
+            halo.scale.setScalar(1.35);
+            haloMat.opacity = 0.45;
+          }
+        } else {
+          mat.color.setHex(isAgent ? 0x00ffff : 0xffffff);
+          mesh.scale.setScalar(1.0);
+          if (halo && haloMat) {
+            halo.scale.setScalar(1.0);
+            haloMat.opacity = isAgent ? 0.22 : 0.0;
+          }
+        }
+      });
+
+      if (!activeId) {
+        highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
+        return;
       }
 
-      if (fgRef.current) {
-        const controls = fgRef.current.controls?.();
-        if (controls) {
-          controls.autoRotate = !validHover && !isLockedRef.current;
+      const activeCoords: number[] = [];
+      validLinks.forEach(({ src, tgt }) => {
+        if (String(src.id) === activeId || String(tgt.id) === activeId) {
+          activeCoords.push(
+            src.fx ?? src.x ?? 0,
+            src.fy ?? src.y ?? 0,
+            src.fz ?? src.z ?? 0,
+            tgt.fx ?? tgt.x ?? 0,
+            tgt.fy ?? tgt.y ?? 0,
+            tgt.fz ?? tgt.z ?? 0
+          );
+        }
+      });
+      highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(activeCoords, 3));
+    };
+
+    applyVisualStateRef.current = applyVisualState;
+
+    // 7. Raycaster for Instant Hover & Click Detection
+    const raycaster = new THREE.Raycaster();
+    raycaster.params.Points = { threshold: 2 };
+    const pointer = new THREE.Vector2(-999, -999);
+    let pointerDownPos = { x: 0, y: 0 };
+
+    const handlePointerMove = (e: MouseEvent) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const intersects = raycaster.intersectObjects(pickableMeshes, false);
+
+      const hitNode: BrainDocNode | null =
+        intersects.length > 0 ? (intersects[0].object.userData.node as BrainDocNode) : null;
+
+      const prevHoverId = hoveredNodeRef.current ? String(hoveredNodeRef.current.id) : null;
+      const nextHoverId = hitNode ? String(hitNode.id) : null;
+
+      if (prevHoverId !== nextHoverId) {
+        hoveredNodeRef.current = hitNode;
+        renderer.domElement.style.cursor = hitNode ? 'pointer' : 'grab';
+        applyVisualState(
+          nextHoverId,
+          selectedNodeRef.current ? String(selectedNodeRef.current.id) : null
+        );
+        onNodeHoverRef.current(hitNode);
+      }
+    };
+
+    const handlePointerDown = (e: MouseEvent) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+      if (!hoveredNodeRef.current) {
+        renderer.domElement.style.cursor = 'grabbing';
+      }
+      // Stop camera lerp if user manually drags to orbit
+      desiredCameraPosRef.current = null;
+      isReturningHomeRef.current = false;
+    };
+
+    const handlePointerUp = (e: MouseEvent) => {
+      const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+      renderer.domElement.style.cursor = hoveredNodeRef.current ? 'pointer' : 'grab';
+
+      // Only count as a click if the user didn't drag the camera
+      if (moveDist < 6) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(pointer, camera);
+        const intersects = raycaster.intersectObjects(pickableMeshes, false);
+
+        if (intersects.length > 0) {
+          const clickedNode = intersects[0].object.userData.node as BrainDocNode;
+          onNodeClickRef.current?.(clickedNode);
+        }
+      }
+    };
+
+    renderer.domElement.addEventListener('mousemove', handlePointerMove);
+    renderer.domElement.addEventListener('mousedown', handlePointerDown);
+    renderer.domElement.addEventListener('mouseup', handlePointerUp);
+
+    // 8. 60fps Animation Loop (Auto-Spin + Camera Focus Lerp + Agent Pulse)
+    let animId: number;
+    let lastFpsTime = performance.now();
+    let frames = 0;
+
+    const animate = (now: number) => {
+      animId = requestAnimationFrame(animate);
+
+      const isLockedOnNode = Boolean(selectedNodeRef.current && selectedNodeRef.current.id !== 'hub');
+      const isHoveringNode = Boolean(hoveredNodeRef.current);
+
+      // Smoothly lerp OrbitControls target toward selected node (or back to 0,0,0)
+      controls.target.lerp(desiredTargetPosRef.current, 0.08);
+
+      if (desiredCameraPosRef.current) {
+        camera.position.lerp(desiredCameraPosRef.current, 0.07);
+        if (camera.position.distanceTo(desiredCameraPosRef.current) < 0.8) {
+          desiredCameraPosRef.current = null;
+        }
+      } else if (isReturningHomeRef.current) {
+        if (controls.target.length() < 0.5) {
+          isReturningHomeRef.current = false;
         }
       }
 
-      onNodeHover(validHover);
-    },
-    [onNodeHover]
-  );
+      // Auto-rotate is active whenever autoSpin is ON and user is not hovering/inspecting a locked node
+      controls.autoRotate = autoSpinRef.current && !isHoveringNode && !isLockedOnNode;
+      controls.update();
 
-  const handleNodeClick = useCallback(
-    (node: any) => {
-      if (!node || node.id === 'hub') return;
-      if (onNodeClick) {
-        onNodeClick(node);
+      // Subtle counter-rotation of the ambient starfield and tactical ring
+      starField.rotation.y += 0.0004;
+      ring2.rotation.z -= 0.001;
+
+      renderer.render(scene, camera);
+
+      // FPS counter
+      frames++;
+      const elapsed = now - lastFpsTime;
+      if (elapsed >= 1000) {
+        const currentFps = Math.min(60, Math.round((frames * 1000) / elapsed));
+        if (Number.isFinite(currentFps) && currentFps > 0) {
+          onFpsUpdateRef.current?.(currentFps);
+        }
+        frames = 0;
+        lastFpsTime = now;
       }
-    },
-    [onNodeClick]
-  );
+    };
 
-  const selectedId = selectedNode ? String(selectedNode.id) : null;
+    animId = requestAnimationFrame(animate);
 
-  // 3. Visual Hierarchy: Group 1 = 7 Core Agents (Cyan #00ffff, larger), Group 2 = Rule Nodes (Tiny White #ffffff)
-  const nodeThreeObject = useCallback(
-    (node: any) => {
-      const idStr = String(node.id);
-      const isHovered = hoveredId === idStr;
-      const isSelected = selectedId === idStr;
-      const isHighlighted = (isHovered || isSelected) && node.id !== 'hub';
-      const isAgent = node.group === 1;
+    // Signal ready to dismiss initial boot loader
+    const readyTimer = setTimeout(() => {
+      onReadyRef.current?.();
+    }, 350);
 
-      if (isHighlighted) {
-        const group = new THREE.Group();
-        const coreRadius = isAgent ? 2.6 : 1.55;
-        const haloRadius = isAgent ? 4.4 : 2.8;
+    // 9. Resize handling
+    const handleResize = () => {
+      if (!container) return;
+      const w = Math.max(container.clientWidth || window.innerWidth, 320);
+      const h = Math.max(container.clientHeight || window.innerHeight, 320);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
 
-        const coreGeo = new THREE.SphereGeometry(coreRadius, 18, 18);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        group.add(new THREE.Mesh(coreGeo, coreMat));
+    window.addEventListener('resize', handleResize);
+    const resizeObserver =
+      typeof ResizeObserver !== 'undefined' ? new ResizeObserver(handleResize) : null;
+    if (resizeObserver) resizeObserver.observe(container);
 
-        const haloGeo = new THREE.SphereGeometry(haloRadius, 18, 18);
-        const haloMat = new THREE.MeshBasicMaterial({
-          color: 0x00ffff,
-          transparent: true,
-          opacity: 0.34,
-        });
-        group.add(new THREE.Mesh(haloGeo, haloMat));
-
-        return group;
-      }
-
-      if (isAgent) {
-        // Group 1: The 7 Core Agents — Larger Cyan (#00ffff) nodes with subtle glow
-        const group = new THREE.Group();
-        const coreGeo = new THREE.SphereGeometry(1.85, 16, 16);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-        group.add(new THREE.Mesh(coreGeo, coreMat));
-
-        const glowGeo = new THREE.SphereGeometry(2.9, 16, 16);
-        const glowMat = new THREE.MeshBasicMaterial({
-          color: 0x00ffff,
-          transparent: true,
-          opacity: 0.18,
-        });
-        group.add(new THREE.Mesh(glowGeo, glowMat));
-
-        return group;
-      }
-
-      // Group 2: Tiny White (#ffffff) Rule Nodes
-      const sphereGeo = new THREE.SphereGeometry(node.id === 'hub' ? 1.2 : 0.62, 10, 10);
-      const sphereMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-      });
-      return new THREE.Mesh(sphereGeo, sphereMat);
-    },
-    [hoveredId, selectedId]
-  );
-
-  const getNodeColor = useCallback(
-    (node: any) => {
-      const idStr = String(node.id);
-      if (hoveredId === idStr || selectedId === idStr) return '#00ffff';
-      return node.group === 1 ? '#00ffff' : '#ffffff';
-    },
-    [hoveredId, selectedId]
-  );
-
-  const getLinkColor = useCallback(
-    (link: any) => {
-      const activeId = hoveredId || selectedId;
-      if (!activeId) return '#1E3A8A';
-      const srcId = typeof link.source === 'object' ? link.source?.id : link.source;
-      const tgtId = typeof link.target === 'object' ? link.target?.id : link.target;
-      if (String(srcId) === activeId || String(tgtId) === activeId) {
-        return '#00ffff';
-      }
-      return '#1E3A8A';
-    },
-    [hoveredId, selectedId]
-  );
+    return () => {
+      clearTimeout(readyTimer);
+      window.removeEventListener('resize', handleResize);
+      if (resizeObserver) resizeObserver.disconnect();
+      renderer.domElement.removeEventListener('mousemove', handlePointerMove);
+      renderer.domElement.removeEventListener('mousedown', handlePointerDown);
+      renderer.domElement.removeEventListener('mouseup', handlePointerUp);
+      cancelAnimationFrame(animId);
+      controls.dispose();
+      renderer.dispose();
+    };
+  }, [graphData]);
 
   return (
     <div
@@ -276,34 +491,6 @@ export default function Brain3D({
         backgroundColor: '#050505',
         overflow: 'hidden',
       }}
-    >
-      <ForceGraph3D
-        ref={fgRef}
-        width={dimensions.width}
-        height={dimensions.height}
-        graphData={graphData}
-        backgroundColor="#050505"
-        showNavInfo={false}
-        nodeLabel={() => ''}
-        nodeColor={getNodeColor}
-        nodeThreeObject={nodeThreeObject}
-        nodeRelSize={1.2}
-        linkColor={getLinkColor}
-        linkOpacity={0.38}
-        linkWidth={(link: any) => {
-          const activeId = hoveredId || selectedId;
-          if (!activeId) return 0.55;
-          const srcId = typeof link.source === 'object' ? link.source?.id : link.source;
-          const tgtId = typeof link.target === 'object' ? link.target?.id : link.target;
-          return String(srcId) === activeId || String(tgtId) === activeId ? 1.5 : 0.45;
-        }}
-        d3AlphaDecay={0.05}
-        d3VelocityDecay={0.4}
-        warmupTicks={20}
-        cooldownTicks={60}
-        onNodeHover={handleNodeHover}
-        onNodeClick={handleNodeClick}
-      />
-    </div>
+    />
   );
 }
