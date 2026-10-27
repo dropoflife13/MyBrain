@@ -22,6 +22,7 @@ import {
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
+import NeuralTransition from '../components/NeuralTransition';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -66,23 +67,14 @@ const FAQ_ITEMS: FaqItem[] = [
 export default function LandingPage() {
   const router = useRouter();
   const [isDiving, setIsDiving] = useState<boolean>(false);
-  const [diveStep, setDiveStep] = useState<number>(0);
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [copiedPluginSnippet, setCopiedPluginSnippet] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const handleOpenMind = () => {
     if (isDiving) return;
     setIsDiving(true);
-    setDiveStep(1);
-
-    setTimeout(() => setDiveStep(2), 650);
-    setTimeout(() => setDiveStep(3), 1300);
-    setTimeout(() => setDiveStep(4), 1950);
-
-    setTimeout(() => {
-      router.push('/console');
-    }, 2550);
   };
 
   const handleCopyPrompt = () => {
@@ -90,6 +82,16 @@ export default function LandingPage() {
       navigator.clipboard.writeText(SELF_ASSESSMENT_PROMPT).catch(() => {});
       setCopiedPrompt(true);
       setTimeout(() => setCopiedPrompt(false), 2200);
+    }
+  };
+
+  const handleCopyPluginSnippet = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard
+        .writeText('# Add a new agent to the suite\necho "# Legal Agent" > agents/legalagent.md')
+        .catch(() => {});
+      setCopiedPluginSnippet(true);
+      setTimeout(() => setCopiedPluginSnippet(false), 2200);
     }
   };
 
@@ -315,16 +317,16 @@ export default function LandingPage() {
                 <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
                     The 7-Agent Execution Suite
                   </h3>
                   <Link
                     href="/agents"
-                    className="text-xs font-mono text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md hover:bg-cyan-500/20 transition-colors font-mono cursor-pointer shrink-0"
                   >
                     <span>Directory</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
@@ -582,6 +584,75 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* SECTION 4: EXTEND THE CORTEX */}
+        <section id="extending" className="px-6 max-w-4xl mx-auto space-y-6">
+          <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 sm:p-10 space-y-6 shadow-xl dark:shadow-2xl hover:border-cyan-400/40 transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>// Modular Architecture</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white font-mono">
+                  Extend the Cortex
+                </h2>
+              </div>
+              <Badge variant="outline" className="w-fit font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
+                PLUGINS &amp; CUSTOM AGENTS
+              </Badge>
+            </div>
+
+            <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+              The system is designed to grow. Drop a new{' '}
+              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
+                .md
+              </code>{' '}
+              file into the{' '}
+              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
+                agents/
+              </code>{' '}
+              folder to instantly spawn a new gatekeeper node in the 3D space.
+            </p>
+
+            {/* Code Snippet Box with Copy Button */}
+            <div className="relative rounded-xl bg-zinc-950 border border-white/10 overflow-hidden font-mono shadow-2xl">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/90 border-b border-white/10 text-xs text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-[11px] text-zinc-300">Terminal // Add Agent Node</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyPluginSnippet}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-[11px] text-cyan-400 transition-colors cursor-pointer"
+                >
+                  {copiedPluginSnippet ? (
+                    <>
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span className="text-emerald-400">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3 h-3" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <pre className="p-4 text-xs sm:text-sm text-zinc-200 overflow-x-auto leading-relaxed">
+                <code>
+                  <span className="text-zinc-500"># Add a new agent to the suite</span>
+                  {'\n'}
+                  <span className="text-cyan-400 font-semibold">echo</span>{' '}
+                  <span className="text-amber-300">&quot;# Legal Agent&quot;</span> &gt;{' '}
+                  <span className="text-emerald-400">agents/legalagent.md</span>
+                </code>
+              </pre>
+            </div>
+          </div>
+        </section>
+
         {/* 6. Footer */}
         <footer className="px-6 max-w-6xl mx-auto pt-16 border-t border-slate-200 dark:border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-mono text-slate-500 dark:text-zinc-500">
           <div className="flex items-center gap-3">
@@ -627,107 +698,14 @@ export default function LandingPage() {
         </footer>
       </div>
 
-      {/* 7. "Open Your Mind" Cinematic Terminal Transition Overlay */}
+      {/* 7. Neural Wiring Full-Screen Transition Overlay */}
       <AnimatePresence>
         {isDiving && (
-          <motion.div
-            key="cinematic-dive-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35 }}
-            className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/95 backdrop-blur-2xl p-6 select-none font-mono"
-          >
-            {/* Ambient terminal scanline layer */}
-            <div
-              className="pointer-events-none absolute inset-0 z-0 opacity-40"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.5) 0px, rgba(0, 0, 0, 0.5) 1px, transparent 1px, transparent 3px)',
-              }}
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, y: 8 }}
-              animate={{ scale: 1, y: 0 }}
-              className="relative z-10 w-full max-w-lg rounded-2xl bg-zinc-950/95 border border-cyan-400/50 p-7 md:p-9 shadow-[0_0_80px_rgba(0,255,255,0.35)] space-y-5"
-            >
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 text-xs text-zinc-400">
-                <span className="flex items-center gap-2 text-cyan-400 font-bold tracking-wider uppercase">
-                  <Terminal className="w-4 h-4 animate-pulse" />
-                  CORTEX_KERNEL_BOOT
-                </span>
-                <span className="text-[10px] font-mono text-zinc-500">THREAD: 0x360_GL</span>
-              </div>
-
-              {/* Terminal Log Sequence */}
-              <div className="space-y-3.5 py-3 text-xs md:text-sm">
-                {diveStep >= 1 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="text-zinc-300 flex items-center gap-2.5"
-                  >
-                    <span className="text-cyan-400 font-bold">&gt;</span>
-                    <span>Initializing Cortex...</span>
-                  </motion.div>
-                )}
-
-                {diveStep >= 2 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="text-zinc-300 flex items-center gap-2.5"
-                  >
-                    <span className="text-cyan-400 font-bold">&gt;</span>
-                    <span>Binding 7 Execution Agents...</span>
-                  </motion.div>
-                )}
-
-                {diveStep >= 3 && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -6 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="text-zinc-300 flex items-center gap-2.5"
-                  >
-                    <span className="text-cyan-400 font-bold">&gt;</span>
-                    <span>Loading 360 Synaptic Coordinates...</span>
-                  </motion.div>
-                )}
-
-                {diveStep >= 4 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-cyan-300 font-bold flex items-center gap-2.5 drop-shadow-[0_0_12px_rgba(0,255,255,0.9)] pt-1"
-                  >
-                    <span className="text-cyan-400 font-black">&gt;</span>
-                    <span className="text-emerald-400">Access Granted.</span>
-                    <span className="inline-block w-2.5 h-4 bg-cyan-400 animate-pulse ml-1 shadow-[0_0_8px_#00ffff]" />
-                  </motion.div>
-                )}
-              </div>
-
-              {/* Progress Track */}
-              <div className="w-full h-1 bg-zinc-900 rounded-full overflow-hidden border border-white/10 mt-2">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-blue-600 via-sky-400 to-cyan-300"
-                  initial={{ width: '0%' }}
-                  animate={{
-                    width:
-                      diveStep === 1
-                        ? '25%'
-                        : diveStep === 2
-                        ? '55%'
-                        : diveStep === 3
-                        ? '85%'
-                        : '100%',
-                  }}
-                  transition={{ duration: 0.45 }}
-                />
-              </div>
-            </motion.div>
-          </motion.div>
+          <NeuralTransition
+            onComplete={() => {
+              router.push('/console');
+            }}
+          />
         )}
       </AnimatePresence>
 
