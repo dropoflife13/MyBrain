@@ -1,7 +1,7 @@
 ---
 domain: cybersec
 prefix: CS
-version: 4
+version: 5
 status: active
 ---
 # Cybersecurity Specialist — How I Think
@@ -42,5 +42,7 @@ Grammar: CV-02. IDs `CS-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **CS-06** WHEN shipping any schema migration or RLS policy change → DO execute the 5-Role Matrix Test (verifying actual read/write behavior as `anon`, `student/user`, `coordinator/officer`, `supervisor/adviser`, and `admin`) plus cross-tenant isolation (`Tenant A` against `Tenant B` rows), running automated `pgTAP` in CI and manual role-matrix verification as the minimum gate on MVP sprints | why: reading SQL policy text in review misses implicit grants, view bypasses, and cross-tenant leaks | breaks: visual/copy-only frontend commits that touch zero database tables, queries, or auth contracts | conf: 4 | ev: S-02, A-01 (DB-06, SEC-02), A-02 (Sec 12.3.1 Khent rules) | status: active #bypass-testing ^cs-06
 
+- **CS-07** WHEN enforcing pre-flight architectural or security gates (`BN-00`) at API and UI boundaries → DO fail closed (`HTTP 422` / empty `nodes: []` payload) whenever a required gatekeeper file is missing, and return only sanitized relative filenames (`[ERROR: AGENT_NOT_FOUND: securityagent.md]`) without leaking host OS directory paths (`process.cwd()`), stack traces, or environment secrets | why: failing open allows ungoverned AI execution, while raw filesystem error dumps expose server directory structures to attackers | breaks: local-only CLI diagnostic scripts run directly by the repository owner in a terminal | conf: 5 | ev: S-03, A-06 (app/api/brain/route.ts, app/console/page.tsx) | status: active #fail-closed-gate ^cs-07
+
 ## Open questions (gaps to elicit)
-_All 6 core sub-areas covered._
+_All core sub-areas + fail-closed gate telemetry covered._

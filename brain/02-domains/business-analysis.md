@@ -1,7 +1,7 @@
 ---
 domain: business-analysis
 prefix: BA
-version: 4
+version: 5
 status: active
 ---
 # Business Analyst — How I Think
@@ -42,5 +42,7 @@ Grammar: CV-02. IDs `BA-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **BA-06** WHEN structuring a B2B/institutional SaaS go-to-market (schools, agrivet stores, local hubs) → DO onboard the paying side with a free 1-cycle pilot that accumulates irreplaceable operational history (signed MOAs, verified hours, evaluations, batch logs) and measures admin hours saved, then convert to a Founding-Partner or per-active-seat tier (~₱150/student/sem) while keeping historical read/export access fair | why: solves the marketplace cold-start problem and builds retention through compounding workflow value rather than hostile data lockouts | breaks: one-off transactional consumer tools where users have zero recurring semester/cycle records | conf: 5 | ev: S-02, A-02 (Sec 6, Sec 7), A-05 (Shark Tank Champion, FlexSpace, Agrivet) | status: active #gtm-moat ^ba-06
 
+- **BA-07** WHEN shipping a deeply technical developer or governance system to a mixed audience (judges, recruiters, senior engineers, and non-technical beginners) → DO structure a progressive 2-tier onboarding flow: a cinematic story-driven Landing Page (`/`) + zero-jargon 5-step Initiation Guide (`/start` with `.zip` download and 1-click copyable terminal snippets) for newcomers, paired with the live 3D Console (`/console`) and Agent Specification Directory (`/agents`) for technical evaluators | why: dropping non-technical visitors straight into a raw terminal/3D HUD causes immediate bounce, while hiding the real rule engine behind marketing fluff loses senior engineers | breaks: internal-only CLI utilities used exclusively by the author | conf: 5 | ev: S-03, A-06 (app/page.tsx, app/start/page.tsx, app/agents/page.tsx) | status: active #progressive-onboarding ^ba-07
+
 ## Open questions (gaps to elicit)
-_All 6 core sub-areas covered._
+_All core sub-areas + progressive 2-tier onboarding covered._

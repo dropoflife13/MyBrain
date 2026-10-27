@@ -1,6 +1,6 @@
 ---
 type: patterns
-version: 2
+version: 3
 status: active
 ---
 # Patterns — Recurring Situations
@@ -17,3 +17,5 @@ Format: `- **P-nn** SITUATION <situation> → PLAY <play> | breaks: <condition> 
 - **P-03** SITUATION Pitching an MVP to judges/panels or onboarding a busy institutional user who has zero patience for fluff → PLAY Storyboard the flow as a 4-beat timeline (Problem → Friction → 'Aha' Action → Verified Outcome), cut media previews at ≤10 seconds (`#t=0,10`), cut the live MVP demo at ≤3 minutes, and pre-empt the panel's #1 security/business objection directly inside the demo flow | breaks: exhaustive compliance audit exports or technical reference manuals | dom: BA, UI | conf: 5 | ev: S-01 (Step 3.2), A-02 (Rule 3), A-03 (Sec 3), A-05 (Shark Tank Champion, Premiere Pro) | status: active ^p-03
 
 - **P-04** SITUATION Multi-project developer using an AI coding assistant across separate client, school, and hackathon repositories → PLAY Keep the Procedural Brain and 7-Agent Suite in one central Git repository (`brain-web`) and attach it to each project via a VS Code Multi-Root Workspace (`.code-workspace` in `.gitignore`) + a project root `CLAUDE.md` bridge file | breaks: air-gapped client machines where mounting an external local folder is prohibited (use single-file `DIGEST.md` paste instead) | dom: * | conf: 5 | ev: S-01, CLAUDE.md, SP-04 | status: active ^p-04
+
+- **P-05** SITUATION Other developers want to fork or clone your personal AI Brain Vault to use on their own engineering projects → PLAY Ship the full 3D WebGL engine and all 7 Core Agent Gatekeepers (`PM, UX, GR, SD, IR, DB, SEC` enforced by `BN-00`) intact, but reset all personal domain/taste/principle files in the starter template (`/brain-template.zip` & Blank Preview mode) to blank-slate `empty` (`0 rules`) so every adopter must run `Launcher L-01` (`THE-TEST.md`) and earn their own synaptic nodes | breaks: team-wide shared engineering standards repositories where all team members intentionally inherit the organization's canonical rulebook | dom: SO, BA | conf: 5 | ev: S-03, A-06 (console/page.tsx, brain-parser.ts) | status: active ^p-05

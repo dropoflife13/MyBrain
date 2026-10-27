@@ -1,7 +1,7 @@
 ---
 domain: ui-frontend
 prefix: UI
-version: 3
+version: 4
 status: active
 ---
 # UI & Frontend Specialist — How I Think
@@ -41,5 +41,11 @@ Grammar: CV-02. IDs `UI-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **UI-06** WHEN designing responsive layouts for a multi-role platform → DO prioritize mobile-first ergonomics (320–375px, ≥44×44px tap targets, accessible `Sheet`/bottom nav, card views) for field/on-the-go roles (Students, Market Inspectors, Co-working seekers) and desktop-first calm data density (1440px max-width, 12-col grid, keyboard-accessible tables with contained horizontal scroll below 820px) for batch-operator roles (Coordinators, Treasurers, Admins) | why: forcing batch reviewers into oversized mobile cards wastes desktop screen real estate, while forcing field users into uncontained desktop tables causes mobile overflow | breaks: single-role utility apps built exclusively for one device class | conf: 5 | ev: S-02, A-01 (UX-02, UX-13), A-02 (Sec 10.6, 12.3.1), A-05 (FlexSpace, CITEMAS) | status: active #role-viewport ^ui-06
 
+- **UI-07** WHEN animating an interactive Three.js / WebGL scene with `OrbitControls` → DO delegate continuous 360-degree rotation exclusively to `controls.autoRotate = true` (`autoRotateSpeed = 1.0`, `enableDamping = true`, `dampingFactor = 0.05`) and never call `camera.position.lerp()` inside the animation loop while `autoRotate` is active (only lerp `camera.position` when `autoRotate` is paused for a locked node selection, and clear the lerp target immediately on `pointerdown`) | why: `OrbitControls.update()` recomputes camera position from internal spherical coordinates every frame, so concurrent manual position lerping causes violent snap-back jitter | breaks: non-interactive cinematic cutscenes where `OrbitControls` is completely disabled (`enabled = false`) and a custom spline track owns the camera | conf: 5 | ev: S-03, A-04, A-06 (Brain3D.tsx) | status: active #orbit-controls ^ui-07
+
+- **UI-08** WHEN transitioning between a marketing/landing route and a heavy interactive application route (`/console`) → DO execute `router.push()` immediately on CTA click without a source-page delay timer, and mount a single destination-owned SVG loader (`<NeuralLoader />`) gated by the exact same composite boolean (`isReady = isGraphReady && minTimerDone`) that crossfades the canvas opacity from `0` to `1` inside `AnimatePresence` | why: stacking a source-route loader before a destination-route loader creates a jarring double-loading experience, and unmounting the loader before the minimum timer completes causes a blank black void | breaks: static content routes that require zero async WebGL/canvas initialization and render instantaneously | conf: 5 | ev: S-03, A-06 (page.tsx, console/page.tsx, NeuralLoader.tsx) | status: active #single-loader ^ui-08
+
+- **UI-09** WHEN building a 3-group top command bar (Left Brand, Center Navigation/Dock, Right Actions) and dual-theme 3D workspace → DO enforce `grid grid-cols-[1fr_auto_1fr] items-center` with uniform `h-10` control heights (`justify-start` left, `justify-center` center, `justify-end` right) and pair the dark obsidian theme (`#050505` / `#00FFFF`) with an Architectural Blueprint Light Mode (`#f0f4f8` canvas, `#1e3a8a` navy nodes, `#cbd5e1` links, `bg-white/90` frosted HUD panels) | why: `flex justify-between` shifts the center dock off-axis whenever left and right action groups differ in width, and dark-only sidebars break visual coherence in light mode | breaks: 2-column mobile headers below `md` breakpoint where the center navigation collapses into a drawer | conf: 5 | ev: S-03, A-06 (page.tsx, console/page.tsx, Brain3D.tsx) | status: active #grid-header-blueprint ^ui-09
+
 ## Open questions (gaps to elicit)
-_All 6 core sub-areas covered._
+_All core sub-areas + Cortex v2.4 WebGL/HUD patterns covered._

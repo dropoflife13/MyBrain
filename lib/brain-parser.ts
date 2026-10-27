@@ -23,6 +23,15 @@ export interface BrainDocLink {
   target: string;
 }
 
+export interface VaultAuditReport {
+  passed: boolean;
+  totalRules: number;
+  uniqueRuleIds: number;
+  duplicateRuleIds: string[];
+  prefixOverlaps: string[];
+  sourceMode: 'live-filesystem' | 'static-snapshot' | 'blank-template';
+}
+
 export interface BrainGraphData {
   nodes: BrainDocNode[];
   links: BrainDocLink[];
@@ -31,6 +40,7 @@ export interface BrainGraphData {
     ruleId: 'BN-00';
     missingAgents: string[];
   };
+  vaultAudit?: VaultAuditReport;
 }
 
 export const REQUIRED_SEVEN_AGENTS = [
@@ -58,6 +68,54 @@ export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
     passed: missingAgents.length === 0,
     ruleId: 'BN-00',
     missingAgents,
+  };
+}
+
+const RESERVED_AGENT_PREFIXES = new Set(['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC']);
+
+/**
+ * Deterministic anti-overlap & mechanical consistency check (H-03, H-06, BN-11).
+ * Ensures zero duplicate rule IDs and zero prefix collisions between the 7 Agents and Domain files.
+ */
+export function auditVaultConsistency(
+  docNodes: BrainDocNode[],
+  sourceMode: VaultAuditReport['sourceMode'] = 'static-snapshot'
+): VaultAuditReport {
+  const seenIds = new Map<string, string>();
+  const duplicateRuleIds: string[] = [];
+  const prefixOverlaps: string[] = [];
+  let totalRules = 0;
+
+  for (const doc of docNodes) {
+    if (!doc.rules) continue;
+    for (const r of doc.rules) {
+      const [idPart] = r.split(':');
+      const ruleId = idPart.trim();
+      if (!ruleId || ruleId.startsWith('EMPTY-') || ruleId.startsWith('STATUS-') || ruleId.startsWith('STEP-')) {
+        continue;
+      }
+      totalRules++;
+      const prefix = ruleId.split('-')[0];
+
+      if (seenIds.has(ruleId)) {
+        duplicateRuleIds.push(`${ruleId} (${seenIds.get(ruleId)} vs ${doc.id})`);
+      } else {
+        seenIds.set(ruleId, doc.id);
+      }
+
+      if (doc.category === 'domain' && RESERVED_AGENT_PREFIXES.has(prefix)) {
+        prefixOverlaps.push(`${ruleId} in domain ${doc.id} collides with reserved agent prefix ${prefix}`);
+      }
+    }
+  }
+
+  return {
+    passed: duplicateRuleIds.length === 0 && prefixOverlaps.length === 0,
+    totalRules,
+    uniqueRuleIds: seenIds.size,
+    duplicateRuleIds,
+    prefixOverlaps,
+    sourceMode,
   };
 }
 
@@ -262,7 +320,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **CS-03** WHEN storing audit-critical records → DO enforce 3-layer append-only immutability (REVOKE UPDATE/DELETE, no mutation RLS, exception trigger) with supersedes_id | conf: 4
 - **CS-04** WHEN exposing any database table or view → DO enable default-deny RLS and derive roles strictly from server-minted claims | conf: 4
 - **CS-05** WHEN ingesting client or offline batches → DO stamp server received_at = now(), bound client observed_at skew, and quarantine statistical outliers | conf: 4
-- **CS-06** WHEN shipping any schema migration or RLS policy change → DO execute the 5-Role Matrix Test plus cross-tenant isolation verification | conf: 4`,
+- **CS-06** WHEN shipping any schema migration or RLS policy change → DO execute the 5-Role Matrix Test plus cross-tenant isolation verification | conf: 4
+- **CS-07** WHEN enforcing pre-flight architectural gates (BN-00) at API and UI boundaries → DO fail closed (HTTP 422 / empty nodes) and return only sanitized relative filenames without leaking host OS paths | conf: 5`,
   },
   {
     id: 'solutions',
@@ -274,7 +333,9 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **SO-03** WHEN read traffic surges → DO follow the relational scaling ladder: Index (EXPLAIN ANALYZE) -> Query rewrite -> CDN cache -> Materialized view -> Read replica | conf: 4
 - **SO-04** WHEN delivering interactive 3D or video surfaces on constrained networks → DO use procedural math (<50KB) over heavy GLTF files and preload short videos in collapsed CSS Grid rows (0fr -> 1fr) | conf: 4
 - **SO-05** WHEN processing batch uploads or offline queues → DO enforce UNIQUE idempotency keys (ON CONFLICT DO NOTHING) and per-row error isolation | conf: 4
-- **SO-06** WHEN designing bulk CSV imports → DO validate <=500 rows / <2s synchronously with a pre-commit preview, offloading >500 rows to async queues | conf: 4`,
+- **SO-06** WHEN designing bulk CSV imports → DO validate <=500 rows / <2s synchronously with a pre-commit preview, offloading >500 rows to async queues | conf: 4
+- **SO-07** WHEN architecting a coupled AI governance + knowledge system (brain/ + agents/) → DO enforce pre-flight gate BN-00 at API and UI boot and distribute public starter templates in blank-slate empty state (0 personal rules) | conf: 5
+- **SO-08** WHEN synchronizing markdown knowledge bases with interactive visualizers → DO parse live .md files on disk to populate both parent and child synaptic nodes with zero static drift | conf: 5`,
   },
   {
     id: 'business-analysis',
@@ -286,7 +347,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **BA-03** WHEN preparing for a capstone defense or pitch → DO assign stable rule IDs (BR-nn, DB-nn) and build the safeguard for the panel's #1 attack directly into the MVP | conf: 5
 - **BA-04** WHEN digitizing institutional workflows → DO model the real authority chain and exception states (MOA expiry, CSV cohort upload) rather than generic B2C assumptions | conf: 4
 - **BA-05** WHEN specs or stakeholder requirements conflict → DO log the exact conflict in Unresolved Decisions and ask the owner rather than silently guessing | conf: 4
-- **BA-06** WHEN structuring institutional SaaS GTM → DO onboard with a free 1-cycle pilot that builds a compounding audit-history moat before converting to Founding-Partner pricing | conf: 5`,
+- **BA-06** WHEN structuring institutional SaaS GTM → DO onboard with a free 1-cycle pilot that builds a compounding audit-history moat before converting to Founding-Partner pricing | conf: 5
+- **BA-07** WHEN shipping a technical governance system to a mixed audience → DO pair a progressive 5-step Beginner Initiation Guide (/start) with power-user /console and /agents views | conf: 5`,
   },
   {
     id: 'ui-frontend',
@@ -298,7 +360,10 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **UI-03** WHEN wiring forms and async views → DO render layout-matching skeletons (zero CLS) and never fire optimistic fake saves before server confirmation | conf: 5
 - **UI-04** WHEN designing interactive states and dialogs → DO use solid-color hover darkening (no scale-110 bounce or neon glow) and explicit verb+object destructive buttons | conf: 5
 - **UI-05** WHEN engineering 3D WebGL or video showcases → DO enforce the 10s hook cut (#t=0,10) and auto-downgrade WebGL when FPS < 30 or prefers-reduced-motion is active | conf: 4
-- **UI-06** WHEN designing multi-role responsive layouts → DO prioritize 375px mobile-first for field roles and 1440px calm data tables for batch operators | conf: 5`,
+- **UI-06** WHEN designing multi-role responsive layouts → DO prioritize 375px mobile-first for field roles and 1440px calm data tables for batch operators | conf: 5
+- **UI-07** WHEN animating an interactive Three.js / WebGL scene with OrbitControls → DO delegate continuous 360-degree rotation exclusively to controls.autoRotate = true and never call camera.position.lerp() while autoRotate is active | conf: 5
+- **UI-08** WHEN transitioning between landing and heavy console routes → DO execute router.push() immediately and mount a single destination-owned NeuralLoader gated by isReady = isGraphReady && minTimerDone | conf: 5
+- **UI-09** WHEN building a 3-group command bar and dual-theme 3D workspace → DO enforce grid-cols-[1fr_auto_1fr] with h-10 heights and pair dark obsidian (#050505) with Blueprint Light Mode (#f0f4f8 / #1e3a8a) | conf: 5`,
   },
   {
     id: 'OPERATING-PRINCIPLES',
@@ -307,11 +372,19 @@ const VAULT_MARKDOWN_SOURCES: Array<{
     markdown: `# Operating Principles — Tier 0 Governance
 - **OP-01** I lock down role boundaries, module ownership, and who is forbidden from doing what before touching UI or code.
 - **OP-02** I design every schema column, state transition, and business rule so I can defend its exact invariant under panel or audit interrogation.
+- **OP-03** I connect technical architecture directly to real operational ground truth and a believable adoption model.
+- **OP-04** Client inputs, browser storage (IndexedDB), role claims from the client, and mobile device clocks are untrusted until verified server-side.
+- **OP-05** On shared codebases or team sprints, strict module sandboxing, data contracts, and branch gates are mandatory.
 - **OP-06** Current state (stock, prices, OJT hours) is a derived view of immutable historical events, never a single mutable number overwritten in-place.
 - **OP-07** Never expose service_role or signing secrets in NEXT_PUBLIC_* or client bundles, even for a two-hour demo emergency.
+- **OP-08** Never allow self-approval (submitter = approver) or silent auto-approval on trust-critical workflow transitions.
 - **OP-09** Never fake a successful save, fabricate audit/trust records, or hide security behind a hidden UI button.
+- **OP-10** A feature is done only when its spec exists, server/DB permissions enforce its boundaries, states are honest, WCAG AA holds without FOUC, and the build passes cleanly.
+- **OP-11** I refuse to silently expand MVP scope mid-sprint without an approved spec; unapproved ideas go to LATER.md.
+- **OP-12** I explore candidate rules across real project contexts first and only promote them once I know the exact breaks: boundary condition.
 - **OP-13** AI provides the necessary help to optimize my workflow, point out my inconsistencies, and fix what is needed, but must never overlap on or override my human judgment and data.
-- **OP-14** Use deterministic math and statistical baselines first (z-score/MAD, regex, Zod) before reaching for an LLM API.`,
+- **OP-14** Use deterministic math and statistical baselines first (z-score/MAD, regex, Zod) before reaching for an LLM API.
+- **OP-15** After shipping any major build milestone, I run a post-build excavation session to feed lessons learned back into the vault and verify zero mechanical or ownership overlaps.`,
   },
   {
     id: 'TASTE',
@@ -322,7 +395,16 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **TA-02** Studio-grade spatial and video experiences engineered for zero jank: procedural Three.js geometry and DOM-persistent preloaded media.
 - **TA-03** Strict typographic rhythm: defined scale (32/24/18/15/12px) with JetBrains Mono for IDs, timers, and numeric telemetry.
 - **TA-04** Flash-free dual theming: synchronous inline <head> script sets dark/light state before first paint with WCAG AA contrast.
-- **TA-13** Video-editor pacing and storyboarding: enforce the 10-second hook rule and structure flows as Problem -> Friction -> 'Aha' Action -> Verified Outcome.`,
+- **TA-05** Reject generic AI dashboard slop: purple/neon gradients, bouncy scale-105 hover, and oversized decorative cards.
+- **TA-06** Reject broken contrast and color-only states: raw #2563EB blue text on dark backgrounds or status pills without labels.
+- **TA-07** Reject arbitrary font sizes, all-caps sentences, misaligned table numerics, and layout shift (CLS).
+- **TA-08** Reject dead controls, decorative filters, fake sorting, or optimistic fake saves.
+- **TA-09** Composable, dumb prop-driven UI primitives (shadcn/ui foundation) cleanly separated from data-fetching containers.
+- **TA-10** Specs use numbered sections, explicit role-ownership tables, Mermaid diagrams, and stable rule IDs (DB-01, UX-01).
+- **TA-11** Admire Linear & Stripe interfaces for calm density, keyboard-first ergonomics, and disciplined token hierarchy.
+- **TA-12** Admire Premiere Pro / studio telemetry HUDs and tactical game UIs for frame-accurate feedback and corner reticles.
+- **TA-13** Video-editor pacing and storyboarding: enforce the 10-second hook rule and structure flows as Problem -> Friction -> 'Aha' Action -> Verified Outcome.
+- **TA-14** Dual-mode spatial HUD precision: pair Obsidian Sci-Fi Dark Mode (#050505 / #00FFFF, 6px HUD scrollbar) with Architectural Blueprint Light Mode (#f0f4f8 / #1e3a8a) and strict grid-cols-[1fr_auto_1fr] alignment.`,
   },
   {
     id: 'HEURISTICS',
@@ -333,7 +415,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **H-02** WHEN a teammate's backend endpoint breaks right before a live defense and they are unreachable → DO isolate a minimal fix on your own branch and disclose it in the handoff log, never faking the save in UI.
 - **H-03** WHEN dividing responsibility across agents or docs → DO give every rule a single canonical owner and cite its stable ID (DB-01, SEC-05) instead of duplicating text.
 - **H-04** WHEN designing a reviewing agent → DO separate blocking Gate Mode (hard invariants) from non-blocking Insight Mode (advisory optimizations).
-- **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before a third attempt.`,
+- **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before a third attempt.
+- **H-06** WHEN evolving a live markdown knowledge vault alongside a TypeScript app → DO derive runtime graph state directly from live .md files, sync the fallback snapshot, and run check-vault to guarantee zero overlap or drift.`,
   },
   {
     id: 'PATTERNS',
@@ -343,7 +426,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **P-01** SITUATION A two-party approval rule (submitter != approver) blocks a Day-1 solo pilot org (active_staff_count == 1) → PLAY Permit self-approval stamped with approval_mode: solo_operator_waiver until a 2nd staff seat joins.
 - **P-02** SITUATION High-craft 3D WebGL or hover video loaded on constrained mobile hardware → PLAY Use procedural math (<50KB), DOM-persistent video rows (0fr -> 1fr), and auto-downgrade WebGL when FPS < 30.
 - **P-03** SITUATION Pitching an MVP to judges or busy institutional users → PLAY Storyboard as Problem -> Friction -> 'Aha' Action -> Verified Outcome, cut media at <=10s, and pre-empt the #1 panel objection.
-- **P-04** SITUATION Multi-project developer using AI across repos → PLAY Keep Brainweb in one central repo and attach via VS Code Multi-Root Workspace (.code-workspace) + CLAUDE.md bridge.`,
+- **P-04** SITUATION Multi-project developer using AI across repos → PLAY Keep Brainweb in one central repo and attach via VS Code Multi-Root Workspace (.code-workspace) + CLAUDE.md bridge.
+- **P-05** SITUATION Other developers want to fork your personal AI Brain Vault → PLAY Ship the 3D engine and all 7 Agent Gatekeepers intact (BN-00), but reset personal rules to blank-slate empty (0 rules) so adopters earn their own nodes via THE-TEST.md.`,
   },
   {
     id: 'RED-FLAGS',
@@ -353,8 +437,13 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **RF-01** SIGNAL NEXT_PUBLIC_* containing SERVICE_ROLE or secret keys inside client code → MEANS Complete RLS bypass in browser bundle → DEFAULT Hard-block PR (GATE: FAIL CS-01) and rotate secret.
 - **RF-02** SIGNAL Shared UI component inside src/components/ui/ importing createClient or fetch → MEANS Presentation coupled to backend → DEFAULT Strip to dumb props (UI-01).
 - **RF-03** SIGNAL UPDATE or DELETE called directly on audit logs, stock balances, or attendance histories → MEANS Historical lineage overwritten → DEFAULT Enforce append-only with supersedes_id (CS-03, SO-01).
+- **RF-04** SIGNAL Approval action lacks submitter_id !== current_user_id check or uses ad-hoc status strings → MEANS Self-approval fraud and broken state machine → DEFAULT Enforce counter-party check (CS-02) and canonical finite state machine (SO-02).
 - **RF-05** SIGNAL alert("Saved!") or success toast fired before await completes → MEANS UI is lying about persistence → DEFAULT Await server confirmation and report missing backends plainly (UI-03).
-- **RF-07** SIGNAL Neon purple-pink gradients, scale-110 bounce, or scattered raw hex codes → MEANS Generic AI dashboard slop → DEFAULT Replace with semantic tokens and solid-color hover darkening (UI-04).`,
+- **RF-06** SIGNAL Theme state initialized inside React useEffect → MEANS White flash (FOUC) on dark-mode reload → DEFAULT Move theme class initialization to synchronous inline <head> script (UI-02).
+- **RF-07** SIGNAL Neon purple-pink gradients, scale-110 bounce, or scattered raw hex codes → MEANS Generic AI dashboard slop → DEFAULT Replace with semantic tokens and solid-color hover darkening (UI-04).
+- **RF-08** SIGNAL Raw #2563EB blue text on dark #0B1220 background or destructive button labeled "OK" → MEANS WCAG AA contrast failure and accidental destructive clicks → DEFAULT Use #A5C7FF on dark and explicit verb+object AlertDialog (UI-02, UI-04).
+- **RF-09** SIGNAL camera.position.lerp() running inside requestAnimationFrame while OrbitControls.autoRotate = true is active → MEANS Competing camera writers causing spherical snap-back jitter → DEFAULT Let OrbitControls.autoRotate own continuous rotation (UI-07).
+- **RF-10** SIGNAL A setTimeout loader on a landing page before router.push('/console') followed by a second loader on destination → MEANS Jarring double-loader UX and blank void → DEFAULT Navigate immediately and bind loader + canvas to a single isReady boolean (UI-08).`,
   },
   {
     id: 'DIGEST',
@@ -452,6 +541,7 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
 export function getBrainData(options?: {
   nodeCount?: number;
   mode?: 'assessed' | 'blank';
+  liveOverrides?: Map<string, BrainDocNode>;
 }): BrainGraphData {
   const mode = options?.mode ?? 'assessed';
 
@@ -505,7 +595,11 @@ export function getBrainData(options?: {
       }
     });
 
-    return { nodes, links };
+    return {
+      nodes,
+      links,
+      vaultAudit: auditVaultConsistency(blankDocs, 'blank-template'),
+    };
   }
 
   const totalConstellationNodes = options?.nodeCount ?? 360;
@@ -516,8 +610,10 @@ export function getBrainData(options?: {
     seed: 7,
   });
 
+  const liveOverrides = options?.liveOverrides;
   const docNodes: BrainDocNode[] = VAULT_MARKDOWN_SOURCES.map((src) => {
-    const parsed = parseMarkdownNode(src.id, src.markdown, src.category);
+    const live = liveOverrides?.get(src.id);
+    const parsed = live ?? parseMarkdownNode(src.id, src.markdown, src.category);
     return {
       ...parsed,
       fx: src.anchor[0],
@@ -625,7 +721,14 @@ export function getBrainData(options?: {
     }
   });
 
-  return { nodes, links };
+  return {
+    nodes,
+    links,
+    vaultAudit: auditVaultConsistency(
+      docNodes,
+      liveOverrides && liveOverrides.size > 0 ? 'live-filesystem' : 'static-snapshot'
+    ),
+  };
 }
 
 export default getBrainData;

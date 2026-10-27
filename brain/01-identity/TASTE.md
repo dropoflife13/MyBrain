@@ -1,6 +1,6 @@
 ---
 type: taste
-version: 3
+version: 4
 status: active
 ---
 # Taste — What I Call Good Work
@@ -13,6 +13,7 @@ Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`). Format: `- **TA-nn** <s
 - **TA-03** Strict typographic rhythm: defined scale (32/24/18/15/12px), geometric headings (Satoshi/Inter Tight), clean UI body (Inter), and monospace (`JetBrains Mono`) for IDs, timers, and numeric telemetry | conf: 5 | ev: S-01, A-02 (Sec 10.5), A-03 (Sec 3, Sec 4) | status: active ^ta-03
 - **TA-04** Flash-free dual theming: synchronous inline `<head>` script sets dark/light state before first paint, paired with WCAG AA verified contrast tokens in both themes | conf: 5 | ev: S-01, A-01 (UX-01), A-02 (Sec 10.4), A-03 (Sec 4.4) | status: active ^ta-04
 - **TA-13** Video-editor pacing and storyboarding: enforce the 10-second rule (cut dead air, deliver the hook/payoff immediately like CITEMAS's 10s reel cut and Dugtong's 3-minute MVP flow) and structure every user flow as a storyboarded timeline (Problem → Friction → 'Aha' Action → Verified Outcome) | conf: 5 | ev: S-01 (Step 3), A-02 (Rule 3), A-03 (Sec 3), A-05 (Premiere Pro/CapCut) | status: active ^ta-13
+- **TA-14** Dual-mode spatial HUD precision: pair Obsidian Sci-Fi Dark Mode (`#050505` / `#00FFFF` glow, `6px` HUD scrollbar) with an Architectural Blueprint Light Mode (`#f0f4f8` canvas, `#1e3a8a` navy nodes, `#cbd5e1` links, frosted `bg-white/90` panels) and strict `grid-cols-[1fr_auto_1fr]` `h-10` command bar alignment | conf: 5 | ev: S-03, A-06 | status: active ^ta-14
 
 ## Bad work smells like
 - **TA-05** Generic "AI dashboard slop": purple/neon gradients, glowing borders, bouncy hover scaling (`scale-105`), and oversized decorative cards | conf: 5 | ev: S-01, A-02 (Sec 10) | status: active ^ta-05

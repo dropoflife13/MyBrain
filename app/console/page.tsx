@@ -268,7 +268,7 @@ export default function Home() {
               v2.4
             </span>
             <span className="hidden xl:inline text-[10px] font-mono text-slate-500 dark:text-zinc-400">
-              {graphData.nodes.length - 1} Synapses • {fps} FPS
+              {graphData.nodes.length - 1} Synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 139} Rules ({graphData.vaultAudit?.duplicateRuleIds.length ?? 0} Overlaps) • {fps} FPS
             </span>
           </div>
         </div>

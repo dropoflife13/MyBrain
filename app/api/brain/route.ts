@@ -10,7 +10,6 @@ import {
 
 export async function GET() {
   try {
-    const baseGraph = getBrainData({ nodeCount: 360 });
     const rootDir = process.cwd();
 
     // Enforce BN-00: Verify all 7 Core Agent files exist in /agents
@@ -22,7 +21,7 @@ export async function GET() {
       }
     }
 
-    // Strict Architectural Halt: If any of the 7 Agents are missing, vanish 3D nodes and return failure
+    // Strict Architectural Halt (CS-07): If any of the 7 Agents are missing, vanish 3D nodes and return failure
     if (missingAgents.length > 0) {
       return NextResponse.json({
         nodes: [],
@@ -65,29 +64,22 @@ export async function GET() {
       }
     }
 
-    const updatedNodes = baseGraph.nodes.map((node) => {
-      const live = liveById.get(node.id);
-      if (live) {
-        return {
-          ...node,
-          name: live.name,
-          description: live.description,
-          group: live.group,
-          content: live.content,
-          rules: live.rules,
-        };
-      }
-      return node;
+    // Generate all 360 synaptic constellation nodes directly from live .md files (SO-08, H-06)
+    const liveGraph = getBrainData({
+      nodeCount: 360,
+      mode: 'assessed',
+      liveOverrides: liveById,
     });
 
     return NextResponse.json({
-      nodes: updatedNodes,
-      links: baseGraph.links,
+      nodes: liveGraph.nodes,
+      links: liveGraph.links,
       gateStatus: {
         passed: missingAgents.length === 0,
         ruleId: 'BN-00',
         missingAgents,
       },
+      vaultAudit: liveGraph.vaultAudit,
     });
   } catch (error: any) {
     return NextResponse.json(getBrainData({ nodeCount: 360 }));

@@ -1,6 +1,6 @@
 ---
 type: heuristics
-version: 2
+version: 3
 status: active
 ---
 # Heuristics — Cross-Domain Judgment
@@ -18,3 +18,5 @@ Rules that apply across domains. Grammar: CV-02. Active requires conf ≥ 3 and 
 - **H-04** WHEN designing a reviewing agent or quality check → DO separate blocking **Gate Mode** (hard invariants that halt PR/release on failure) from non-blocking **Insight Mode** (advisory optimizations and unexplored candidates) | why: mixing suggestions with hard blockers either causes alert fatigue or lets critical security flaws slip through | breaks: exploratory throwaway sandboxes where all checks are intentionally advisory | conf: 5 | ev: S-01, A-01 (Sec 5 across all 7 agents), CLAUDE.md | status: active #gate-vs-insight ^h-04
 
 - **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before attempting a third variation | why: blind trial-and-error loops compound technical debt and risk corrupting shared working trees | breaks: deterministic syntax/lint auto-fixes where each iteration resolves a distinct compiler line | conf: 4 | ev: A-02 (Working with this team), S-01 | status: active #stop ^h-05
+
+- **H-06** WHEN evolving a live markdown knowledge vault alongside a TypeScript application (`lib/brain-parser.ts`, `/api/brain`) → DO derive runtime API/graph state directly from the live `.md` files on disk, synchronize the offline fallback snapshot in the same commit, and run automated mechanical + ownership checks (`check-vault.py` & `auditVaultConsistency`) to guarantee zero duplicate IDs or cross-file drift | why: hardcoded secondary copies inevitably lag behind newly promoted rules and create silent inconsistencies | breaks: read-only archival snapshots that are intentionally frozen at a historical version tag | conf: 5 | ev: S-03, A-06 (brain-parser.ts, route.ts, check-vault.py) | status: active #zero-drift ^h-06

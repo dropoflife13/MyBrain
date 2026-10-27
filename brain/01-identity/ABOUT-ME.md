@@ -61,6 +61,7 @@ Purpose: give the quiz author (AI) and 7-Agent Suite enough context to ground sc
 4. **FlexSpace Iloilo (Capstone 1 & 2, `A-05`):** Workspace discovery platform for Iloilo City enabling students and professionals to locate co-working hubs via live GPS tracking. *Lesson:* Forged my habit of defending every schema column, business rule ID, and scope boundary under tough capstone panel questioning.
 5. **Agrivet (`A-05`):** Integrated retail operations platform for small agrivet businesses to track stock, monitor batch expiration, and manage suppliers. *Lesson:* Taught me that "current stock" must be derived from batch/transaction logs with expiration dates—never a single mutable integer overwritten in-place.
 6. **2D Top-Down Godot Roguelike Game (`A-05`):** Desktop game with stage-based progression, stat upgrades, and augment synergies. *Lesson:* Instilled composable data-driven design (modular upgrade definitions instead of spaghetti conditionals) and strict finite state machine transitions.
+7. **Cortex v2.4 — Procedural 3D Brain & 7-Agent Gate Console (`A-06`):** Next.js 16 + Three.js WebGL interactive knowledge vault enforcing `BN-00` (the 7-Agent Pre-Flight Invariant), blank-slate fork onboarding (`0 rules` until self-assessed via `THE-TEST.md`), single-owner `OrbitControls` auto-rotation, unified `NeuralLoader` route transitions, 3-column CSS Grid HUD symmetry, Blueprint Light Mode parity (`#f0f4f8`), and live markdown-to-constellation synchronization with zero rule overlap.
 
 ## 4. How I work
 - **First move on a new task:** Define the roles, who owns what, and the hard boundaries (who is NOT allowed to do what—both among user roles and among teammates) before touching UI or code.
@@ -88,3 +89,4 @@ Purpose: give the quiz author (AI) and 7-Agent Suite enough context to ground sc
 - `A-03` — CITEMAS Portal System Architecture (`docs/CITEMAS_Portal_Architecture.md`)
 - `A-04` — Synaptic Constellation 3D Brain (`lib/brainGraph.ts`, `public/synaptic_constellation_brain.glb`)
 - `A-05` — Practitioner Resume & Project Lineage: FlexSpace Iloilo, Agrivet, Godot Roguelike (`01-identity/ABOUT-ME.md`)
+- `A-06` — Cortex v2.4 Full-Stack 3D Knowledge Console & Pre-Flight Gate Engine (`app/page.tsx`, `app/console/page.tsx`, `components/Brain3D.tsx`, `components/NeuralLoader.tsx`, `app/api/brain/route.ts`, `lib/brain-parser.ts`)

@@ -1,6 +1,6 @@
 ---
 type: principles
-version: 3
+version: 4
 status: active
 ---
 # Operating Principles
@@ -32,3 +32,4 @@ Tier 0 governance across all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`
 
 ## How I learn and change my mind
 - **OP-12** I explore candidate rules across multiple real project contexts first and only promote them to hard gates once I know the exact boundary condition (`breaks:`) where they fail | conf: 5 | ev: S-01, CV-03 | status: active ^op-12
+- **OP-15** After shipping any major build milestone, I run a post-build excavation session to feed what we built and learned back into the vault, eliminate duplicate or drifting rule arrays, and verify zero mechanical or ownership overlaps (`check-vault`) | conf: 5 | ev: S-03, A-06 | status: active ^op-15

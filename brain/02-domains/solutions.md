@@ -1,7 +1,7 @@
 ---
 domain: solutions
 prefix: SO
-version: 4
+version: 5
 status: active
 ---
 # Solutions Specialist — How I Think
@@ -41,5 +41,9 @@ Grammar: CV-02. IDs `SO-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **SO-06** WHEN designing bulk file imports or batch mutations (school cohort CSV uploads, agrivet inventory imports) → DO run synchronous server validation with a pre-commit row-level accept/reject preview for batches ≤ 500 rows and < 2s execution, and switch to client chunking or an async outbox job with a progress bar once batches exceed 500 rows or 2s | why: synchronous HTTP requests time out on serverless platforms above ~500 rows, while async worker infrastructure is unnecessary overhead for single-cohort school uploads | breaks: batches where every row triggers an external third-party API call (e.g. sending 500 transactional emails or provisioning 500 Auth accounts synchronously), which must offload to an async queue even below 500 rows | conf: 4 | ev: S-02, A-01 (DB-05, DB-09), A-02 (Sec 12.3.1 Arwin/Khent upload rules), A-05 (Agrivet) | status: active #sync-async-cutoff ^so-06
 
+- **SO-07** WHEN architecting a coupled AI governance + knowledge system (`brain/` + `agents/`) → DO enforce a deterministic pre-flight file gate (`BN-00`) at both API and UI boot that halts initialization if any of the 7 Core Agent files (`PM, UX, GR, SD, IR, DB, SEC`) is missing, and distribute public starter templates with `0 personal rules` (blank-slate `empty` state) while keeping the 7 agent gatekeepers intact | why: a brain vault without execution agents has no enforcement boundary, while a forked vault pre-filled with someone else's rules produces unearned copy-pasted decisions | breaks: read-only portfolio showcase mode (`vaultMode === 'assessed'`) where visitors inspect the author's earned constellation without mutating it | conf: 5 | ev: S-03, A-01, A-06 (route.ts, brain-parser.ts, brainagent.md) | status: active #preflight-gate ^so-07
+
+- **SO-08** WHEN synchronizing markdown knowledge bases with interactive visualizers or API endpoints → DO parse the live `.md` files on disk as the single canonical source of truth to populate both parent document nodes and all child synaptic nodes (keeping static TypeScript fallbacks 100% mirrored for offline/edge builds), and use `--webpack` on Windows Next.js production builds when Turbopack PostCSS child-process IPC fails | why: updating only parent nodes from disk while child nodes read a stale hardcoded array creates silent data drift between the vault and the 3D UI | breaks: purely static client-only deployments without a Node filesystem runtime where the build-time snapshot is the sole data source | conf: 5 | ev: S-03, A-06 (route.ts, brain-parser.ts, package.json) | status: active #live-sync ^so-08
+
 ## Open questions (gaps to elicit)
-_All 6 core sub-areas covered._
+_All core sub-areas + Cortex v2.4 pre-flight and live-sync invariants covered._
