@@ -11,24 +11,34 @@ const ForceGraph3D = dynamic(() => import('react-force-graph-3d'), {
 
 export interface Brain3DProps {
   data?: BrainGraphData;
+  selectedNode?: any;
   onNodeHover: (node: any) => void;
   onNodeClick?: (node: any) => void;
 }
 
-export default function Brain3D({ data, onNodeHover, onNodeClick }: Brain3DProps) {
+export default function Brain3D({
+  data,
+  selectedNode,
+  onNodeHover,
+  onNodeClick,
+}: Brain3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const fgRef = useRef<any>(null);
+  const angleRef = useRef<number>(0);
+  const isHoveredRef = useRef<boolean>(false);
+  const isLockedRef = useRef<boolean>(false);
+
   const [dimensions, setDimensions] = useState<{ width: number; height: number }>({
-    width: 1280,
-    height: 800,
+    width: 1440,
+    height: 900,
   });
-  const [activeHoverId, setActiveHoverId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   const graphData = useMemo(() => {
     return data && data.nodes?.length ? data : getBrainData({ nodeCount: 360 });
   }, [data]);
 
-  // Track viewport/container dimensions cleanly
+  // Measure full-screen viewport cleanly
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -56,102 +66,203 @@ export default function Brain3D({ data, onNodeHover, onNodeClick }: Brain3DProps
     };
   }, []);
 
-  // Set initial camera distance and gentle auto-orbit
+  // 1. Slow Auto-Rotate Camera Loop around the center by default
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const distance = 165;
+    let frameId: number;
+
+    const configureControls = () => {
       if (fgRef.current) {
-        fgRef.current.cameraPosition({ x: 0, y: 24, z: 165 }, { x: 0, y: 0, z: 0 }, 800);
+        const controls = fgRef.current.controls?.();
+        if (controls) {
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.06;
+          controls.autoRotate = !isHoveredRef.current && !isLockedRef.current;
+          controls.autoRotateSpeed = 0.55;
+        }
+      }
+    };
+
+    const initTimer = setTimeout(() => {
+      if (fgRef.current) {
+        fgRef.current.cameraPosition({ x: 0, y: 20, z: distance }, { x: 0, y: 0, z: 0 }, 0);
+        configureControls();
+      }
+    }, 150);
+
+    const tick = () => {
+      if (fgRef.current && !isHoveredRef.current && !isLockedRef.current) {
         const controls = fgRef.current.controls?.();
         if (controls) {
           controls.autoRotate = true;
-          controls.autoRotateSpeed = 0.65;
-          controls.enableDamping = true;
-          controls.dampingFactor = 0.06;
+          controls.autoRotateSpeed = 0.55;
+        } else {
+          angleRef.current += 0.0018;
+          fgRef.current.cameraPosition({
+            x: distance * Math.sin(angleRef.current),
+            y: 20,
+            z: distance * Math.cos(angleRef.current),
+          });
         }
       }
-    }, 250);
-    return () => clearTimeout(timer);
+      frameId = requestAnimationFrame(tick);
+    };
+
+    frameId = requestAnimationFrame(tick);
+
+    return () => {
+      clearTimeout(initTimer);
+      cancelAnimationFrame(frameId);
+    };
   }, []);
+
+  // 2. Lock Camera onto Selected Node (or unlock when deselected via Escape / Close)
+  useEffect(() => {
+    isLockedRef.current = Boolean(selectedNode && selectedNode.id !== 'hub');
+
+    if (!fgRef.current) return;
+    const controls = fgRef.current.controls?.();
+
+    if (selectedNode && selectedNode.id !== 'hub') {
+      if (controls) controls.autoRotate = false;
+
+      const nx = selectedNode.x ?? selectedNode.fx ?? 0;
+      const ny = selectedNode.y ?? selectedNode.fy ?? 0;
+      const nz = selectedNode.z ?? selectedNode.fz ?? 0;
+      const dist = Math.hypot(nx, ny, nz) || 1;
+      const distanceRatio = 1 + 48 / dist;
+
+      fgRef.current.cameraPosition(
+        {
+          x: nx * distanceRatio,
+          y: ny * distanceRatio + 6,
+          z: nz * distanceRatio,
+        },
+        { x: nx, y: ny, z: nz },
+        900
+      );
+    } else {
+      // Return to center orbit when deselected
+      if (controls) {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.55;
+      }
+      fgRef.current.cameraPosition({ x: 0, y: 20, z: 165 }, { x: 0, y: 0, z: 0 }, 800);
+    }
+  }, [selectedNode]);
 
   const handleNodeHover = useCallback(
     (node: any) => {
-      setActiveHoverId(node ? String(node.id) : null);
+      const validHover = node && node.id !== 'hub' ? node : null;
+      isHoveredRef.current = Boolean(validHover);
+      setHoveredId(validHover ? String(validHover.id) : null);
+
       if (typeof document !== 'undefined') {
-        document.body.style.cursor = node && node.id !== 'hub' ? 'pointer' : 'default';
+        document.body.style.cursor = validHover ? 'pointer' : 'default';
       }
-      // Pause auto-rotate while inspecting a hovered node so it stays steady under the cursor
+
       if (fgRef.current) {
         const controls = fgRef.current.controls?.();
         if (controls) {
-          controls.autoRotate = !node;
+          controls.autoRotate = !validHover && !isLockedRef.current;
         }
       }
-      onNodeHover(node || null);
+
+      onNodeHover(validHover);
     },
     [onNodeHover]
   );
 
-  // Shared geometries & materials for crisp 60fps rendering
+  const handleNodeClick = useCallback(
+    (node: any) => {
+      if (!node || node.id === 'hub') return;
+      if (onNodeClick) {
+        onNodeClick(node);
+      }
+    },
+    [onNodeClick]
+  );
+
+  const selectedId = selectedNode ? String(selectedNode.id) : null;
+
+  // 3. Visual Hierarchy: Group 1 = 7 Core Agents (Cyan #00ffff, larger), Group 2 = Rule Nodes (Tiny White #ffffff)
   const nodeThreeObject = useCallback(
     (node: any) => {
-      const isHovered = activeHoverId !== null && String(node.id) === activeHoverId;
-      const isHub = node.id === 'hub';
-      const isPrimaryDoc =
-        node.category === 'agent' ||
-        node.category === 'domain' ||
-        node.category === 'heuristic' ||
-        node.category === 'identity';
+      const idStr = String(node.id);
+      const isHovered = hoveredId === idStr;
+      const isSelected = selectedId === idStr;
+      const isHighlighted = (isHovered || isSelected) && node.id !== 'hub';
+      const isAgent = node.group === 1;
 
-      if (isHovered && !isHub) {
-        // Larger, brighter glowing cyan/white node when hovered
+      if (isHighlighted) {
         const group = new THREE.Group();
+        const coreRadius = isAgent ? 2.6 : 1.55;
+        const haloRadius = isAgent ? 4.4 : 2.8;
 
-        const coreGeo = new THREE.SphereGeometry(isPrimaryDoc ? 2.1 : 1.65, 16, 16);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const coreGeo = new THREE.SphereGeometry(coreRadius, 18, 18);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
         group.add(new THREE.Mesh(coreGeo, coreMat));
 
-        const haloGeo = new THREE.SphereGeometry(isPrimaryDoc ? 3.4 : 2.7, 16, 16);
+        const haloGeo = new THREE.SphereGeometry(haloRadius, 18, 18);
         const haloMat = new THREE.MeshBasicMaterial({
-          color: 0x22d3ee,
+          color: 0x00ffff,
           transparent: true,
-          opacity: 0.38,
+          opacity: 0.34,
         });
         group.add(new THREE.Mesh(haloGeo, haloMat));
 
         return group;
       }
 
-      const radius = isHub ? 2.4 : isPrimaryDoc ? 1.15 : 0.68;
-      const sphereGeo = new THREE.SphereGeometry(radius, 10, 10);
+      if (isAgent) {
+        // Group 1: The 7 Core Agents — Larger Cyan (#00ffff) nodes with subtle glow
+        const group = new THREE.Group();
+        const coreGeo = new THREE.SphereGeometry(1.85, 16, 16);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+        group.add(new THREE.Mesh(coreGeo, coreMat));
+
+        const glowGeo = new THREE.SphereGeometry(2.9, 16, 16);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color: 0x00ffff,
+          transparent: true,
+          opacity: 0.18,
+        });
+        group.add(new THREE.Mesh(glowGeo, glowMat));
+
+        return group;
+      }
+
+      // Group 2: Tiny White (#ffffff) Rule Nodes
+      const sphereGeo = new THREE.SphereGeometry(node.id === 'hub' ? 1.2 : 0.62, 10, 10);
       const sphereMat = new THREE.MeshBasicMaterial({
-        color: isHub ? 0x38bdf8 : 0xffffff,
+        color: 0xffffff,
       });
       return new THREE.Mesh(sphereGeo, sphereMat);
     },
-    [activeHoverId]
+    [hoveredId, selectedId]
   );
 
   const getNodeColor = useCallback(
     (node: any) => {
-      if (activeHoverId !== null && String(node.id) === activeHoverId && node.id !== 'hub') {
-        return '#22D3EE';
-      }
-      return '#FFFFFF';
+      const idStr = String(node.id);
+      if (hoveredId === idStr || selectedId === idStr) return '#00ffff';
+      return node.group === 1 ? '#00ffff' : '#ffffff';
     },
-    [activeHoverId]
+    [hoveredId, selectedId]
   );
 
   const getLinkColor = useCallback(
     (link: any) => {
-      if (!activeHoverId) return '#1E3A8A';
+      const activeId = hoveredId || selectedId;
+      if (!activeId) return '#1E3A8A';
       const srcId = typeof link.source === 'object' ? link.source?.id : link.source;
       const tgtId = typeof link.target === 'object' ? link.target?.id : link.target;
-      if (String(srcId) === activeHoverId || String(tgtId) === activeHoverId) {
-        return '#38BDF8';
+      if (String(srcId) === activeId || String(tgtId) === activeId) {
+        return '#00ffff';
       }
       return '#1E3A8A';
     },
-    [activeHoverId]
+    [hoveredId, selectedId]
   );
 
   return (
@@ -178,23 +289,20 @@ export default function Brain3D({ data, onNodeHover, onNodeClick }: Brain3DProps
         nodeThreeObject={nodeThreeObject}
         nodeRelSize={1.2}
         linkColor={getLinkColor}
-        linkOpacity={0.42}
+        linkOpacity={0.38}
         linkWidth={(link: any) => {
-          if (!activeHoverId) return 0.6;
+          const activeId = hoveredId || selectedId;
+          if (!activeId) return 0.55;
           const srcId = typeof link.source === 'object' ? link.source?.id : link.source;
           const tgtId = typeof link.target === 'object' ? link.target?.id : link.target;
-          return String(srcId) === activeHoverId || String(tgtId) === activeHoverId ? 1.6 : 0.5;
+          return String(srcId) === activeId || String(tgtId) === activeId ? 1.5 : 0.45;
         }}
         d3AlphaDecay={0.05}
         d3VelocityDecay={0.4}
         warmupTicks={20}
         cooldownTicks={60}
         onNodeHover={handleNodeHover}
-        onNodeClick={(node: any) => {
-          if (onNodeClick && node && node.id !== 'hub') {
-            onNodeClick(node);
-          }
-        }}
+        onNodeClick={handleNodeClick}
       />
     </div>
   );

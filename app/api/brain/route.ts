@@ -45,6 +45,7 @@ export async function GET() {
           ...node,
           name: live.name,
           description: live.description,
+          group: live.group,
           content: live.content,
           rules: live.rules,
         };
