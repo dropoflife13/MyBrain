@@ -61,6 +61,18 @@ export default function Home() {
 
   // 3D Graph Ready State for Seamless Neural Transition
   const [isGraphReady, setIsGraphReady] = useState<boolean>(false);
+  const [minTimerDone, setMinTimerDone] = useState<boolean>(false);
+
+  // Guarantee the NeuralLoader stays visible for at least 2.5 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setMinTimerDone(true);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Ready when both 3D graph is ready and minimum 2.5s has elapsed
+  const isReady = isGraphReady && minTimerDone;
 
   const [assessedGraphData, setAssessedGraphData] = useState<BrainGraphData>(() =>
     getBrainData({ nodeCount: 360, mode: 'assessed' })
@@ -95,11 +107,12 @@ export default function Home() {
       });
   };
 
-  // Safety fallback so loader never hangs > 2.4s
+  // Safety fallback so loader never hangs indefinitely
   useEffect(() => {
     const fallback = setTimeout(() => {
       setIsGraphReady(true);
-    }, 2400);
+      setMinTimerDone(true);
+    }, 3800);
     return () => clearTimeout(fallback);
   }, []);
 
@@ -187,13 +200,13 @@ export default function Home() {
   return (
     <main
       onMouseMove={handleMouseMove}
-      className="relative w-screen h-screen overflow-hidden bg-[#050505] text-white select-none"
+      className="relative w-screen h-screen overflow-hidden bg-[#f0f4f8] dark:bg-[#050505] text-slate-900 dark:text-white select-none transition-colors duration-300"
     >
       {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
       <motion.div
-        className="absolute inset-0 w-full h-full z-0 bg-[#050505]"
+        className="absolute inset-0 w-full h-full z-0 bg-[#f0f4f8] dark:bg-[#050505] transition-colors duration-300"
         initial={{ opacity: 0 }}
-        animate={{ opacity: isGraphReady ? 1 : 0 }}
+        animate={{ opacity: isReady ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <Brain3D
@@ -225,114 +238,101 @@ export default function Home() {
       />
 
       {/* Precision Corner Telemetry Reticles */}
-      <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-400/30" />
-      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-400/30" />
-      <div className="pointer-events-none fixed bottom-6 left-6 z-10 w-3 h-3 border-b border-l border-cyan-400/30" />
+      <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-500/30 dark:border-cyan-400/30" />
+      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-500/30 dark:border-cyan-400/30" />
+      <div className="pointer-events-none fixed bottom-6 left-6 z-10 w-3 h-3 border-b border-l border-cyan-500/30 dark:border-cyan-400/30" />
 
-      {/* 3. Top Desktop Command Bar (Brand + 7-Agent Quick Dock + Auto-Spin Control) */}
-      <header className="fixed top-4 left-6 right-6 z-30 flex items-center justify-between gap-4 pointer-events-none">
-        {/* Left: Overview Link + Cortex Brand & Telemetry Pill */}
-        <div className="pointer-events-auto flex items-center gap-2.5">
+      {/* 3. Top Desktop Command Bar (Strict CSS Grid Alignment & Blueprint Light Mode Adaptation) */}
+      <header className="fixed top-4 left-4 right-4 md:left-6 md:right-6 z-30 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none gap-3">
+        {/* Left: Overview Link + Cortex Brand Pill */}
+        <div className="flex items-center justify-start gap-2 pointer-events-auto">
           <Link
             href="/"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#09090b]/85 hover:bg-zinc-800/80 text-zinc-300 hover:text-white backdrop-blur-xl border border-white/10 text-xs font-mono transition-all shadow-2xl cursor-pointer"
+            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
             title="Return to Landing Page"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-cyan-400" />
+            <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
             <span className="hidden sm:inline">Overview</span>
           </Link>
 
-          <div className="flex items-center gap-3.5 px-3.5 py-2 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
+          <div className="h-10 flex items-center justify-center gap-2.5 px-3.5 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
             <img
               src="/cortex-logo-cyan.svg"
               alt="Cortex Logo"
-              className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
+              className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
             />
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold tracking-widest text-white uppercase">
-                  CORTEX
-                </span>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-400/10 text-[#00ffff] border border-cyan-400/20">
-                  v2.4
-                </span>
-              </div>
-              <div className="flex items-center gap-3 mt-0.5 text-[10px] font-mono text-zinc-400">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#00ffff] shadow-[0_0_6px_#00ffff]" />
-                  7 Agents
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                  {graphData.nodes.length - 1} Synapses
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-1 text-emerald-400">
-                  <Activity className="w-3 h-3" />
-                  {fps} FPS
-                </span>
-              </div>
-            </div>
+            <span className="text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white uppercase">
+              CORTEX
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
+              v2.4
+            </span>
+            <span className="hidden xl:inline text-[10px] font-mono text-slate-500 dark:text-zinc-400">
+              {graphData.nodes.length - 1} Synapses • {fps} FPS
+            </span>
           </div>
         </div>
 
         {/* Center: 7-Agent Quick-Jump Dock */}
-        <nav className="pointer-events-auto hidden lg:flex items-center gap-1 p-1.5 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
-          <span className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#00ffff]" />
-            Gates:
-          </span>
-          {AGENT_DOCK.map((agent) => {
-            const isActive = selectedNode?.id === agent.id;
-            return (
-              <button
-                key={agent.id}
-                type="button"
-                onClick={() => handleSelectAgentFromDock(agent.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-[#00ffff] text-zinc-950 font-bold shadow-[0_0_12px_rgba(0,255,255,0.4)]'
-                    : 'text-zinc-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isActive ? 'bg-zinc-950' : 'bg-[#00ffff]'
+        <div className="flex items-center justify-center pointer-events-auto">
+          <nav className="h-10 hidden lg:flex items-center justify-center gap-1 p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
+            <span className="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+              Gates:
+            </span>
+            {AGENT_DOCK.map((agent) => {
+              const isActive = selectedNode?.id === agent.id;
+              return (
+                <button
+                  key={agent.id}
+                  type="button"
+                  onClick={() => handleSelectAgentFromDock(agent.id)}
+                  className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    isActive
+                      ? 'bg-cyan-500 dark:bg-[#00ffff] text-black font-bold shadow-[0_0_12px_rgba(0,255,255,0.4)]'
+                      : 'text-slate-600 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10'
                   }`}
-                />
-                <span>{agent.code}</span>
-              </button>
-            );
-          })}
-        </nav>
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isActive ? 'bg-black' : 'bg-cyan-500 dark:bg-[#00ffff]'
+                    }`}
+                  />
+                  <span>{agent.code}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Right: Vault State Switcher (Assessed vs Blank Fork) + Auto-Spin Control */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          <div className="hidden sm:flex items-center p-1 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
+        {/* Right: Vault State Switcher + Theme Toggle + Auto-Spin */}
+        <div className="flex items-center justify-end gap-2 pointer-events-auto">
+          <div className="h-10 hidden sm:flex items-center justify-center p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
             <button
               type="button"
               onClick={() => handleToggleVaultMode('assessed')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 vaultMode === 'assessed'
-                  ? 'bg-[#00ffff]/15 text-[#00ffff] border border-cyan-400/35 font-semibold'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-cyan-500/15 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/30 dark:border-cyan-400/35 font-semibold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="View Neil's fully assessed 360-node Cortex"
             >
               <Sparkles className="w-3 h-3" />
-              <span>Assessed (86 Rules)</span>
+              <span>Assessed</span>
             </button>
             <button
               type="button"
               onClick={() => handleToggleVaultMode('blank')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 vaultMode === 'blank'
-                  ? 'bg-amber-400/15 text-amber-300 border border-amber-400/35 font-semibold'
-                  : 'text-zinc-400 hover:text-white'
+                  ? 'bg-amber-500/15 dark:bg-amber-400/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 dark:border-amber-400/35 font-semibold'
+                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
-              title="Preview what a freshly forked Blank-Slate Brain looks like before self-assessment"
+              title="Preview blank-slate fork"
             >
               <Eye className="w-3 h-3" />
-              <span>Blank Fork (0 Rules)</span>
+              <span>Blank</span>
             </button>
           </div>
 
@@ -341,19 +341,19 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setAutoSpin((prev) => !prev)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-2xl ${
+            className={`h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-xl ${
               autoSpin
-                ? 'bg-[#09090b]/85 border-cyan-400/35 text-[#00ffff]'
-                : 'bg-[#09090b]/85 border-white/10 text-zinc-400 hover:text-white'
+                ? 'bg-white/90 dark:bg-[#09090b]/85 border-cyan-500/40 dark:border-cyan-400/35 text-cyan-600 dark:text-[#00ffff]'
+                : 'bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
             }`}
             title="Toggle 3D Auto-Orbit"
           >
             {autoSpin ? (
-              <RotateCw className="w-3.5 h-3.5 text-[#00ffff] animate-spin" />
+              <RotateCw className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff] animate-spin" />
             ) : (
-              <Pause className="w-3.5 h-3.5 text-zinc-400" />
+              <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
             )}
-            <span>Auto-Spin: {autoSpin ? 'ON' : 'OFF'}</span>
+            <span className="hidden sm:inline">Spin: {autoSpin ? 'ON' : 'OFF'}</span>
           </button>
         </div>
       </header>
@@ -383,7 +383,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 4. Dynamic Cursor-Following Dark Glass Tooltip (Shows ONLY Title) */}
+      {/* 4. Dynamic Cursor-Following Glass Tooltip (Shows ONLY Title) */}
       <AnimatePresence>
         {showHoverTooltip && (
           <motion.div
@@ -392,7 +392,7 @@ export default function Home() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.94 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-50 pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#09090b]/95 backdrop-blur-md border border-white/15 shadow-2xl"
+            className="fixed z-50 pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border border-slate-300 dark:border-white/15 shadow-2xl text-slate-900 dark:text-white"
             style={{
               left: `${Math.min(
                 mousePos.x + 18,
@@ -404,11 +404,11 @@ export default function Home() {
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 hoveredNode?.group === 1
-                  ? 'bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
-                  : 'bg-white shadow-[0_0_4px_#ffffff]'
+                  ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
+                  : 'bg-slate-700 dark:bg-white shadow-[0_0_4px_#ffffff]'
               }`}
             />
-            <span className="text-xs font-mono font-medium text-white whitespace-nowrap">
+            <span className="text-xs font-mono font-medium whitespace-nowrap">
               {hoveredNode?.name}
             </span>
           </motion.div>
@@ -424,20 +424,20 @@ export default function Home() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="fixed top-0 right-0 bottom-0 z-40 w-[460px] max-w-full backdrop-blur-md bg-black/60 border-l border-white/10 p-5 flex flex-col justify-between shadow-2xl"
+            className="fixed top-0 right-0 bottom-0 z-40 w-[460px] max-w-full backdrop-blur-md bg-white/80 dark:bg-black/60 border-l border-slate-300 dark:border-white/10 p-5 flex flex-col justify-between shadow-2xl"
           >
             <div
-              className="flex flex-col h-full rounded-xl bg-[#09090b] border border-white/10 overflow-hidden shadow-2xl"
+              className="flex flex-col h-full rounded-xl bg-white dark:bg-[#09090b] border border-slate-300 dark:border-white/10 overflow-hidden shadow-2xl"
               style={{
                 fontFamily:
                   "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               }}
             >
               {/* Editor Top Tab Bar with Explicit Working Exit Button */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-zinc-950">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-950">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <FileCode2 className="w-4 h-4 text-[#00ffff] shrink-0" />
-                  <span className="text-xs font-semibold text-zinc-100 truncate">
+                  <FileCode2 className="w-4 h-4 text-cyan-600 dark:text-[#00ffff] shrink-0" />
+                  <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
                     {selectedIdClean}.md
                   </span>
                   <Badge variant={selectedNode.group === 1 ? 'default' : 'secondary'}>
@@ -451,7 +451,7 @@ export default function Home() {
                     e.stopPropagation();
                     handleCloseSidebar();
                   }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-red-500/20 border border-white/10 hover:border-red-400/40 text-zinc-300 hover:text-red-200 text-xs font-mono transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-200 dark:bg-zinc-900 hover:bg-red-500/15 border border-slate-300 dark:border-white/10 hover:border-red-400/40 text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-200 text-xs font-mono transition-colors cursor-pointer"
                   title="Close Inspector (Esc)"
                   aria-label="Close panel"
                 >
@@ -461,24 +461,24 @@ export default function Home() {
               </div>
 
               {/* Node Title & Filter Search Bar */}
-              <div className="px-4 py-3 border-b border-white/10 bg-[#09090b] space-y-2.5">
-                <h2 className="text-sm font-semibold text-white tracking-tight">
+              <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#09090b] space-y-2.5">
+                <h2 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
                   {selectedNode.name}
                 </h2>
                 <div className="relative flex items-center">
-                  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 pointer-events-none" />
+                  <Search className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 absolute left-3 pointer-events-none" />
                   <input
                     type="text"
                     value={queryText}
                     onChange={(e) => setQueryText(e.target.value)}
                     placeholder="Filter rules in this file..."
-                    className="w-full pl-8 pr-8 py-1.5 rounded-md bg-zinc-900/90 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#00ffff]/60"
+                    className="w-full pl-8 pr-8 py-1.5 rounded-md bg-slate-100 dark:bg-zinc-900/90 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-cyan-500 dark:focus:border-[#00ffff]/60"
                   />
                   {queryText && (
                     <button
                       type="button"
                       onClick={() => setQueryText('')}
-                      className="absolute right-2.5 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                      className="absolute right-2.5 text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -487,7 +487,7 @@ export default function Home() {
               </div>
 
               {/* Code Notepad Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs leading-relaxed text-zinc-300">
+              <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-zinc-300">
                 {formattedLines.map((line: string, index: number) => {
                   const isHeading = line.trim().startsWith('#');
                   const cleanLine = line.replace(/^-\s*/, '').trim();
@@ -496,27 +496,27 @@ export default function Home() {
                   return (
                     <div
                       key={index}
-                      className="flex items-start gap-3 py-1.5 px-2 rounded hover:bg-white/[0.04] transition-colors"
+                      className="flex items-start gap-3 py-1.5 px-2 rounded hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors"
                     >
-                      <span className="text-[10px] text-zinc-600 select-none w-5 text-right shrink-0 pt-0.5">
+                      <span className="text-[10px] text-slate-400 dark:text-zinc-600 select-none w-5 text-right shrink-0 pt-0.5">
                         {String(index + 1).padStart(2, '0')}
                       </span>
 
                       {isHeading ? (
-                        <span className="text-[#00ffff] font-semibold">
+                        <span className="text-cyan-600 dark:text-[#00ffff] font-semibold">
                           {line.replace(/^#+\s*/, '# ')}
                         </span>
                       ) : ruleIdMatch ? (
                         <div className="flex-1">
-                          <span className="inline-block px-1.5 py-0.5 mr-2 rounded bg-[#00ffff]/15 text-[#00ffff] font-semibold text-[11px]">
+                          <span className="inline-block px-1.5 py-0.5 mr-2 rounded bg-cyan-500/10 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] font-semibold text-[11px]">
                             {ruleIdMatch[1]}
                           </span>
-                          <span className="text-zinc-200">
+                          <span className="text-slate-800 dark:text-zinc-200">
                             {ruleIdMatch[2].replace(/\*\*/g, '')}
                           </span>
                         </div>
                       ) : (
-                        <span className="flex-1 text-zinc-300">
+                        <span className="flex-1 text-slate-700 dark:text-zinc-300">
                           {cleanLine.replace(/\*\*/g, '')}
                         </span>
                       )}
@@ -526,12 +526,12 @@ export default function Home() {
               </div>
 
               {/* Editor Status Bar Footer */}
-              <div className="px-4 py-2.5 border-t border-white/10 bg-zinc-950 flex items-center justify-between text-[10px] text-zinc-500">
+              <div className="px-4 py-2.5 border-t border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-950 flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-500">
                 <span>UTF-8 • MARKDOWN VAULT</span>
                 <button
                   type="button"
                   onClick={handleCloseSidebar}
-                  className="text-[#00ffff] hover:underline cursor-pointer"
+                  className="text-cyan-600 dark:text-[#00ffff] hover:underline cursor-pointer font-medium"
                 >
                   UNLOCK CAMERA [ESC]
                 </button>
@@ -546,9 +546,9 @@ export default function Home() {
         <Button
           variant="outline"
           onClick={() => setIsShareOpen(true)}
-          className="backdrop-blur-xl bg-[#09090b]/85 border-white/15 hover:border-[#00ffff]/50 shadow-2xl px-4 py-2.5 h-auto font-mono text-xs"
+          className="backdrop-blur-xl bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/15 hover:border-cyan-500 dark:hover:border-[#00ffff]/50 text-slate-800 dark:text-white shadow-2xl px-4 py-2.5 h-auto font-mono text-xs"
         >
-          <GitFork className="w-3.5 h-3.5 text-[#00ffff]" />
+          <GitFork className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
           <span>Fork this Brain</span>
         </Button>
       </div>
@@ -888,7 +888,7 @@ export default function Home() {
 
       {/* 9. Seamless Neural Wiring Loader */}
       <AnimatePresence>
-        {!isGraphReady && (
+        {!isReady && (
           <NeuralLoader key="cortex-neural-loader" />
         )}
       </AnimatePresence>

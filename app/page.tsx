@@ -133,60 +133,64 @@ export default function LandingPage() {
       <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-500/30 dark:border-cyan-400/30 hidden md:block" />
       <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-500/30 dark:border-cyan-400/30 hidden md:block" />
 
-      {/* 3. Top Floating Navigation Bar */}
-      <header className="fixed top-4 left-4 right-4 md:left-8 md:right-8 z-40 flex items-center justify-between gap-4 pointer-events-none">
-        {/* Brand Pill */}
-        <div className="pointer-events-auto flex items-center gap-3 px-3.5 py-2 rounded-xl bg-white/85 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-xl">
-          <img
-            src="/cortex-logo-cyan.svg"
-            alt="Cortex Logo"
-            className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
-          />
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white uppercase">
-              CORTEX
-            </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
-              v2.4
-            </span>
+      {/* 3. Top Floating Navigation Bar (Strict CSS Grid Alignment) */}
+      <header className="fixed top-4 left-4 right-4 md:left-8 md:right-8 z-40 grid grid-cols-[1fr_auto_1fr] items-center pointer-events-none gap-4">
+        {/* Left: Brand Pill */}
+        <div className="flex items-center justify-start pointer-events-auto">
+          <div className="h-10 px-3.5 rounded-xl bg-white/85 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-xl flex items-center justify-center gap-3">
+            <img
+              src="/cortex-logo-cyan.svg"
+              alt="Cortex Logo"
+              className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white uppercase">
+                CORTEX
+              </span>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
+                v2.4
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Center Links (Desktop) */}
-        <nav className="pointer-events-auto hidden md:flex items-center gap-6 px-5 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-xl">
-          <a href="#architecture" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
-            Architecture
-          </a>
-          <a href="#how-it-works" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
-            How It Works
-          </a>
-          <Link
-            href="/agents"
-            className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-cyan-600 dark:text-cyan-300"
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>The Agents</span>
-          </Link>
-          <Link
-            href="/start"
-            className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Beginner&apos;s Guide</span>
-          </Link>
-          <a href="#faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
-            FAQ
-          </a>
-        </nav>
+        {/* Center: Main Navigation (Desktop) */}
+        <div className="flex items-center justify-center pointer-events-auto">
+          <nav className="h-10 hidden md:flex items-center justify-center gap-5 lg:gap-6 px-5 rounded-xl bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-xl">
+            <a href="#architecture" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+              Architecture
+            </a>
+            <a href="#how-it-works" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+              How It Works
+            </a>
+            <Link
+              href="/agents"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-cyan-600 dark:text-cyan-300"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>The Agents</span>
+            </Link>
+            <Link
+              href="/start"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Guide</span>
+            </Link>
+            <a href="#faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+              FAQ
+            </a>
+          </nav>
+        </div>
 
-        {/* Right CTA Actions + Dark/Light Theme Toggle */}
-        <div className="pointer-events-auto flex items-center gap-2.5">
+        {/* Right: Theme Toggle + Fork + Console CTA */}
+        <div className="flex items-center justify-end gap-2.5 pointer-events-auto">
           <ThemeToggle />
 
           <button
             type="button"
             onClick={() => setIsShareOpen(true)}
-            className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/85 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-slate-200 dark:border-white/15 hover:border-cyan-400/40 text-xs font-mono text-slate-800 dark:text-zinc-200 transition-all shadow-xl cursor-pointer"
+            className="h-10 hidden sm:flex items-center justify-center gap-2 px-3.5 rounded-xl bg-white/85 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-900 border border-slate-200 dark:border-white/15 hover:border-cyan-400/40 text-xs font-mono text-slate-800 dark:text-zinc-200 transition-all shadow-xl cursor-pointer"
           >
             <GitFork className="w-3.5 h-3.5 text-cyan-500 dark:text-[#00ffff]" />
             <span>Fork this Brain</span>
@@ -195,7 +199,7 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={handleOpenMind}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.5)] cursor-pointer"
+            className="h-10 flex items-center justify-center gap-2 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.5)] cursor-pointer"
           >
             <span>Console</span>
             <ArrowRight className="w-3.5 h-3.5" />

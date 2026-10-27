@@ -113,9 +113,9 @@ export default function Brain3D({
 
     // 1. Scene
     const scene = new THREE.Scene();
-    const bgColor = isLight ? 0xf8fafc : 0x050505;
+    const bgColor = isLight ? 0xf0f4f8 : 0x050505;
     scene.background = new THREE.Color(bgColor);
-    scene.fog = new THREE.FogExp2(bgColor, isLight ? 0.0018 : 0.0022);
+    scene.fog = new THREE.FogExp2(bgColor, isLight ? 0.0016 : 0.0022);
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 1500);
@@ -135,12 +135,12 @@ export default function Brain3D({
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // 4. OrbitControls (Hardware-damped + Auto-Rotate)
+    // 4. OrbitControls (Seamless hardware-damped infinite 360 spin)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.055;
+    controls.dampingFactor = 0.05;
     controls.autoRotate = autoSpinRef.current;
-    controls.autoRotateSpeed = isBackgroundRef.current ? 0.95 : 1.45;
+    controls.autoRotateSpeed = 1.0;
     controls.minDistance = 28;
     controls.maxDistance = 340;
     controls.target.set(0, 0, 0);
@@ -230,7 +230,7 @@ export default function Brain3D({
     const ruleHaloGeo = new THREE.SphereGeometry(2.1, 14, 14);
 
     const agentColor = isLight ? 0x0284c7 : 0x00ffff;
-    const ruleColor = isLight ? 0x0f172a : 0xffffff;
+    const ruleColor = isLight ? 0x1e3a8a : 0xffffff;
 
     graphData.nodes.forEach((node) => {
       nodeById.set(String(node.id), node);
@@ -299,9 +299,9 @@ export default function Brain3D({
     const baseLineGeo = new THREE.BufferGeometry();
     baseLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(baseLineCoords, 3));
     const baseLineMat = new THREE.LineBasicMaterial({
-      color: isLight ? 0x94a3b8 : 0x1e3a8a,
+      color: isLight ? 0xcbd5e1 : 0x1e3a8a,
       transparent: true,
-      opacity: isLight ? 0.48 : 0.42,
+      opacity: isLight ? 0.65 : 0.42,
     });
     const baseLineSegments = new THREE.LineSegments(baseLineGeo, baseLineMat);
     brainGroup.add(baseLineSegments);
@@ -456,32 +456,21 @@ export default function Brain3D({
     const animate = (now: number) => {
       animId = requestAnimationFrame(animate);
 
-      if (divingInRef.current) {
-        // Dramatic dive-in zoom effect into the center of the constellation
-        camera.position.lerp(new THREE.Vector3(0, 4, 12), 0.09);
-        camera.fov = THREE.MathUtils.lerp(camera.fov, 16, 0.08);
-        camera.updateProjectionMatrix();
-      }
-
+      // Smooth infinite 360-degree rotation powered directly by OrbitControls
       const isLockedOnNode = Boolean(selectedNodeRef.current && selectedNodeRef.current.id !== 'hub');
-      const isHoveringNode = Boolean(hoveredNodeRef.current);
+      controls.autoRotate = autoSpinRef.current && !isLockedOnNode;
+      controls.autoRotateSpeed = 1.0;
 
-      // Smoothly lerp OrbitControls target toward selected node (or back to 0,0,0)
-      controls.target.lerp(desiredTargetPosRef.current, 0.08);
+      // Smoothly orient controls target when a node is selected (or return home to 0,0,0)
+      controls.target.lerp(desiredTargetPosRef.current, 0.05);
 
-      if (desiredCameraPosRef.current) {
-        camera.position.lerp(desiredCameraPosRef.current, 0.07);
+      if (isLockedOnNode && desiredCameraPosRef.current) {
+        camera.position.lerp(desiredCameraPosRef.current, 0.06);
         if (camera.position.distanceTo(desiredCameraPosRef.current) < 0.8) {
           desiredCameraPosRef.current = null;
         }
-      } else if (isReturningHomeRef.current) {
-        if (controls.target.length() < 0.5) {
-          isReturningHomeRef.current = false;
-        }
       }
 
-      // Auto-rotate is active whenever autoSpin is ON and user is not hovering/inspecting a locked node
-      controls.autoRotate = autoSpinRef.current && !isHoveringNode && !isLockedOnNode;
       controls.update();
 
       // Subtle counter-rotation of the ambient starfield and tactical ring
@@ -545,7 +534,7 @@ export default function Brain3D({
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden select-none transition-colors duration-300 ${
-        isLight ? 'bg-slate-50' : 'bg-[#050505]'
+        isLight ? 'bg-[#f0f4f8]' : 'bg-[#050505]'
       }`}
       style={{
         position: 'relative',
