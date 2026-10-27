@@ -1,6 +1,6 @@
 ---
 type: protocol
-version: 2
+version: 3
 status: active
 ---
 # Artifact Archaeology
@@ -21,3 +21,4 @@ Mines habits from work already made: specs, diagrams, code structure, prompts, a
 | A-02 | Product & Technical Spec (Dugtong OJT) | `docs/Dugtong_OJT_Unified_Context.md` | 2026-10-26 | yes |
 | A-03 | Creative Studio Spec (CITEMAS Portal) | `docs/CITEMAS_Portal_Architecture.md` | 2026-10-27 | yes |
 | A-04 | 3D Synaptic Brain (Procedural Graph & GLB) | `lib/brainGraph.ts`, `public/synaptic_constellation_brain.glb` | 2026-10-27 | yes |
+| A-05 | Practitioner Resume & Project Lineage (FlexSpace, Agrivet, Godot Roguelike, CITEMAS Leadership) | `01-identity/ABOUT-ME.md` | 2026-10-27 | yes |
