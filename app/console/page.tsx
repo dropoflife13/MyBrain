@@ -15,10 +15,13 @@ import {
   FileCode2,
   GitFork,
   Layers,
+  Loader2,
+  Menu,
   Pause,
   RefreshCw,
   RotateCw,
   Search,
+  Send,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -73,6 +76,20 @@ export default function Home() {
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [activeGate, setActiveGate] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+
+  // Sliding AI Neural Chat Panel State (Framer Motion right sidebar)
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      text: string;
+      timestamp: string;
+    }>
+  >([]);
+  const [chatInput, setChatInput] = useState<string>('');
+  const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
+  const chatBottomRef = React.useRef<HTMLDivElement>(null);
 
   // 3D Graph Ready State for Seamless Neural Transition
   const [isGraphReady, setIsGraphReady] = useState<boolean>(false);
@@ -270,6 +287,83 @@ export default function Home() {
     }
   };
 
+  // Connect neural chat session whenever a node is selected in Brain3D
+  useEffect(() => {
+    if (selectedNode && selectedNode.id !== 'hub') {
+      const cleanId = String(selectedNode.id).split('::')[0];
+      setChatMessages([
+        {
+          id: 'welcome',
+          role: 'assistant',
+          text: `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule or agent specification:`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+      setChatInput('');
+    } else {
+      setChatMessages([]);
+      setChatInput('');
+    }
+  }, [selectedNode]);
+
+  // Auto-scroll chat history on new messages or loading updates
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages, isChatLoading]);
+
+  const handleSendChat = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const query = chatInput.trim();
+    if (!query || isChatLoading || !selectedNode) return;
+
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: 'user' as const,
+      text: query,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query,
+          contextNode: selectedNode,
+        }),
+      });
+
+      const data = await res.json();
+      const aiText = data.text || data.error || 'No response returned from the neural core.';
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          role: 'assistant' as const,
+          text: aiText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err: any) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          role: 'assistant' as const,
+          text: `Neural connection failure: ${err?.message || 'Unable to contact Cortex API.'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
     setMousePos({ x: e.clientX, y: e.clientY });
   };
@@ -277,26 +371,16 @@ export default function Home() {
   const showHoverTooltip = Boolean(hoveredNode && hoveredNode.id !== 'hub');
   const selectedIdClean = selectedNode?.id ? String(selectedNode.id).split('::')[0] : '';
 
-  const formattedLines: string[] = useMemo(() => {
-    if (!selectedNode) return [];
-    const raw = selectedNode.content || selectedNode.description || '';
-    return raw
-      .split(/\r?\n/)
-      .filter((line: string) =>
-        queryText.trim()
-          ? line.toLowerCase().includes(queryText.toLowerCase())
-          : line.trim().length > 0
-      );
-  }, [selectedNode, queryText]);
-
   return (
     <main
       onMouseMove={handleMouseMove}
-      className="relative w-screen h-screen overflow-hidden bg-[#f0f4f8] dark:bg-[#050505] text-slate-900 dark:text-white select-none transition-colors duration-300"
+      className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-white select-none transition-colors duration-300"
     >
       {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
       <motion.div
-        className="absolute inset-y-0 right-0 left-0 md:left-64 h-screen z-0 bg-[#f0f4f8] dark:bg-[#050505] transition-colors duration-300"
+        className={`absolute inset-y-0 right-0 h-screen z-0 bg-slate-50 dark:bg-[#050505] transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+        }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: isReady ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -320,7 +404,9 @@ export default function Home() {
 
       {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
       <div
-        className="pointer-events-none fixed inset-y-0 right-0 left-0 md:left-64 z-10 opacity-0 dark:opacity-100 transition-opacity duration-300"
+        className={`pointer-events-none fixed inset-y-0 right-0 z-10 opacity-0 dark:opacity-100 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+        }`}
         style={{
           backgroundImage: `
             radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
@@ -331,18 +417,41 @@ export default function Home() {
       />
 
       {/* Precision Corner Telemetry Reticles */}
-      <div className="pointer-events-none fixed top-20 left-6 md:left-[17.5rem] z-10 w-3 h-3 border-t border-l border-cyan-500/30 dark:border-cyan-400/30" />
-      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-500/30 dark:border-cyan-400/30" />
-      <div className="pointer-events-none fixed bottom-6 left-6 md:left-[17.5rem] z-10 w-3 h-3 border-b border-l border-cyan-500/30 dark:border-cyan-400/30" />
+      <div
+        className={`pointer-events-none fixed top-20 z-10 w-3 h-3 border-t border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
+          isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
+        }`}
+      />
+      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-600/40 dark:border-cyan-400/30" />
+      <div
+        className={`pointer-events-none fixed bottom-6 z-10 w-3 h-3 border-b border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
+          isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
+        }`}
+      />
 
-      {/* 3. Top Command Bar (spans the canvas area only) */}
-      <header className="fixed top-4 left-4 right-4 md:left-[17rem] md:right-6 z-30 flex items-center justify-between pointer-events-none gap-2 sm:gap-3">
-        {/* Left: Overview Link + Cortex Brand Pill */}
+      {/* 3. Top Command Bar (fixed top-0 right-0 z-40, dynamically offsets based on sidebar state) */}
+      <header
+        className={`fixed top-0 right-0 z-40 h-16 flex items-center justify-between px-3 sm:px-6 pointer-events-none transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+        }`}
+      >
+        {/* Left: Sidebar Toggle (☰) + Overview Link + Cortex Brand Pill */}
         <div className="flex items-center justify-start gap-2 pointer-events-auto shrink-0">
+          <Tooltip content={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'} side="bottom">
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen((prev) => !prev)}
+              aria-label="Toggle sidebar"
+              className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
+            >
+              <Menu className="w-4 h-4 text-cyan-600 dark:text-[#00ffff]" />
+            </button>
+          </Tooltip>
+
           <Tooltip content="Return to landing page" side="bottom">
             <Link
               href="/"
-              className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
+              className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
               <span className="hidden sm:inline">Overview</span>
@@ -358,7 +467,7 @@ export default function Home() {
             <span className="text-xs font-mono font-bold tracking-widest text-slate-900 dark:text-white uppercase">
               CORTEX
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-700 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
               v2.4
             </span>
           </div>
@@ -370,11 +479,11 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsMatrixOpen(true)}
-              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
             >
               <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-              <span className="hidden 2xl:inline">Governance Matrix</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+              <span className="hidden lg:inline">Governance Matrix</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-500/20">
                 0 Overlaps
               </span>
             </button>
@@ -384,25 +493,25 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setIsCmdPaletteOpen(true)}
-              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
               <span className="hidden xl:inline">Search</span>
-              <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
+              <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-600 dark:text-zinc-400 font-mono">
                 ⌘K
               </kbd>
             </button>
           </Tooltip>
 
-          <div className="h-10 hidden sm:flex items-center justify-center p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
+          <div className="h-10 hidden sm:flex items-center justify-center p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl shrink-0">
             <Tooltip content="View the fully assessed 360-node Cortex" side="bottom">
               <button
                 type="button"
                 onClick={() => handleToggleVaultMode('assessed')}
                 className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                   vaultMode === 'assessed'
-                    ? 'bg-cyan-500/15 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/30 dark:border-cyan-400/35 font-semibold'
-                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-cyan-500/15 dark:bg-[#00ffff]/15 text-cyan-700 dark:text-[#00ffff] border border-cyan-500/30 dark:border-cyan-400/35 font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Sparkles className="w-3 h-3" />
@@ -415,8 +524,8 @@ export default function Home() {
                 onClick={() => handleToggleVaultMode('blank')}
                 className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                   vaultMode === 'blank'
-                    ? 'bg-amber-500/15 dark:bg-amber-400/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 dark:border-amber-400/35 font-semibold'
-                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-amber-500/15 dark:bg-amber-400/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 dark:border-amber-400/35 font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <Eye className="w-3 h-3" />
@@ -431,10 +540,10 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setAutoSpin((prev) => !prev)}
-              className={`h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-xl ${
+              className={`h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-xl shrink-0 ${
                 autoSpin
-                  ? 'bg-white/90 dark:bg-[#09090b]/85 border-cyan-500/40 dark:border-cyan-400/35 text-cyan-600 dark:text-[#00ffff]'
-                  : 'bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-white/90 dark:bg-[#09090b]/85 border-cyan-500/40 dark:border-cyan-400/35 text-cyan-700 dark:text-[#00ffff]'
+                  : 'bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/10 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {autoSpin ? (
@@ -448,71 +557,77 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Left Sidebar: Gates Directory */}
+      {/* Left Sidebar: Gates Directory (Collapsible w-64 vs w-0) */}
       <aside
         aria-label="Gates directory"
-        className="hidden md:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white transition-colors duration-300"
+        className={`fixed left-0 top-0 z-40 h-screen flex flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white transition-all duration-300 ease-in-out ${
+          isSidebarOpen
+            ? 'w-64 opacity-100 pointer-events-auto'
+            : 'w-0 opacity-0 overflow-hidden border-none pointer-events-none'
+        }`}
         style={{
           fontFamily:
             "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         }}
       >
-        <div className="px-5 pt-6 pb-4 border-b border-slate-200 dark:border-white/10">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500 dark:text-zinc-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span>Gates Directory</span>
+        <div className="w-64 flex flex-col h-full">
+          <div className="px-5 pt-6 pb-4 border-b border-slate-200 dark:border-white/10">
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+              <span>Gates Directory</span>
+            </div>
+            <p className="mt-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
+              Filter the constellation by agent.
+            </p>
           </div>
-          <p className="mt-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
-            Filter the constellation by agent.
-          </p>
-        </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
-          <button
-            type="button"
-            onClick={() => setActiveGate(null)}
-            aria-pressed={activeGate === null}
-            className={`w-full h-9 px-3 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer border ${
-              activeGate === null
-                ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/30 dark:border-[#00ffff]/30 text-cyan-700 dark:text-[#00ffff] font-semibold'
-                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-            }`}
-          >
-            <span>Show All</span>
-            <span className="text-[10px] text-slate-400 dark:text-zinc-500">{AGENT_DOCK.length} gates</span>
-          </button>
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+            <button
+              type="button"
+              onClick={() => setActiveGate(null)}
+              aria-pressed={activeGate === null}
+              className={`w-full h-9 px-3 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer border ${
+                activeGate === null
+                  ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/30 dark:border-[#00ffff]/30 text-cyan-700 dark:text-[#00ffff] font-semibold'
+                  : 'border-transparent text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
+              }`}
+            >
+              <span>Show All</span>
+              <span className="text-[10px] text-slate-500 dark:text-zinc-500">{AGENT_DOCK.length} gates</span>
+            </button>
 
-          <div className="my-2 border-t border-slate-200 dark:border-white/5" />
+            <div className="my-2 border-t border-slate-200 dark:border-white/5" />
 
-          {AGENT_DOCK.map((agent) => {
-            const isActive = activeGate === agent.code;
-            return (
-              <Tooltip key={agent.id} content={agent.fullName} side="right" className="w-full">
-                <button
-                  type="button"
-                  onClick={() => setActiveGate(isActive ? null : agent.code)}
-                  aria-pressed={isActive}
-                  className={`w-full h-10 px-3 rounded-lg flex items-center gap-3 text-xs transition-all cursor-pointer border ${
-                    isActive
-                      ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
-                      : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isActive ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
+            {AGENT_DOCK.map((agent) => {
+              const isActive = activeGate === agent.code;
+              return (
+                <Tooltip key={agent.id} content={agent.fullName} side="right" className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => setActiveGate(isActive ? null : agent.code)}
+                    aria-pressed={isActive}
+                    className={`w-full h-10 px-3 rounded-lg flex items-center gap-3 text-xs transition-all cursor-pointer border ${
+                      isActive
+                        ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
+                        : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
                     }`}
-                  />
-                  <span className="font-bold tracking-wider w-8 text-left">{agent.code}</span>
-                  <span className="text-[11px] text-slate-500 dark:text-zinc-500 truncate">{agent.label}</span>
-                </button>
-              </Tooltip>
-            );
-          })}
-        </nav>
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        isActive ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
+                      }`}
+                    />
+                    <span className="font-bold tracking-wider w-8 text-left">{agent.code}</span>
+                    <span className="text-[11px] text-slate-500 dark:text-zinc-500 truncate">{agent.label}</span>
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </nav>
 
-        <div className="px-5 py-3 border-t border-slate-200 dark:border-white/10 text-[10px] text-slate-500 dark:text-zinc-500">
-          {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 159} rules • {fps} FPS
+          <div className="px-5 py-3 border-t border-slate-200 dark:border-white/10 text-[10px] text-slate-500 dark:text-zinc-500">
+            {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 159} rules • {fps} FPS
+          </div>
         </div>
       </aside>
 
@@ -572,127 +687,98 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 5. Right Sidebar Overhaul (Framer Motion Slide-In + Guaranteed Close on X & Escape) */}
+      {/* 5. Sliding AI Neural Chat Panel (Framer Motion Slide-In + Close on X & Esc) */}
       <AnimatePresence>
         {selectedNode && selectedNode.id !== 'hub' && (
           <motion.aside
-            key="inspector-sidebar"
+            key="node-chat-panel"
             initial={{ x: '100%', opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="fixed top-0 right-0 bottom-0 z-40 w-[460px] max-w-full backdrop-blur-md bg-white/80 dark:bg-black/60 border-l border-slate-300 dark:border-white/10 p-5 flex flex-col justify-between shadow-2xl"
+            transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            className="w-[400px] max-w-full fixed right-0 top-0 h-screen z-50 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-xl border-l border-black/10 dark:border-white/10 flex flex-col justify-between shadow-2xl"
+            style={{
+              fontFamily:
+                "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            }}
           >
-            <div
-              className="flex flex-col h-full rounded-xl bg-white dark:bg-[#09090b] border border-slate-300 dark:border-white/10 overflow-hidden shadow-2xl"
-              style={{
-                fontFamily:
-                  "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-              }}
-            >
-              {/* Editor Top Tab Bar with Explicit Working Exit Button */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-950">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileCode2 className="w-4 h-4 text-cyan-600 dark:text-[#00ffff] shrink-0" />
-                  <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 truncate">
-                    {selectedIdClean}.md
+            {/* Header: Node Title, Node ID, green SYSTEM READY dot, and close X */}
+            <div className="px-5 py-4 border-b border-black/10 dark:border-white/10 flex items-start justify-between gap-3 bg-slate-50/80 dark:bg-black/40">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase">
+                    SYSTEM READY
                   </span>
-                  <Badge variant={selectedNode.group === 1 ? 'default' : 'secondary'}>
-                    {selectedNode.group === 1 ? 'GROUP 1 • AGENT' : 'GROUP 2 • RULE'}
-                  </Badge>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseSidebar();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-200 dark:bg-zinc-900 hover:bg-red-500/15 border border-slate-300 dark:border-white/10 hover:border-red-400/40 text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-200 text-xs font-mono transition-colors cursor-pointer"
-                  aria-label="Close panel"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>ESC</span>
-                </button>
-              </div>
-
-              {/* Node Title & Filter Search Bar */}
-              <div className="px-4 py-3 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#09090b] space-y-2.5">
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                   {selectedNode.name}
                 </h2>
-                <div className="relative flex items-center">
-                  <Search className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500 absolute left-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={queryText}
-                    onChange={(e) => setQueryText(e.target.value)}
-                    placeholder="Filter rules in this file..."
-                    className="w-full pl-8 pr-8 py-1.5 rounded-md bg-slate-100 dark:bg-zinc-900/90 border border-slate-300 dark:border-white/10 text-xs text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-cyan-500 dark:focus:border-[#00ffff]/60"
-                  />
-                  {queryText && (
-                    <button
-                      type="button"
-                      onClick={() => setQueryText('')}
-                      className="absolute right-2.5 text-slate-400 dark:text-zinc-500 hover:text-slate-700 dark:hover:text-zinc-300 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+                <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
+                  NODE ID: <span className="font-semibold text-cyan-600 dark:text-[#00ffff]">{selectedIdClean}</span>
                 </div>
               </div>
 
-              {/* Code Notepad Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs leading-relaxed text-slate-700 dark:text-zinc-300">
-                {formattedLines.map((line: string, index: number) => {
-                  const isHeading = line.trim().startsWith('#');
-                  const cleanLine = line.replace(/^-\s*/, '').trim();
-                  const ruleIdMatch = cleanLine.match(/^\*\*([A-Z]{1,4}-\d+)\*\*\s*(.+)$/);
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 py-1.5 px-2 rounded hover:bg-slate-100 dark:hover:bg-white/[0.04] transition-colors"
-                    >
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-600 select-none w-5 text-right shrink-0 pt-0.5">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-
-                      {isHeading ? (
-                        <span className="text-cyan-600 dark:text-[#00ffff] font-semibold">
-                          {line.replace(/^#+\s*/, '# ')}
-                        </span>
-                      ) : ruleIdMatch ? (
-                        <div className="flex-1">
-                          <span className="inline-block px-1.5 py-0.5 mr-2 rounded bg-cyan-500/10 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] font-semibold text-[11px]">
-                            {ruleIdMatch[1]}
-                          </span>
-                          <span className="text-slate-800 dark:text-zinc-200">
-                            {ruleIdMatch[2].replace(/\*\*/g, '')}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="flex-1 text-slate-700 dark:text-zinc-300">
-                          {cleanLine.replace(/\*\*/g, '')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Editor Status Bar Footer */}
-              <div className="px-4 py-2.5 border-t border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-950 flex items-center justify-between text-[10px] text-slate-500 dark:text-zinc-500">
-                <span>UTF-8 • MARKDOWN VAULT</span>
-                <button
-                  type="button"
-                  onClick={handleCloseSidebar}
-                  className="text-cyan-600 dark:text-[#00ffff] hover:underline cursor-pointer font-medium"
-                >
-                  UNLOCK CAMERA [ESC]
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleCloseSidebar}
+                className="p-1.5 rounded-lg bg-slate-200/80 dark:bg-white/5 hover:bg-red-500/15 text-slate-600 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 transition-colors cursor-pointer shrink-0"
+                aria-label="Close chat panel"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Body: Scrollable chat history */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-sm">
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`rounded-xl p-3.5 leading-relaxed ${
+                    msg.role === 'user'
+                      ? 'bg-cyan-500/10 text-cyan-900 dark:text-cyan-100 border border-cyan-500/20 ml-6'
+                      : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4 whitespace-pre-wrap'
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-[10px] opacity-60 mb-1.5 uppercase font-bold tracking-wider">
+                    <span>{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
+                    <span>{msg.timestamp}</span>
+                  </div>
+                  <div>{msg.text}</div>
+                </div>
+              ))}
+
+              {isChatLoading && (
+                <div className="bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 rounded-xl p-3.5 mr-4 font-mono text-sm flex items-center gap-2.5">
+                  <Loader2 className="w-4 h-4 text-cyan-600 dark:text-[#00ffff] animate-spin" />
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">Querying neural knowledge base...</span>
+                </div>
+              )}
+              <div ref={chatBottomRef} />
+            </div>
+
+            {/* Input: Monospace input and Send button */}
+            <form
+              onSubmit={handleSendChat}
+              className="p-3 border-t border-black/10 dark:border-white/10 bg-slate-50/80 dark:bg-black/30 flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask about this rule or agent..."
+                disabled={isChatLoading}
+                className="flex-1 px-3 py-2 text-sm font-mono rounded-lg bg-white dark:bg-zinc-900/90 border border-black/10 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-cyan-500 dark:focus:border-[#00ffff]"
+              />
+              <button
+                type="submit"
+                disabled={isChatLoading || !chatInput.trim()}
+                className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 dark:bg-[#00ffff] dark:hover:bg-cyan-300 text-white dark:text-black font-mono text-sm font-bold disabled:opacity-40 transition-all cursor-pointer shadow-[0_0_12px_rgba(0,255,255,0.3)] shrink-0 flex items-center gap-1.5"
+              >
+                <span>Send</span>
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </form>
           </motion.aside>
         )}
       </AnimatePresence>

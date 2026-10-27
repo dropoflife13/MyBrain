@@ -138,7 +138,7 @@ export default function Brain3D({
 
     // 1. Scene
     const scene = new THREE.Scene();
-    const bgColor = isLight ? 0xf0f4f8 : 0x050505;
+    const bgColor = isLight ? 0xf8fafc : 0x050505;
     scene.background = new THREE.Color(bgColor);
     scene.fog = new THREE.FogExp2(bgColor, isLight ? 0.0016 : 0.0022);
 
@@ -422,7 +422,7 @@ export default function Brain3D({
 
     // Seamless in-place theme update (zero WebGL recreation / zero flash)
     applyThemeRef.current = (lightMode: boolean) => {
-      const nextBg = lightMode ? 0xf0f4f8 : 0x050505;
+      const nextBg = lightMode ? 0xf8fafc : 0x050505;
       scene.background = new THREE.Color(nextBg);
       scene.fog = new THREE.FogExp2(nextBg, lightMode ? 0.0016 : 0.0022);
       ringMat1.color.setHex(lightMode ? 0x94a3b8 : 0x1e3a8a);
@@ -608,7 +608,7 @@ export default function Brain3D({
     <div
       ref={containerRef}
       className={`relative w-full h-full overflow-hidden select-none transition-colors duration-300 ${
-        isLight ? 'bg-[#f0f4f8]' : 'bg-[#050505]'
+        isLight ? 'bg-slate-50' : 'bg-[#050505]'
       }`}
       style={{
         position: 'relative',
