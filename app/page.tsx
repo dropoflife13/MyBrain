@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
+  AlertTriangle,
   Check,
   Copy,
   Cpu,
@@ -13,10 +14,12 @@ import {
   FileCode2,
   GitFork,
   Pause,
+  RefreshCw,
   RotateCw,
   Search,
   ShieldCheck,
   Sparkles,
+  Terminal,
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
@@ -70,6 +73,25 @@ export default function Home() {
     () => graphData.gateStatus ?? verifySevenAgentsGate(graphData.nodes),
     [graphData]
   );
+  const [isCheckingGate, setIsCheckingGate] = useState<boolean>(false);
+
+  const handleRecheckGate = () => {
+    setIsCheckingGate(true);
+    fetch('/api/brain')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((payload) => {
+        if (payload) {
+          setAssessedGraphData(payload);
+          if (payload.gateStatus?.passed) {
+            setIsBooting(false);
+          }
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => setIsCheckingGate(false), 350);
+      });
+  };
 
   // Smooth Boot Loader Progression
   useEffect(() => {
@@ -109,8 +131,11 @@ export default function Home() {
     fetch('/api/brain')
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
-        if (active && payload && Array.isArray(payload.nodes) && payload.nodes.length > 0) {
+        if (active && payload) {
           setAssessedGraphData(payload);
+          if (payload.gateStatus && !payload.gateStatus.passed) {
+            setIsBooting(false);
+          }
         }
       })
       .catch(() => {});
@@ -701,40 +726,166 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 8. Strict Pre-Flight Gate Hard Stop (GATE: FAIL BN-00 if any of the 7 Agents are missing) */}
+      {/* 8. Sci-Fi System Crash Overlay (GATE: FAIL BN-00 Hard Stop if any of the 7 Agents are missing) */}
       <AnimatePresence>
         {!agentGate.passed && (
           <motion.div
-            key="bn00-hard-stop"
+            key="bn00-sci-fi-crash"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[95] flex items-center justify-center bg-[#050505]/95 backdrop-blur-xl p-6"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 overflow-hidden select-none"
+            style={{
+              background:
+                'radial-gradient(ellipse at 50% 50%, rgba(130, 10, 15, 0.45) 0%, rgba(20, 2, 5, 0.96) 60%, #030002 100%)',
+            }}
           >
-            <div className="w-full max-w-lg rounded-2xl bg-[#09090b] border border-red-500/40 p-6 shadow-2xl font-mono space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span className="text-xs font-bold text-red-400 tracking-wider uppercase">
-                  GATE: FAIL BN-00 • INITIALIZATION HALTED
-                </span>
-                <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 text-[10px] border border-red-500/30">
-                  7-AGENT SUITE INCOMPLETE
-                </span>
-              </div>
-              <p className="text-xs text-zinc-300 leading-relaxed">
-                This Brain Vault <strong className="text-white">cannot start</strong> without all 7 Core Execution Agents (<code className="text-[#00ffff]">PM, UX, GR, SD, IR, DB, SEC</code>) present in <code className="text-white">/agents</code>.
-              </p>
-              <div className="p-3 rounded-lg bg-red-950/30 border border-red-500/30 text-xs text-red-200 space-y-1">
-                <div className="text-[10px] uppercase text-red-400 font-semibold">
-                  Missing Required Agent Files:
+            {/* CRT Scanline Texture Layer */}
+            <div
+              className="pointer-events-none absolute inset-0 z-0 opacity-45"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.5) 0px, rgba(0, 0, 0, 0.5) 1px, transparent 1px, transparent 3px)',
+              }}
+            />
+
+            {/* Glowing Red Emergency Perimeter & Pulsing Vignette */}
+            <div className="pointer-events-none absolute inset-0 z-0 border-[3px] border-red-600/40 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)] animate-pulse" />
+
+            {/* Precision Neon Corner Brackets */}
+            <div className="pointer-events-none absolute top-6 left-6 z-10 w-8 h-8 border-t-2 border-l-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
+            <div className="pointer-events-none absolute top-6 right-6 z-10 w-8 h-8 border-t-2 border-r-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
+            <div className="pointer-events-none absolute bottom-6 left-6 z-10 w-8 h-8 border-b-2 border-l-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
+            <div className="pointer-events-none absolute bottom-6 right-6 z-10 w-8 h-8 border-b-2 border-r-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
+
+            {/* Main Hardened Terminal Box */}
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 w-full max-w-2xl rounded-2xl bg-[#090203]/95 border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)] p-6 md:p-8 space-y-5 font-mono backdrop-blur-2xl"
+              style={{
+                fontFamily:
+                  "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+              }}
+            >
+              {/* Terminal Title Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/30 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-red-950/80 border border-red-500/60 shadow-[0_0_12px_rgba(239,68,68,0.5)]">
+                    <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-red-200 tracking-wider uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
+                      GATE: FAIL BN-00 // CRITICAL SYSTEM CRASH
+                    </h2>
+                    <p className="text-[10px] text-red-400/80 mt-0.5 tracking-tight">
+                      CORTEX_PREFLIGHT_INVARIANT_VIOLATION [0xDEAD_AGENT_ORPHAN]
+                    </p>
+                  </div>
                 </div>
-                {agentGate.missingAgents.map((item) => (
-                  <div key={item}>• {item}</div>
-                ))}
+
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_8px_#ef4444]" />
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-bold tracking-wider">
+                    SYSTEM HALTED
+                  </span>
+                </div>
               </div>
-              <p className="text-[11px] text-zinc-400">
-                Restore the missing files from <code className="text-white">/brain-template.zip</code> or re-clone the complete repository to unlock the Cortex.
-              </p>
-            </div>
+
+              {/* Terminal Diagnostics Telemetry */}
+              <div className="text-[11px] leading-relaxed text-red-300/80 space-y-1">
+                <div>&gt;&gt;&gt; INITIATING PROCEDURAL KERNEL PRE-FLIGHT DIAGNOSTIC...</div>
+                <div>&gt;&gt;&gt; VERIFYING 7-AGENT EXECUTION GATE SUITE (/agents)...</div>
+                <div className="text-red-400 font-semibold">
+                  &gt;&gt;&gt; [FATAL] INVARIANT BREACH: RULE BN-00 FORBIDS HEADLESS OR UNGOVERNED OPERATION.
+                </div>
+              </div>
+
+              {/* Missing Agents Section (Formatted as [ERROR: AGENT_NOT_FOUND: filename]) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-red-400">
+                  <span className="flex items-center gap-1.5">
+                    <Terminal className="w-3.5 h-3.5 text-red-400" />
+                    Missing Required Gatekeepers:
+                  </span>
+                  <span className="text-red-400/70">
+                    COUNT: {agentGate.missingAgents.length} / 7
+                  </span>
+                </div>
+
+                <div className="space-y-1.5">
+                  {agentGate.missingAgents.map((file) => {
+                    const cleanName = file.replace(/^[^\w.-]+/, '').split(' ')[0];
+                    return (
+                      <div
+                        key={file}
+                        className="flex items-center gap-3 px-3.5 py-2 rounded-lg bg-red-950/70 border border-red-500/50 text-xs font-bold text-red-200 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
+                      >
+                        <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-ping shrink-0" />
+                        <span className="tracking-wide text-red-100 drop-shadow-[0_0_6px_rgba(239,68,68,0.6)]">
+                          [ERROR: AGENT_NOT_FOUND: {cleanName}]
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Architectural Explanation */}
+              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 text-[11px] text-zinc-300 space-y-1 leading-relaxed">
+                <div className="text-red-400 font-bold uppercase text-[10px]">
+                  // Architectural Invariant Explained:
+                </div>
+                <p>
+                  A <strong className="text-white">Procedural Brain</strong> (<code className="text-[#00ffff]">/brain</code>) stores tacit human judgment and trade-offs. The <strong className="text-white">7-Agent Suite</strong> (<code className="text-[#00ffff]">/agents</code>) enforces those rules as hard engineering gates (<code className="text-white">PM, UX, GR, SD, IR, DB, SEC</code>).
+                </p>
+                <p className="text-zinc-400">
+                  If an agent is deleted or unmapped, all rule promotion, 3D synaptic matrix rendering, and AI queries are hard-locked to prevent unverified actions.
+                </p>
+              </div>
+
+              {/* Blinking Terminal Cursor */}
+              <div className="pt-2 border-t border-red-500/25 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 text-red-400">
+                  <span className="text-red-500/80 font-bold">root@cortex-daemon:~#</span>
+                  <span className="text-zinc-400 text-[11px]">waiting for filesystem restoration event</span>
+                  <span className="inline-block w-2.5 h-4 bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse" />
+                </div>
+                <span className="hidden sm:inline text-[10px] text-zinc-500">
+                  REVERT .bak TO UNLOCK
+                </span>
+              </div>
+
+              {/* Remediation Action Controls */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleRecheckGate}
+                  disabled={isCheckingGate}
+                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2.5 text-xs font-bold text-white shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isCheckingGate ? 'animate-spin' : ''}`}
+                  />
+                  <span>
+                    {isCheckingGate
+                      ? 'Re-Verifying Filesystem...'
+                      : 'Re-Verify Gate (Check Files)'}
+                  </span>
+                </button>
+
+                <a
+                  href="/brain-template.zip"
+                  download="brain-vault-blank-template.zip"
+                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-zinc-900/90 hover:bg-zinc-800 px-4 py-2.5 text-xs text-red-200 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5 text-red-400" />
+                  <span>Download Recovery Bundle</span>
+                </a>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

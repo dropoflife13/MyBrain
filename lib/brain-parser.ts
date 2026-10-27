@@ -34,13 +34,13 @@ export interface BrainGraphData {
 }
 
 export const REQUIRED_SEVEN_AGENTS = [
-  { id: 'productmanageragent', code: 'PM', file: 'agents/productmanageragent.md' },
-  { id: 'uiuxagent', code: 'UX', file: 'agents/uiuxagent.md' },
-  { id: 'growthagent', code: 'GR', file: 'agents/growthagent.md' },
-  { id: 'systemsdesignagent', code: 'SD', file: 'agents/systemsdesignagent.md' },
-  { id: 'integrationagent', code: 'IR', file: 'agents/integrationagent.md' },
-  { id: 'dbaagent', code: 'DB', file: 'agents/dbaagent.md' },
-  { id: 'securityagent', code: 'SEC', file: 'agents/securityagent.md' },
+  { id: 'productmanageragent', code: 'PM', file: 'agents/productmanageragent.md', filename: 'productmanageragent.md' },
+  { id: 'uiuxagent', code: 'UX', file: 'agents/uiuxagent.md', filename: 'uiuxagent.md' },
+  { id: 'growthagent', code: 'GR', file: 'agents/growthagent.md', filename: 'growthagent.md' },
+  { id: 'systemsdesignagent', code: 'SD', file: 'agents/systemsdesignagent.md', filename: 'systemsdesignagent.md' },
+  { id: 'integrationagent', code: 'IR', file: 'agents/integrationagent.md', filename: 'integrationagent.md' },
+  { id: 'dbaagent', code: 'DB', file: 'agents/dbaagent.md', filename: 'dbaagent.md' },
+  { id: 'securityagent', code: 'SEC', file: 'agents/securityagent.md', filename: 'securityagent.md' },
 ] as const;
 
 export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
@@ -52,7 +52,7 @@ export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
     nodes.filter((n) => n.group === 1 || n.category === 'agent').map((n) => n.id)
   );
   const missingAgents = REQUIRED_SEVEN_AGENTS.filter((a) => !presentIds.has(a.id)).map(
-    (a) => `${a.file} ([${a.code}])`
+    (a) => a.filename
   );
   return {
     passed: missingAgents.length === 0,

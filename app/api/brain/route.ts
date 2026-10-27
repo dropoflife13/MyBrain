@@ -18,8 +18,21 @@ export async function GET() {
     for (const agent of REQUIRED_SEVEN_AGENTS) {
       const fullAgentPath = path.join(rootDir, agent.file);
       if (!fs.existsSync(fullAgentPath)) {
-        missingAgents.push(`${agent.file} ([${agent.code}])`);
+        missingAgents.push(agent.filename);
       }
+    }
+
+    // Strict Architectural Halt: If any of the 7 Agents are missing, vanish 3D nodes and return failure
+    if (missingAgents.length > 0) {
+      return NextResponse.json({
+        nodes: [],
+        links: [],
+        gateStatus: {
+          passed: false,
+          ruleId: 'BN-00',
+          missingAgents,
+        },
+      });
     }
 
     const fileMap: Array<{ id: string; relPath: string; category: BrainDocNode['category'] }> = [
@@ -79,4 +92,27 @@ export async function GET() {
   } catch (error: any) {
     return NextResponse.json(getBrainData({ nodeCount: 360 }));
   }
+}
+
+export async function POST() {
+  const rootDir = process.cwd();
+  const missingAgents: string[] = [];
+  for (const agent of REQUIRED_SEVEN_AGENTS) {
+    const fullAgentPath = path.join(rootDir, agent.file);
+    if (!fs.existsSync(fullAgentPath)) {
+      missingAgents.push(agent.filename);
+    }
+  }
+
+  if (missingAgents.length > 0) {
+    return NextResponse.json(
+      {
+        error: 'GATE: FAIL BN-00 — Execution Halted. Missing 7-Agent Suite.',
+        missingAgents: missingAgents.map((f) => `[ERROR: AGENT_NOT_FOUND: ${f}]`),
+      },
+      { status: 422 }
+    );
+  }
+
+  return NextResponse.json({ ok: true });
 }
