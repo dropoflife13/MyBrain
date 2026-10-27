@@ -1,7 +1,7 @@
 ---
 domain: ui-frontend
 prefix: UI
-version: 2
+version: 3
 status: active
 ---
 # UI & Frontend Specialist — How I Think
@@ -14,14 +14,14 @@ In the first 10 minutes on a frontend task, I **inspect existing routes, `compon
 2. Centralized semantic tokens & WCAG AA contrast (zero raw hex, zero FOUC)
 3. Honest data states (layout-matching skeletons, zero fake saves)
 4. Restrained physical craft & video-editor pacing (solid hover darkening, 10s hooks, zero AI neon slop)
-5. Role-aware navigation & 60fps mobile accessibility
+5. Role-matched viewport priority (375px mobile-first for field roles; 1440px desktop-first for batch operators)
 
 ## Sub-areas (Self-Map)
 | Area | Self (0–3) | Demonstrated (0–3) | Evidence |
 |---|---|---|---|
 | Centralized design tokens & theme consistency (zero raw hex in components) | 3 | 3 | S-01, A-01 (UX-01), A-02 (Sec 10.4), A-03 (Sec 4.4) |
 | Dumb prop-driven primitives vs smart containers (zero DB/network in UI) | 3 | 3 | S-01, A-02 (Sec 10.2, 12.3.1), A-05 (Godot data-driven systems) |
-| Role-aware navigation & responsive shell (desktop sidebar / mobile drawer) | 3 | 3 | S-01, A-01 (UX-02), A-02 (Sec 10.6, 10.8), A-03 (Navbar/ScrollSpine) |
+| Role-aware navigation & responsive shell (desktop sidebar / mobile drawer) | 3 | 3 | S-01, S-02, A-01 (UX-02), A-02 (Sec 10.6, 10.8), A-03 (Navbar/ScrollSpine) |
 | Honest data states & perceived perf (skeletons matching layout, no fake saves) | 3 | 3 | S-01, A-01 (UX-05, UX-12), A-02 (Sec 10.1, 10.9) |
 | Restrained interaction & accessibility (WCAG AA, solid darkening, no bounce) | 3 | 3 | S-01, A-01 (UX-04, UX-13), A-02 (Sec 10.4, 10.10) |
 | Safe form ergonomics & destructive confirmation (dialogs, undo toasts) | 3 | 3 | S-01, A-01 (UX-07, UX-08), A-02 (Sec 10.7) |
@@ -39,5 +39,7 @@ Grammar: CV-02. IDs `UI-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **UI-05** WHEN engineering high-craft 3D WebGL or video showcase surfaces → DO enforce the 10-second hook rule (`#t=0,10` + `onTimeUpdate` loop), keep `<video>` elements preloaded in DOM grid rows (`0fr → 1fr`) to prevent black flashes, pause carousels on `document.hidden`, and auto-downgrade heavy WebGL to a crisp static SVG/blueprint fallback when FPS drops below 30 or `prefers-reduced-motion` is active (`UX-13 > TA-02`) | why: frame-accurate responsiveness and 60fps usability on budget phones always beat lagging visual spectacle | breaks: dedicated desktop 3D modeling or CAD inspection tools where manipulating the full mesh is the core functional task | conf: 4 | ev: S-01 (Triad 1, Step 3.2), A-01 (UX-05, UX-13), A-03 (Sec 2, 3, 4), A-04 | status: active #studio-perf ^ui-05
 
+- **UI-06** WHEN designing responsive layouts for a multi-role platform → DO prioritize mobile-first ergonomics (320–375px, ≥44×44px tap targets, accessible `Sheet`/bottom nav, card views) for field/on-the-go roles (Students, Market Inspectors, Co-working seekers) and desktop-first calm data density (1440px max-width, 12-col grid, keyboard-accessible tables with contained horizontal scroll below 820px) for batch-operator roles (Coordinators, Treasurers, Admins) | why: forcing batch reviewers into oversized mobile cards wastes desktop screen real estate, while forcing field users into uncontained desktop tables causes mobile overflow | breaks: single-role utility apps built exclusively for one device class | conf: 5 | ev: S-02, A-01 (UX-02, UX-13), A-02 (Sec 10.6, 12.3.1), A-05 (FlexSpace, CITEMAS) | status: active #role-viewport ^ui-06
+
 ## Open questions (gaps to elicit)
-- [ ] For Dugtong OJT's pilot, should mobile-first ergonomics prioritize the Student portal (375px phone) or the Coordinator dashboard (1440px desktop table)?
+_All 6 core sub-areas covered._

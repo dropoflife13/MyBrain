@@ -1,7 +1,7 @@
 ---
 domain: cybersec
 prefix: CS
-version: 3
+version: 4
 status: active
 ---
 # Cybersecurity Specialist — How I Think
@@ -15,6 +15,7 @@ In the first 3 seconds of any review, I check **trust boundaries and secret isol
 3. Multi-party authorization (`submitter ≠ approver`)
 4. Non-repudiable append-only audit trails
 5. Untrusted client/offline input quarantine
+6. 5-role matrix & cross-tenant bypass verification
 
 ## Sub-areas (Self-Map)
 | Area | Self (0–3) | Demonstrated (0–3) | Evidence |
@@ -24,7 +25,7 @@ In the first 3 seconds of any review, I check **trust boundaries and secret isol
 | Multi-party authorization & separation of duty (`submitter ≠ approver`) | 3 | 3 | S-01, A-01 (SEC-05), A-02 (Sec 12.3), A-03 (Sec 6.1) |
 | Non-repudiable audit trails & append-only history | 3 | 3 | S-01, A-01 (DB-01), A-02 (Sec 9.4), A-05 (CITEMAS Treasurer) |
 | Secret hygiene & client-bundle containment | 3 | 3 | S-01, A-01 (SEC-03), A-02 (Rule 4) |
-| Adversarial attack surface & bypass testing | 2 | 2 | A-01 (SEC-01, SEC-02) |
+| Adversarial attack surface & bypass testing | 3 | 3 | S-02, A-01 (SEC-01, SEC-02), A-02 (Sec 12.3.1 Khent rules) |
 
 ## Rules
 Grammar: CV-02. IDs `CS-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concrete `ev:` only.
@@ -39,5 +40,7 @@ Grammar: CV-02. IDs `CS-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **CS-05** WHEN ingesting client or offline-queued batches (IndexedDB sync, CSV student uploads, market price entries) → DO treat client payloads and clocks as untrusted: stamp server `received_at = now()`, bound client `observed_at` within skew tolerance, validate institutional formats (e.g. `@phinmaed.com`, Student ID regex, Zod schemas), and quarantine statistical outliers (`z-score`/MAD) before they touch derived views | why: offline storage and client requests can be replayed or tampered with before sync | breaks: trusted internal server-to-server migration scripts running inside a locked VPC with pre-validated snapshots | conf: 4 | ev: S-01, A-01 (DB-05, SEC-04, SEC-05), A-02 (Sec 12.3.1), A-03 (Sec 6.2) | status: active #untrusted-edge ^cs-05
 
+- **CS-06** WHEN shipping any schema migration or RLS policy change → DO execute the 5-Role Matrix Test (verifying actual read/write behavior as `anon`, `student/user`, `coordinator/officer`, `supervisor/adviser`, and `admin`) plus cross-tenant isolation (`Tenant A` against `Tenant B` rows), running automated `pgTAP` in CI and manual role-matrix verification as the minimum gate on MVP sprints | why: reading SQL policy text in review misses implicit grants, view bypasses, and cross-tenant leaks | breaks: visual/copy-only frontend commits that touch zero database tables, queries, or auth contracts | conf: 4 | ev: S-02, A-01 (DB-06, SEC-02), A-02 (Sec 12.3.1 Khent rules) | status: active #bypass-testing ^cs-06
+
 ## Open questions (gaps to elicit)
-- [ ] What is my minimum pgTAP test coverage before signing off on a multi-tenant schema migration?
+_All 6 core sub-areas covered._

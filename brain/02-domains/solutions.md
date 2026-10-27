@@ -1,7 +1,7 @@
 ---
 domain: solutions
 prefix: SO
-version: 3
+version: 4
 status: active
 ---
 # Solutions Specialist — How I Think
@@ -14,7 +14,7 @@ In the first 15 minutes on a blank page, I **define the actors, who owns what, t
 2. Derived state vs. immutable transaction logs
 3. Explicit finite state machines for workflows
 4. Procedural & structural efficiency over asset bloat
-5. Disciplined relational scaling before distributed complexity
+5. Disciplined relational scaling & 500-row/2s sync-to-async boundaries
 
 ## Sub-areas (Self-Map)
 | Area | Self (0–3) | Demonstrated (0–3) | Evidence |
@@ -22,9 +22,9 @@ In the first 15 minutes on a blank page, I **define the actors, who owns what, t
 | Constraint-driven architecture (low-cost, no-Docker, pinned stacks) | 3 | 3 | S-01, A-02 (Pinned Stack), A-03, A-05 (FlexSpace) |
 | Offline-first & sync reconciliation (outbox, idempotency, clock skew) | 3 | 3 | S-01, A-01 (DB-05, IR-04) |
 | Append-only storage & materialized read views | 3 | 3 | S-01, A-01 (DB-01, DB-02), A-05 (Agrivet) |
-| Asynchronous processing & write offloading (debounced triggers, queues) | 2 | 3 | S-01, A-01 (DB-03, DB-09) |
+| Asynchronous processing & write offloading (debounced triggers, queues) | 3 | 3 | S-01, S-02, A-01 (DB-03, DB-09) |
 | Integration boundaries & strict RPC contracts | 3 | 3 | S-01, A-01 (DB-05), A-02 (Sec 12.2) |
-| Pragmatic scale limits (simple early vs breaking at 10×) | 3 | 3 | S-01, A-01 (DB-08, DB-09) |
+| Pragmatic scale limits (simple early vs breaking at 10×) | 3 | 3 | S-01, S-02, A-01 (DB-08, DB-09) |
 
 ## Rules
 Grammar: CV-02. IDs `SO-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concrete `ev:` only.
@@ -39,5 +39,7 @@ Grammar: CV-02. IDs `SO-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **SO-05** WHEN processing batch uploads or offline sync queues (CSV student imports, batched price logs) → DO enforce `UNIQUE` idempotency keys (`ON CONFLICT DO NOTHING`), validate and return per-row status so one malformed row never aborts the entire batch, and keep materialized view refreshes off the synchronous write path | why: field networks drop mid-sync and users retry batches; synchronous view refreshes lock hot tables | breaks: strict all-or-nothing double-entry accounting transfers where partial batch commit violates conservation of money | conf: 4 | ev: S-01, A-01 (DB-03, DB-05), A-02 (Sec 12.3.1 Arwin CSV rules) | status: active #batch-resilience ^so-05
 
+- **SO-06** WHEN designing bulk file imports or batch mutations (school cohort CSV uploads, agrivet inventory imports) → DO run synchronous server validation with a pre-commit row-level accept/reject preview for batches ≤ 500 rows and < 2s execution, and switch to client chunking or an async outbox job with a progress bar once batches exceed 500 rows or 2s | why: synchronous HTTP requests time out on serverless platforms above ~500 rows, while async worker infrastructure is unnecessary overhead for single-cohort school uploads | breaks: batches where every row triggers an external third-party API call (e.g. sending 500 transactional emails or provisioning 500 Auth accounts synchronously), which must offload to an async queue even below 500 rows | conf: 4 | ev: S-02, A-01 (DB-05, DB-09), A-02 (Sec 12.3.1 Arwin/Khent upload rules), A-05 (Agrivet) | status: active #sync-async-cutoff ^so-06
+
 ## Open questions (gaps to elicit)
-- [ ] What is my exact row-count or payload-size cutoff for switching a synchronous CSV upload to an asynchronous background job?
+_All 6 core sub-areas covered._

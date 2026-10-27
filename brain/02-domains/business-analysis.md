@@ -1,7 +1,7 @@
 ---
 domain: business-analysis
 prefix: BA
-version: 3
+version: 4
 status: active
 ---
 # Business Analyst — How I Think
@@ -15,6 +15,7 @@ In the first 10 minutes with a new problem or team spec, I **map the actors, who
 3. Spec conflict & edge-case exception detection (expired MOAs, rejected requests, single-holder seats)
 4. 3-minute MVP cut & `LATER.md` scope defense
 5. Pre-empting panel/judge interrogation with citable rule IDs
+6. Compounding data-moat pilot conversion
 
 ## Sub-areas (Self-Map)
 | Area | Self (0–3) | Demonstrated (0–3) | Evidence |
@@ -24,7 +25,7 @@ In the first 10 minutes with a new problem or team spec, I **map the actors, who
 | Invariant & business rule extraction | 3 | 3 | S-01, A-01 (BR01..04), A-05 (FlexSpace, Agrivet) |
 | Scope triage & MVP slicing (1 core user/job) | 3 | 3 | S-01, A-02 (Rule 2, Rule 3) |
 | Data & document lifecycle mapping | 3 | 3 | S-01, A-02 (MOA/deployment flow), A-03 (applications) |
-| Stakeholder alignment & boundary defense | 3 | 3 | S-01, A-05 (Shark Tank Champion, FlexSpace Capstone) |
+| Stakeholder alignment & boundary defense | 3 | 3 | S-01, S-02, A-05 (Shark Tank Champion, FlexSpace Capstone) |
 
 ## Rules
 Grammar: CV-02. IDs `BA-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concrete `ev:` only.
@@ -39,5 +40,7 @@ Grammar: CV-02. IDs `BA-nn`. Mandatory `breaks:` condition for conf ≥ 3. Concr
 
 - **BA-05** WHEN two project documents, teammate guides, or stakeholder requirements contradict each other (e.g. student self time-in/out vs. supervisor-recorded read-only attendance) → DO document the exact conflict in an "Unresolved Decisions" section and ask the owner to resolve it, never guessing or silently picking one in backend code | why: silent guesses create incompatible frontend/backend contracts across teammates | breaks: when an explicit fallback precedence rule is already written in the unified spec for UI-only passes | conf: 4 | ev: S-01, A-02 (Sec 12.4, Sec 15) | status: active #conflict-detection ^ba-05
 
+- **BA-06** WHEN structuring a B2B/institutional SaaS go-to-market (schools, agrivet stores, local hubs) → DO onboard the paying side with a free 1-cycle pilot that accumulates irreplaceable operational history (signed MOAs, verified hours, evaluations, batch logs) and measures admin hours saved, then convert to a Founding-Partner or per-active-seat tier (~₱150/student/sem) while keeping historical read/export access fair | why: solves the marketplace cold-start problem and builds retention through compounding workflow value rather than hostile data lockouts | breaks: one-off transactional consumer tools where users have zero recurring semester/cycle records | conf: 5 | ev: S-02, A-02 (Sec 6, Sec 7), A-05 (Shark Tank Champion, FlexSpace, Agrivet) | status: active #gtm-moat ^ba-06
+
 ## Open questions (gaps to elicit)
-- [ ] How do I price and structure the transition from a free 1-semester school pilot to a paid annual contract without losing coordinator champions?
+_All 6 core sub-areas covered._
