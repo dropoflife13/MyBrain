@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -15,6 +15,7 @@ import {
   Download,
   ExternalLink,
   GitFork,
+  Search,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
@@ -23,9 +24,11 @@ import {
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
+import CommandPalette from '../components/CommandPalette';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { BrainDocNode, getBrainData } from '../lib/brain-parser';
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
@@ -70,6 +73,32 @@ export default function LandingPage() {
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedPluginSnippet, setCopiedPluginSnippet] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
+  const graphData = useMemo(() => getBrainData({ nodeCount: 360 }), []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCmdPaletteOpen((prev) => !prev);
+        return;
+      }
+      if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName) &&
+        !(e.target as HTMLElement)?.isContentEditable
+      ) {
+        e.preventDefault();
+        setIsCmdPaletteOpen(true);
+        return;
+      }
+      if (e.key === 'Escape' && isCmdPaletteOpen) {
+        setIsCmdPaletteOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCmdPaletteOpen]);
 
   const handleOpenMind = () => {
     router.push('/console');
@@ -183,8 +212,22 @@ export default function LandingPage() {
           </nav>
         </div>
 
-        {/* Right: Theme Toggle + Fork + Console CTA */}
+        {/* Right: Search + Theme Toggle + Fork + Console CTA */}
         <div className="flex items-center justify-end gap-2.5 pointer-events-auto">
+          {/* Global Search Palette Button (GR-04) */}
+          <button
+            type="button"
+            onClick={() => setIsCmdPaletteOpen(true)}
+            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/85 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-200 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            title="Search Rules & Agents (Ctrl+K / ⌘K)"
+          >
+            <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+            <span className="hidden md:inline">Search</span>
+            <kbd className="hidden lg:inline-block text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
+              ⌘K
+            </kbd>
+          </button>
+
           <ThemeToggle />
 
           <button
@@ -856,6 +899,18 @@ export default function LandingPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Global Cmd+K Search Palette (GR-04) */}
+      <CommandPalette
+        isOpen={isCmdPaletteOpen}
+        onClose={() => setIsCmdPaletteOpen(false)}
+        nodes={graphData.nodes}
+        onSelectNode={(node) => {
+          const cleanId = String(node.id).split('::')[0];
+          router.push(`/console?node=${encodeURIComponent(cleanId)}`);
+        }}
+        onNavigate={(href) => router.push(href)}
+      />
     </div>
   );
 }

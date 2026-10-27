@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Brain3D from '../../components/Brain3D';
+import CommandPalette from '../../components/CommandPalette';
 import NeuralLoader from '../../components/NeuralLoader';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import {
@@ -56,6 +57,7 @@ export default function Home() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [queryText, setQueryText] = useState<string>('');
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
+  const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
@@ -149,17 +151,65 @@ export default function Home() {
     setHoveredNode(null);
   };
 
-  // Pressing Escape closes the sidebar and deselects the node (or closes Share modal)
+  // Pressing Escape closes modals; Cmd+K and '/' open Global Command Palette (GR-04)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsCmdPaletteOpen((prev) => !prev);
+        return;
+      }
+      if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName) &&
+        !(e.target as HTMLElement)?.isContentEditable
+      ) {
+        e.preventDefault();
+        setIsCmdPaletteOpen(true);
+        return;
+      }
       if (e.key === 'Escape') {
-        setSelectedNode(null);
-        setIsShareOpen(false);
+        if (isCmdPaletteOpen) {
+          setIsCmdPaletteOpen(false);
+        } else {
+          setSelectedNode(null);
+          setIsShareOpen(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isCmdPaletteOpen]);
+
+  // Deep-link support for ?node=<id> URL parameter
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const targetId = params.get('node');
+      if (targetId) {
+        const found = graphData.nodes.find(
+          (n) =>
+            n.id.toLowerCase() === targetId.toLowerCase() ||
+            String(n.id).toLowerCase().startsWith(`${targetId.toLowerCase()}::`)
+        );
+        if (found) {
+          setSelectedNode(found);
+          const ruleMatch = String(found.id).match(/^([A-Z]{1,4}-\d+)/);
+          if (ruleMatch) setQueryText(ruleMatch[1]);
+        }
+      }
+    }
+  }, [graphData.nodes]);
+
+  const handleSelectNodeFromPalette = (node: BrainDocNode) => {
+    setSelectedNode(node);
+    const ruleMatch = String(node.id).match(/^([A-Z]{1,4}-\d+)/);
+    if (ruleMatch) {
+      setQueryText(ruleMatch[1]);
+    } else {
+      setQueryText('');
+    }
+  };
 
   const handleCloseSidebar = () => {
     setSelectedNode(null);
@@ -305,8 +355,22 @@ export default function Home() {
           </nav>
         </div>
 
-        {/* Right: Vault State Switcher + Theme Toggle + Auto-Spin */}
+        {/* Right: Search Palette Trigger + Vault State Switcher + Theme Toggle + Auto-Spin */}
         <div className="flex items-center justify-end gap-2 pointer-events-auto">
+          {/* Global Search Palette Button (GR-04) */}
+          <button
+            type="button"
+            onClick={() => setIsCmdPaletteOpen(true)}
+            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            title="Search Rules & Agents (Ctrl+K / ⌘K)"
+          >
+            <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+            <span className="hidden md:inline">Search</span>
+            <kbd className="hidden lg:inline-block text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
+              ⌘K
+            </kbd>
+          </button>
+
           <div className="h-10 hidden sm:flex items-center justify-center p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
             <button
               type="button"
@@ -892,6 +956,14 @@ export default function Home() {
           <NeuralLoader key="cortex-neural-loader" />
         )}
       </AnimatePresence>
+
+      {/* 10. Global Cmd+K Search Palette (GR-04) */}
+      <CommandPalette
+        isOpen={isCmdPaletteOpen}
+        onClose={() => setIsCmdPaletteOpen(false)}
+        nodes={graphData.nodes}
+        onSelectNode={handleSelectNodeFromPalette}
+      />
     </main>
   );
 }
