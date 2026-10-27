@@ -343,7 +343,138 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   },
 ];
 
-export function getBrainData(options?: { nodeCount?: number }): BrainGraphData {
+const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
+  id: string;
+  category: BrainDocNode['category'];
+  anchor: [number, number, number];
+  markdown: string;
+}> = [
+  ...VAULT_MARKDOWN_SOURCES.filter((s) => s.category === 'agent'),
+  {
+    id: 'ABOUT-ME',
+    category: 'identity',
+    anchor: [0, 20, -28],
+    markdown: `# About Me — Practitioner Intake (status: empty)
+- **STATUS-00** Vault is unassessed (0 personal rules). Fill out 01-identity/ABOUT-ME.md or run Launcher L-09 (AI Interview) before taking THE-TEST.md.
+- **STEP-01** Complete §1 Snapshot, §2 Domains & Years, §3 Shipped Systems, and §4 Failure Modes to calibrate your diagnostic quiz.`,
+  },
+  {
+    id: 'OPERATING-PRINCIPLES',
+    category: 'identity',
+    anchor: [-14, 24, -12],
+    markdown: `# Operating Principles — Tier 0 Governance (status: empty)
+- **EMPTY-OP** _None yet._ Run Launcher L-01 (05-elicitation/THE-TEST.md) to excavate your non-negotiable engineering principles.`,
+  },
+  {
+    id: 'TASTE',
+    category: 'identity',
+    anchor: [14, 24, -12],
+    markdown: `# Taste — What I Call Good Work (status: empty)
+- **EMPTY-TA** _None yet._ Take the Visceral Cringe Test in 05-elicitation/THE-TEST.md to define what you respect vs. what you reject as slop.`,
+  },
+  {
+    id: 'cybersec',
+    category: 'domain',
+    anchor: [18, 22, 6],
+    markdown: `# Cybersecurity Specialist — How I Think (status: draft • 0 Rules)
+- **EMPTY-CS** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Cybersecurity scenarios in 05-elicitation/THE-TEST.md to earn CS-nn rules.`,
+  },
+  {
+    id: 'solutions',
+    category: 'domain',
+    anchor: [-18, 22, 6],
+    markdown: `# Solutions Specialist — How I Think (status: draft • 0 Rules)
+- **EMPTY-SO** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Architecture Trade-Off Triads in 05-elicitation/THE-TEST.md to earn SO-nn rules.`,
+  },
+  {
+    id: 'business-analysis',
+    category: 'domain',
+    anchor: [16, 18, 30],
+    markdown: `# Business Analyst — How I Think (status: draft • 0 Rules)
+- **EMPTY-BA** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Scope & Stakeholder scenarios in 05-elicitation/THE-TEST.md to earn BA-nn rules.`,
+  },
+  {
+    id: 'ui-frontend',
+    category: 'domain',
+    anchor: [-16, 18, 30],
+    markdown: `# UI & Frontend Specialist — How I Think (status: draft • 0 Rules)
+- **EMPTY-UI** _None yet (0 active rules)._ Rate your Self-Map (0–3) and run the Visceral Cringe Test in 05-elicitation/THE-TEST.md to earn UI-nn rules.`,
+  },
+  {
+    id: 'HEURISTICS',
+    category: 'heuristic',
+    anchor: [-20, -4, -30],
+    markdown: `# Heuristics — Cross-Domain Judgment (status: empty • 0 Rules)
+- **EMPTY-H** _None yet._ Promote validated cross-domain rules from 06-raw/inbox.md using Launcher L-06 once conf >= 3.`,
+  },
+  {
+    id: 'RED-FLAGS',
+    category: 'heuristic',
+    anchor: [12, -10, 26],
+    markdown: `# Red Flags — Visceral Blockers (status: empty • 0 Rules)
+- **EMPTY-RF** _None yet._ Document the signals in a PR, schema, or UI that make you immediately halt approval.`,
+  },
+];
+
+export function getBrainData(options?: {
+  nodeCount?: number;
+  mode?: 'assessed' | 'blank';
+}): BrainGraphData {
+  const mode = options?.mode ?? 'assessed';
+
+  if (mode === 'blank') {
+    const blankDocs: BrainDocNode[] = BLANK_VAULT_MARKDOWN_SOURCES.map((src) => {
+      const parsed = parseMarkdownNode(src.id, src.markdown, src.category);
+      return {
+        ...parsed,
+        fx: src.anchor[0],
+        fy: src.anchor[1],
+        fz: src.anchor[2],
+      };
+    });
+
+    const nodes: BrainDocNode[] = [
+      {
+        id: 'hub',
+        name: 'Unassessed Cortex Seed',
+        description: 'Blank-slate vault (0 personal rules). Run Launcher L-01 to assess yourself.',
+        group: 2,
+        category: 'hub',
+        val: 2.0,
+        fx: 0,
+        fy: 0,
+        fz: 0,
+      },
+      ...blankDocs,
+    ];
+
+    const links: BrainDocLink[] = [];
+    const coreAgents = blankDocs.filter((d) => d.group === 1);
+    const emptyFiles = blankDocs.filter((d) => d.group === 2);
+
+    // Connect the 7 Core Agent Gatekeepers in their perimeter ring + to central seed
+    for (let i = 0; i < coreAgents.length; i++) {
+      links.push({ source: 'hub', target: coreAgents[i].id });
+      links.push({
+        source: coreAgents[i].id,
+        target: coreAgents[(i + 1) % coreAgents.length].id,
+      });
+    }
+
+    // Connect each empty domain/identity slot to the central seed and nearest agent gate
+    emptyFiles.forEach((doc, idx) => {
+      links.push({ source: 'hub', target: doc.id });
+      if (coreAgents.length > 0) {
+        links.push({
+          source: coreAgents[idx % coreAgents.length].id,
+          target: doc.id,
+        });
+      }
+    });
+
+    return { nodes, links };
+  }
+
   const totalConstellationNodes = options?.nodeCount ?? 360;
   const procedural = buildBrainGraph({
     nodeCount: totalConstellationNodes,

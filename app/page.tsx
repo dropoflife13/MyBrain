@@ -4,15 +4,19 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
+  Check,
+  Copy,
   Cpu,
   Download,
   ExternalLink,
+  Eye,
   FileCode2,
   GitFork,
   Pause,
   RotateCw,
   Search,
   ShieldCheck,
+  Sparkles,
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
@@ -30,6 +34,8 @@ const AGENT_DOCK: Array<{ id: string; code: string; label: string }> = [
   { id: 'growthagent', code: 'GR', label: 'Growth' },
 ];
 
+const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md. My vault is currently a blank slate (0 rules). Run Launcher L-01 to assess me: guide me through the Self-Map (0-3) and the 3 Fast Excavation Micro-Triggers (Artifact Archaeology, Visceral Cringe Test, and 30-Second Trade-Off Triads) one question at a time so I can earn my own rules.`;
+
 export default function Home() {
   const [hoveredNode, setHoveredNode] = useState<BrainDocNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<BrainDocNode | null>(null);
@@ -38,15 +44,23 @@ export default function Home() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [queryText, setQueryText] = useState<string>('');
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
+  const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
+  const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
   // Custom Boot Loader State
   const [isBooting, setIsBooting] = useState<boolean>(true);
   const [bootProgress, setBootProgress] = useState<number>(12);
   const [sceneReady, setSceneReady] = useState<boolean>(false);
 
-  const [graphData, setGraphData] = useState<BrainGraphData>(() =>
-    getBrainData({ nodeCount: 360 })
+  const [assessedGraphData, setAssessedGraphData] = useState<BrainGraphData>(() =>
+    getBrainData({ nodeCount: 360, mode: 'assessed' })
   );
+  const blankGraphData = useMemo(
+    () => getBrainData({ mode: 'blank' }),
+    []
+  );
+
+  const graphData = vaultMode === 'blank' ? blankGraphData : assessedGraphData;
 
   // Smooth Boot Loader Progression
   useEffect(() => {
@@ -87,7 +101,7 @@ export default function Home() {
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (active && payload && Array.isArray(payload.nodes) && payload.nodes.length > 0) {
-          setGraphData(payload);
+          setAssessedGraphData(payload);
         }
       })
       .catch(() => {});
@@ -95,6 +109,20 @@ export default function Home() {
       active = false;
     };
   }, []);
+
+  const handleCopyPrompt = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(SELF_ASSESSMENT_PROMPT).catch(() => {});
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 2200);
+    }
+  };
+
+  const handleToggleVaultMode = (nextMode: 'assessed' | 'blank') => {
+    setVaultMode(nextMode);
+    setSelectedNode(null);
+    setHoveredNode(null);
+  };
 
   // Pressing Escape closes the sidebar and deselects the node (or closes Share modal)
   useEffect(() => {
@@ -249,8 +277,37 @@ export default function Home() {
           })}
         </nav>
 
-        {/* Right: Auto-Spin Toggle Control */}
+        {/* Right: Vault State Switcher (Assessed vs Blank Fork) + Auto-Spin Control */}
         <div className="pointer-events-auto flex items-center gap-2">
+          <div className="hidden sm:flex items-center p-1 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <button
+              type="button"
+              onClick={() => handleToggleVaultMode('assessed')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                vaultMode === 'assessed'
+                  ? 'bg-[#00ffff]/15 text-[#00ffff] border border-cyan-400/35 font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="View Neil's fully assessed 360-node Cortex"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Assessed (86 Rules)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleVaultMode('blank')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                vaultMode === 'blank'
+                  ? 'bg-amber-400/15 text-amber-300 border border-amber-400/35 font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+              title="Preview what a freshly forked Blank-Slate Brain looks like before self-assessment"
+            >
+              <Eye className="w-3 h-3" />
+              <span>Blank Fork (0 Rules)</span>
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setAutoSpin((prev) => !prev)}
@@ -270,6 +327,31 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+      {/* Blank Fork Preview Mode Banner */}
+      <AnimatePresence>
+        {vaultMode === 'blank' && (
+          <motion.div
+            key="blank-mode-banner"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#09090b]/90 backdrop-blur-xl border border-amber-400/35 shadow-2xl text-xs font-mono"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-amber-200">
+              BLANK-SLATE FORK PREVIEW: <strong className="text-white">0 Personal Rules</strong> (Only the 7 Agent Gatekeepers + Empty Slots). You must assess yourself to grow your Cortex.
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsShareOpen(true)}
+              className="px-2.5 py-1 rounded bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 cursor-pointer whitespace-nowrap"
+            >
+              Take Self-Assessment →
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 4. Dynamic Cursor-Following Dark Glass Tooltip (Shows ONLY Title) */}
       <AnimatePresence>
@@ -441,7 +523,7 @@ export default function Home() {
         </Button>
       </div>
 
-      {/* 7. Share / Export Modal ("Want your own Brain Vault? Clone the template.") */}
+      {/* 7. Share / Export Modal ("Fork a Blank-Slate Brain — Assess Yourself") */}
       <AnimatePresence>
         {isShareOpen && (
           <motion.div
@@ -458,7 +540,7 @@ export default function Home() {
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.18 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl bg-[#09090b] border border-white/15 p-6 shadow-2xl space-y-5"
+              className="w-full max-w-lg rounded-2xl bg-[#09090b] border border-white/15 p-6 shadow-2xl space-y-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -468,11 +550,15 @@ export default function Home() {
                     className="w-9 h-9 object-contain"
                   />
                   <div>
-                    <h3 className="text-base font-semibold text-white">
-                      Want your own Brain Vault? Clone the template.
-                    </h3>
-                    <p className="text-xs text-zinc-400 mt-0.5">
-                      Deploy your own 7-Agent Gate Suite & Procedural Markdown Brain.
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-semibold text-white">
+                        Want your own Brain Vault? Clone the template.
+                      </h3>
+                      <Badge variant="default">0 RULES • BLANK SLATE</Badge>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                      You can&apos;t copy-paste someone else&apos;s judgment. The forked template starts{' '}
+                      <span className="text-white font-medium">100% empty (status: empty)</span> so you must assess yourself to earn every synaptic node.
                     </p>
                   </div>
                 </div>
@@ -486,31 +572,101 @@ export default function Home() {
                 </Button>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 text-xs font-mono text-zinc-300 space-y-1">
-                <div className="text-zinc-500">// Includes:</div>
-                <div>• /agents (PM, UX, GR, SD, IR, DB, SEC Gatekeepers)</div>
-                <div>• /brain (01-identity, 02-domains, 03-heuristics, 07-meta)</div>
-                <div>• 3D Synaptic Constellation WebGL Console</div>
+              {/* 3-Step Self-Assessment Pipeline */}
+              <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 text-xs font-mono text-zinc-300 space-y-2">
+                <div className="text-[11px] text-[#00ffff] uppercase tracking-wider font-semibold">
+                  // How You Build Your Own Cortex (Self-Assessment Loop):
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-400/15 text-[#00ffff] text-[10px] font-bold">
+                    01
+                  </span>
+                  <div>
+                    <span className="text-white font-semibold">01-identity/ABOUT-ME.md</span> — Fill out your background or run <span className="text-[#00ffff]">Launcher L-09</span> (AI Interview).
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-400/15 text-[#00ffff] text-[10px] font-bold">
+                    02
+                  </span>
+                  <div>
+                    <span className="text-white font-semibold">05-elicitation/THE-TEST.md</span> — Run <span className="text-[#00ffff]">Launcher L-01</span> (Self-Map + Artifact Archaeology + Visceral Cringe Test + 30s Trade-Off Triads).
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-400/15 text-[#00ffff] text-[10px] font-bold">
+                    03
+                  </span>
+                  <div>
+                    <span className="text-white font-semibold">02-domains/*.md</span> — Promote proven rules (<span className="text-emerald-400">conf &ge; 3</span> + <span className="text-amber-300">breaks:</span> condition) to light up your 3D Constellation.
+                  </div>
+                </div>
               </div>
 
+              {/* Copy Launcher L-01 Self-Assessment Prompt */}
+              <div className="p-3 rounded-xl bg-zinc-950 border border-white/10 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">
+                    Starter Prompt (Paste into Claude / Cursor / Antigravity):
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyPrompt}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-[11px] font-mono text-[#00ffff] transition-colors cursor-pointer"
+                  >
+                    {copiedPrompt ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy L-01 Prompt</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-[11px] font-mono text-zinc-400 line-clamp-2 leading-relaxed">
+                  &ldquo;{SELF_ASSESSMENT_PROMPT}&rdquo;
+                </p>
+              </div>
+
+              {/* Preview Blank Fork in 3D Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  handleToggleVaultMode(vaultMode === 'blank' ? 'assessed' : 'blank');
+                  setIsShareOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-amber-400/35 bg-amber-400/10 hover:bg-amber-400/20 text-xs font-mono text-amber-200 transition-colors cursor-pointer"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-300" />
+                <span>
+                  {vaultMode === 'blank'
+                    ? "Switch Back to Neil's Assessed 3D Cortex (86 Rules)"
+                    : 'Preview Blank-Slate Fork in 3D (0 Personal Rules)'}
+                </span>
+              </button>
+
               <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <a
+                  href="/brain-template.zip"
+                  download="brain-vault-blank-template.zip"
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#00ffff] px-4 py-2.5 text-xs font-mono font-semibold text-zinc-950 hover:bg-cyan-300 transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Blank .zip (0 Rules)</span>
+                </a>
+
                 <a
                   href="https://github.com/dropoflife13/MyBrain"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#00ffff] px-4 py-2.5 text-xs font-mono font-semibold text-zinc-950 hover:bg-cyan-300 transition-colors"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" />
-                  <span>Clone on GitHub</span>
-                </a>
-
-                <a
-                  href="/brain-template.zip"
-                  download="brain-vault-template.zip"
                   className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-zinc-900 px-4 py-2.5 text-xs font-mono font-medium text-zinc-200 hover:bg-zinc-800 transition-colors"
                 >
-                  <Download className="w-3.5 h-3.5 text-[#00ffff]" />
-                  <span>Download .zip</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-[#00ffff]" />
+                  <span>Clone on GitHub</span>
                 </a>
               </div>
             </motion.div>
