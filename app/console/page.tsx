@@ -436,13 +436,12 @@ export default function Home() {
             <span className="text-amber-200">
               BLANK-SLATE FORK PREVIEW: <strong className="text-white">0 Personal Rules</strong> (Only the 7 Agent Gatekeepers + Empty Slots). You must assess yourself to grow your Cortex.
             </span>
-            <button
-              type="button"
-              onClick={() => setIsShareOpen(true)}
-              className="px-2.5 py-1 rounded bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 cursor-pointer whitespace-nowrap"
+            <Link
+              href="/assess"
+              className="px-2.5 py-1 rounded bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 cursor-pointer whitespace-nowrap inline-flex items-center gap-1"
             >
-              Take Self-Assessment →
-            </button>
+              <span>Take Self-Assessment Quiz (L-01) →</span>
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
@@ -743,6 +742,15 @@ export default function Home() {
                   &ldquo;{SELF_ASSESSMENT_PROMPT}&rdquo;
                 </p>
               </div>
+
+              {/* In-Browser Self-Assessment Quiz Link */}
+              <Link
+                href="/assess"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-xs font-mono font-bold text-cyan-300 transition-colors shadow-[0_0_15px_rgba(0,255,255,0.2)]"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#00ffff]" />
+                <span>Take In-Browser Self-Assessment Quiz (L-01) →</span>
+              </Link>
 
               {/* Preview Blank Fork in 3D Button */}
               <button

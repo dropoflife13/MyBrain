@@ -206,6 +206,13 @@ export default function LandingPage() {
               <BookOpen className="w-3.5 h-3.5" />
               <span>Guide</span>
             </Link>
+            <Link
+              href="/assess"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Assess (L-01)</span>
+            </Link>
             <a href="#faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               FAQ
             </a>
@@ -874,6 +881,14 @@ export default function LandingPage() {
                   &ldquo;{SELF_ASSESSMENT_PROMPT}&rdquo;
                 </p>
               </div>
+
+              <Link
+                href="/assess"
+                className="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 px-4 py-2.5 text-xs font-mono font-bold text-cyan-300 transition-colors shadow-[0_0_15px_rgba(0,255,255,0.2)]"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#00ffff]" />
+                <span>Take In-Browser Self-Assessment Quiz (L-01) →</span>
+              </Link>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 <a
