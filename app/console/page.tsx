@@ -366,12 +366,12 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setIsMatrixOpen(true)}
-            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
             title="Inspect Brain ↔ 7 Agent Matrix & Resolved Contradictions"
           >
             <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span className="hidden xl:inline">Governance Matrix</span>
-            <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+            <span className="hidden 2xl:inline">Governance Matrix</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
               0 Overlaps
             </span>
           </button>
@@ -380,12 +380,12 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setIsCmdPaletteOpen(true)}
-            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
             title="Search Rules & Agents (Ctrl+K / ⌘K)"
           >
             <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span className="hidden md:inline">Search</span>
-            <kbd className="hidden lg:inline-block text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
+            <span className="hidden xl:inline">Search</span>
+            <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
               ⌘K
             </kbd>
           </button>
@@ -845,20 +845,29 @@ export default function Home() {
             <div className="pointer-events-none absolute bottom-6 left-6 z-10 w-8 h-8 border-b-2 border-l-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
             <div className="pointer-events-none absolute bottom-6 right-6 z-10 w-8 h-8 border-b-2 border-r-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
 
-            {/* Main Hardened Terminal Box */}
+            {/* Fixed Floating Back to Home Button */}
+            <Link
+              href="/"
+              className="fixed top-5 left-5 z-[210] inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-950/90 border border-red-500/60 hover:bg-red-900/90 text-xs font-mono text-red-100 shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all cursor-pointer backdrop-blur-xl"
+            >
+              <ArrowLeft className="w-4 h-4 text-red-300" />
+              <span>← Back to Safety (Home)</span>
+            </Link>
+
+            {/* Main Hardened Terminal Box (Constrained & Scrollable) */}
             <motion.div
               initial={{ scale: 0.95, y: 10 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="relative z-10 w-full max-w-2xl rounded-2xl bg-[#090203]/95 border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)] p-6 md:p-8 space-y-5 font-mono backdrop-blur-2xl"
+              className="relative z-10 w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl bg-[#090203]/95 border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)] p-5 sm:p-7 space-y-4 font-mono backdrop-blur-2xl"
               style={{
                 fontFamily:
                   "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               }}
             >
               {/* Terminal Title Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/30 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/30 pb-3">
                 <div className="flex items-center gap-3">
                   <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-red-950/80 border border-red-500/60 shadow-[0_0_12px_rgba(239,68,68,0.5)]">
                     <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
@@ -873,11 +882,22 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_8px_#ef4444]" />
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-bold tracking-wider">
-                    SYSTEM HALTED
-                  </span>
+                <div className="flex items-center gap-2.5">
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-[11px] text-red-200 transition-colors cursor-pointer"
+                    title="Exit to Landing Page"
+                  >
+                    <ArrowLeft className="w-3 h-3" />
+                    <span>Home</span>
+                  </Link>
+
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_8px_#ef4444]" />
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-bold tracking-wider">
+                      HALTED
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -902,7 +922,7 @@ export default function Home() {
                   </span>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                   {agentGate.missingAgents.map((file) => {
                     const cleanName = file.replace(/^[^\w.-]+/, '').split(' ')[0];
                     return (
@@ -946,7 +966,15 @@ export default function Home() {
               </div>
 
               {/* Remediation Action Controls */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-1">
+                <Link
+                  href="/"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-lg border border-red-500/40 bg-red-950/60 hover:bg-red-900/80 text-xs font-bold text-red-200 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-red-400" />
+                  <span>Exit to Home</span>
+                </Link>
+
                 <button
                   type="button"
                   onClick={handleRecheckGate}
@@ -958,8 +986,8 @@ export default function Home() {
                   />
                   <span>
                     {isCheckingGate
-                      ? 'Re-Verifying Filesystem...'
-                      : 'Re-Verify Gate (Check Files)'}
+                      ? 'Re-Verifying...'
+                      : 'Re-Verify Gate'}
                   </span>
                 </button>
 
@@ -969,7 +997,7 @@ export default function Home() {
                   className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-zinc-900/90 hover:bg-zinc-800 px-4 py-2.5 text-xs text-red-200 transition-colors"
                 >
                   <Download className="w-3.5 h-3.5 text-red-400" />
-                  <span>Download Recovery Bundle</span>
+                  <span>Download Recovery</span>
                 </a>
               </div>
             </motion.div>

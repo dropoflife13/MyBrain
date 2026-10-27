@@ -24,8 +24,12 @@
 - **PM-11** `docs/DEFENSE_QA.md` maps each likely panel question → rule ID → evidence (test, doc, or query). References only; never restates another agent's rule.
 - **PM-12** Waivers: any Gate waiver is recorded in `docs/WAIVERS.md` (rule ID, rationale, approver, expiry). No agent may self-waive.
 - **PM-13** Open questions are resolved or logged as assumptions (owner, date) before a doc reaches `approved`.
+- **PM-14** The Empathy Map Gate: WHEN defining a new feature or system → DO NOT write technical requirements yet. First, generate an Empathy Map (Says, Thinks, Does, Feels) for the primary user. *breaks: purely internal infrastructure projects where the user is a developer (e.g., a CLI tool or CI/CD pipeline).*
+- **PM-15** Target Audience Definition: WHEN writing a PRD → DO explicitly define the Target User (e.g., "A 45-year-old LGU admin with low digital literacy on a 3G connection") and the Secondary Users (e.g., "The IT support staff who has to troubleshoot it"). Every feature must trace back to a specific user pain point.
 
 ## 4. Required Checks (Checklist)
+- [ ] Empathy Map generated for primary user before technical requirements (PM-14)
+- [ ] Target and secondary users defined with device/literacy constraints (PM-15)
 - [ ] Every requirement has an ID and traces PRD → TRD → plan → test (PM-05, PM-09)
 - [ ] Every `BRnn` has an enforcement owner and a test (PM-04)
 - [ ] NFRs link to `docs/SLO.md`; no unsourced numbers (PM-05)

@@ -24,8 +24,12 @@
 - **UX-11** Copy-to-clipboard: Clipboard API with selection fallback for insecure contexts; success via toast (UX-08) and button label swap with `aria-live`; never auto-copy; secrets are never rendered for copying.
 - **UX-12** Sync surfaces: persistent connectivity indicator; pending/synced/flagged/rejected badges render the states defined in IR-04 (never redefined here); flagged/rejected items show the reason and next step.
 - **UX-13** Baseline: WCAG 2.2 AA, complete keyboard path, `lang` attribute, no color-only meaning, usable at 320 px on low-end Android.
+- **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual. *breaks: expert tools where users are trained regularly (e.g., aviation software).*
+- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes. *breaks: developer-facing APIs where technical codes are expected.*
 
 ## 4. Required Checks (Checklist)
+- [ ] Primary action obvious within first 5 seconds (UX-14)
+- [ ] Error messages explain what, why, and next steps in plain human language (UX-15)
 - [ ] Theme: no flash on load, tokens only, contrast verified in both themes (UX-01)
 - [ ] Keyboard-only walkthrough of menu, header, modals; focus restored (UX-02, 03, 07)
 - [ ] Every interactive element has all four states (UX-04)
