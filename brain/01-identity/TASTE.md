@@ -1,6 +1,6 @@
 ---
 type: taste
-version: 2
+version: 3
 status: active
 ---
 # Taste — What I Call Good Work
@@ -12,6 +12,7 @@ Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`). Format: `- **TA-nn** <s
 - **TA-02** Studio-grade spatial and video experiences engineered for zero jank: procedural Three.js geometry over bloated downloads, and DOM-persistent preloaded media (`grid-rows-[0fr]` → `[1fr]`) with zero black flash on hover | conf: 5 | ev: S-01, A-03 (Sec 2, Sec 3), A-04 | status: active ^ta-02
 - **TA-03** Strict typographic rhythm: defined scale (32/24/18/15/12px), geometric headings (Satoshi/Inter Tight), clean UI body (Inter), and monospace (`JetBrains Mono`) for IDs, timers, and numeric telemetry | conf: 5 | ev: S-01, A-02 (Sec 10.5), A-03 (Sec 3, Sec 4) | status: active ^ta-03
 - **TA-04** Flash-free dual theming: synchronous inline `<head>` script sets dark/light state before first paint, paired with WCAG AA verified contrast tokens in both themes | conf: 5 | ev: S-01, A-01 (UX-01), A-02 (Sec 10.4), A-03 (Sec 4.4) | status: active ^ta-04
+- **TA-13** Video-editor pacing and storyboarding: enforce the 10-second rule (cut dead air, deliver the hook/payoff immediately like CITEMAS's 10s reel cut and Dugtong's 3-minute MVP flow) and structure every user flow as a storyboarded timeline (Problem → Friction → 'Aha' Action → Verified Outcome) | conf: 5 | ev: S-01 (Step 3), A-02 (Rule 3), A-03 (Sec 3), A-05 (Premiere Pro/CapCut) | status: active ^ta-13
 
 ## Bad work smells like
 - **TA-05** Generic "AI dashboard slop": purple/neon gradients, glowing borders, bouncy hover scaling (`scale-105`), and oversized decorative cards | conf: 5 | ev: S-01, A-02 (Sec 10) | status: active ^ta-05

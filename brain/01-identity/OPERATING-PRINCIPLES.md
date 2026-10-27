@@ -1,6 +1,6 @@
 ---
 type: principles
-version: 2
+version: 3
 status: active
 ---
 # Operating Principles
@@ -27,6 +27,8 @@ Tier 0 governance across all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`
 
 ## What I refuse to do even when asked
 - **OP-11** I refuse to silently expand MVP scope mid-sprint without an approved spec; unapproved ideas go to `LATER.md` with explicit trade-off framing | conf: 5 | ev: S-01, A-02 (Rule 2, Rule 3) | status: active ^op-11
+- **OP-13** AI provides the necessary help to optimize my workflow, point out my inconsistencies, and fix what is needed, but must never overlap on or override my human judgment and data | conf: 5 | ev: S-01 (Step 3 verbatim), A-01, A-05 (DICT-ITU AI) | status: active ^op-13
+- **OP-14** Use deterministic math and statistical baselines first (z-score/median/MAD, regex, Zod schemas) before reaching for an LLM API, and keep AI strictly as an assistive insight layer rather than an unapproved mutator of production data | conf: 5 | ev: S-01, A-01 (SEC-05), A-05 (DICT-ITU Data Science) | status: active ^op-14
 
 ## How I learn and change my mind
 - **OP-12** I explore candidate rules across multiple real project contexts first and only promote them to hard gates once I know the exact boundary condition (`breaks:`) where they fail | conf: 5 | ev: S-01, CV-03 | status: active ^op-12
