@@ -14,6 +14,7 @@ import {
   Eye,
   FileCode2,
   GitFork,
+  Layers,
   Pause,
   RefreshCw,
   RotateCw,
@@ -25,6 +26,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Brain3D from '../../components/Brain3D';
+import AuditInspector from '../../components/AuditInspector';
 import CommandPalette from '../../components/CommandPalette';
 import NeuralLoader from '../../components/NeuralLoader';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -58,6 +60,7 @@ export default function Home() {
   const [queryText, setQueryText] = useState<string>('');
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
+  const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
@@ -171,6 +174,8 @@ export default function Home() {
       if (e.key === 'Escape') {
         if (isCmdPaletteOpen) {
           setIsCmdPaletteOpen(false);
+        } else if (isMatrixOpen) {
+          setIsMatrixOpen(false);
         } else {
           setSelectedNode(null);
           setIsShareOpen(false);
@@ -357,6 +362,20 @@ export default function Home() {
 
         {/* Right: Search Palette Trigger + Vault State Switcher + Theme Toggle + Auto-Spin */}
         <div className="flex items-center justify-end gap-2 pointer-events-auto">
+          {/* Governance Matrix & Contradiction Inspector (GR-04, X-01..05) */}
+          <button
+            type="button"
+            onClick={() => setIsMatrixOpen(true)}
+            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            title="Inspect Brain ↔ 7 Agent Matrix & Resolved Contradictions"
+          >
+            <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+            <span className="hidden xl:inline">Governance Matrix</span>
+            <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+              0 Overlaps
+            </span>
+          </button>
+
           {/* Global Search Palette Button (GR-04) */}
           <button
             type="button"
@@ -964,6 +983,24 @@ export default function Home() {
           <NeuralLoader key="cortex-neural-loader" />
         )}
       </AnimatePresence>
+
+      {/* Governance Matrix & Contradiction Inspector Modal */}
+      <AuditInspector
+        isOpen={isMatrixOpen}
+        onClose={() => setIsMatrixOpen(false)}
+        auditReport={assessedGraphData.vaultAudit}
+        onSelectNode={(nodeId) => {
+          const found = graphData.nodes.find(
+            (n) =>
+              n.id.toLowerCase() === nodeId.toLowerCase() ||
+              String(n.id).toLowerCase().startsWith(`${nodeId.toLowerCase()}::`)
+          );
+          if (found) {
+            setSelectedNode(found);
+            setQueryText(nodeId);
+          }
+        }}
+      />
 
       {/* 10. Global Cmd+K Search Palette (GR-04) */}
       <CommandPalette
