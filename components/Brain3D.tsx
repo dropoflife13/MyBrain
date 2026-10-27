@@ -17,6 +17,8 @@ export interface Brain3DProps {
   onNodeClick?: (node: BrainDocNode | null) => void;
   onReady?: () => void;
   onFpsUpdate?: (fps: number) => void;
+  /** When set, nodes whose clean id is not in this set are dimmed. */
+  focusIds?: Set<string> | null;
 }
 
 export default function Brain3D({
@@ -30,6 +32,7 @@ export default function Brain3D({
   onNodeClick,
   onReady,
   onFpsUpdate,
+  focusIds = null,
 }: Brain3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { resolvedTheme } = useTheme();
@@ -49,6 +52,7 @@ export default function Brain3D({
 
   // Camera lerp target refs when locking/unlocking focus
   const desiredCameraPosRef = useRef<THREE.Vector3 | null>(null);
+  const focusIdsRef = useRef<Set<string> | null>(focusIds);
   const desiredTargetPosRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const isReturningHomeRef = useRef<boolean>(false);
 
@@ -73,6 +77,19 @@ export default function Brain3D({
     onReadyRef.current = onReady;
     onFpsUpdateRef.current = onFpsUpdate;
   }, [onNodeHover, onNodeClick, onReady, onFpsUpdate]);
+
+  // Re-apply visual state whenever the gate filter changes
+  useEffect(() => {
+    focusIdsRef.current = focusIds;
+    if (applyVisualStateRef.current) {
+      applyVisualStateRef.current(
+        hoveredNodeRef.current ? String(hoveredNodeRef.current.id) : null,
+        selectedNodeRef.current && selectedNodeRef.current.id !== 'hub'
+          ? String(selectedNodeRef.current.id)
+          : null
+      );
+    }
+  }, [focusIds]);
 
   // Update camera lock target whenever selectedNode changes
   useEffect(() => {
@@ -347,6 +364,19 @@ export default function Brain3D({
           }
         }
       });
+
+      // Gate filter: dim nodes and links outside the focused agent
+      const focus = focusIdsRef.current;
+      meshById.forEach((mesh, id) => {
+        const mat = mesh.material as THREE.MeshBasicMaterial;
+        const halo = haloById.get(id);
+        const haloMat = halo?.material as THREE.MeshBasicMaterial | undefined;
+        const dimmed = Boolean(focus) && !focus!.has(id.split('::')[0]) && id !== hoverId && id !== selectId;
+        mat.transparent = true;
+        mat.opacity = dimmed ? 0.08 : 1;
+        if (dimmed && haloMat) haloMat.opacity = 0;
+      });
+      baseLineMat.opacity = focus ? 0.08 : isLight ? 0.65 : 0.42;
 
       if (!activeId) {
         highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute([], 3));

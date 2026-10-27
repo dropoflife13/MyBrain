@@ -29,6 +29,7 @@ import Brain3D from '../../components/Brain3D';
 import AuditInspector from '../../components/AuditInspector';
 import CommandPalette from '../../components/CommandPalette';
 import NeuralLoader from '../../components/NeuralLoader';
+import { Tooltip } from '../../components/Tooltip';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import {
   BrainDocNode,
@@ -39,14 +40,20 @@ import {
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 
-const AGENT_DOCK: Array<{ id: string; code: string; label: string }> = [
-  { id: 'dbaagent', code: 'DB', label: 'Database' },
-  { id: 'securityagent', code: 'SEC', label: 'Security' },
-  { id: 'uiuxagent', code: 'UX', label: 'UI / UX' },
-  { id: 'productmanageragent', code: 'PM', label: 'Product' },
-  { id: 'systemsdesignagent', code: 'SD', label: 'Systems' },
-  { id: 'integrationagent', code: 'IR', label: 'Integration' },
-  { id: 'growthagent', code: 'GR', label: 'Growth' },
+const AGENT_DOCK: Array<{
+  id: string;
+  code: string;
+  label: string;
+  fullName: string;
+  prefixes: string[];
+}> = [
+  { id: 'dbaagent', code: 'DB', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
+  { id: 'securityagent', code: 'SEC', label: 'Security', fullName: 'Security Agent', prefixes: ['CS'] },
+  { id: 'uiuxagent', code: 'UX', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UI', 'TA'] },
+  { id: 'productmanageragent', code: 'PM', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['BA', 'OP'] },
+  { id: 'systemsdesignagent', code: 'SD', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SO'] },
+  { id: 'integrationagent', code: 'IR', label: 'Integration', fullName: 'Integration Agent', prefixes: ['RF', 'H', 'P'] },
+  { id: 'growthagent', code: 'GR', label: 'Growth', fullName: 'Growth Agent', prefixes: [] },
 ];
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
@@ -63,6 +70,7 @@ export default function Home() {
   const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [activeGate, setActiveGate] = useState<string | null>(null);
 
   // 3D Graph Ready State for Seamless Neural Transition
   const [isGraphReady, setIsGraphReady] = useState<boolean>(false);
@@ -93,6 +101,28 @@ export default function Home() {
     [graphData]
   );
   const [isCheckingGate, setIsCheckingGate] = useState<boolean>(false);
+
+  // Nodes belonging to the active gate: the agent, its linked nodes, and its rule prefixes
+  const focusIds = useMemo<Set<string> | null>(() => {
+    if (!activeGate) return null;
+    const agent = AGENT_DOCK.find((a) => a.code === activeGate);
+    if (!agent) return null;
+    const ids = new Set<string>([agent.id]);
+    const clean = (v: unknown) => String(typeof v === 'object' && v ? (v as { id: string }).id : v).split('::')[0];
+    graphData.links.forEach((l) => {
+      const s = clean(l.source);
+      const t = clean(l.target);
+      if (s === agent.id) ids.add(t);
+      if (t === agent.id) ids.add(s);
+    });
+    graphData.nodes.forEach((n) => {
+      const cid = String(n.id).split('::')[0];
+      const m = cid.match(/^([A-Z]{1,4})-\d+/);
+      if ((m && agent.prefixes.includes(m[1])) || n.agentCode === agent.code) ids.add(cid);
+    });
+    ids.delete('hub');
+    return ids;
+  }, [activeGate, graphData]);
 
   const handleRecheckGate = () => {
     setIsCheckingGate(true);
@@ -259,7 +289,7 @@ export default function Home() {
     >
       {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
       <motion.div
-        className="absolute inset-0 w-full h-full z-0 bg-[#f0f4f8] dark:bg-[#050505] transition-colors duration-300"
+        className="absolute inset-y-0 right-0 left-0 md:left-64 h-screen z-0 bg-[#f0f4f8] dark:bg-[#050505] transition-colors duration-300"
         initial={{ opacity: 0 }}
         animate={{ opacity: isReady ? 1 : 0 }}
         transition={{ duration: 0.6, ease: 'easeOut' }}
@@ -277,12 +307,13 @@ export default function Home() {
           }}
           onReady={() => setIsGraphReady(true)}
           onFpsUpdate={setFps}
+          focusIds={focusIds}
         />
       </motion.div>
 
       {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
       <div
-        className="pointer-events-none fixed inset-0 z-10"
+        className="pointer-events-none fixed inset-y-0 right-0 left-0 md:left-64 z-10"
         style={{
           backgroundImage: `
             radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
@@ -293,22 +324,23 @@ export default function Home() {
       />
 
       {/* Precision Corner Telemetry Reticles */}
-      <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-500/30 dark:border-cyan-400/30" />
+      <div className="pointer-events-none fixed top-20 left-6 md:left-[17.5rem] z-10 w-3 h-3 border-t border-l border-cyan-500/30 dark:border-cyan-400/30" />
       <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-500/30 dark:border-cyan-400/30" />
-      <div className="pointer-events-none fixed bottom-6 left-6 z-10 w-3 h-3 border-b border-l border-cyan-500/30 dark:border-cyan-400/30" />
+      <div className="pointer-events-none fixed bottom-6 left-6 md:left-[17.5rem] z-10 w-3 h-3 border-b border-l border-cyan-500/30 dark:border-cyan-400/30" />
 
-      {/* 3. Top Desktop Command Bar (Horizontal Left-Aligned Gates & Telemetry) */}
-      <header className="fixed top-4 left-4 right-4 md:left-6 md:right-6 z-30 flex items-center justify-between pointer-events-none gap-2 sm:gap-3">
-        {/* Left: Overview Link + Cortex Brand Pill + Horizontal 7-Agent Gates */}
+      {/* 3. Top Command Bar (spans the canvas area only) */}
+      <header className="fixed top-4 left-4 right-4 md:left-[17rem] md:right-6 z-30 flex items-center justify-between pointer-events-none gap-2 sm:gap-3">
+        {/* Left: Overview Link + Cortex Brand Pill */}
         <div className="flex items-center justify-start gap-2 pointer-events-auto shrink-0">
-          <Link
-            href="/"
-            className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
-            title="Return to Landing Page"
-          >
-            <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-            <span className="hidden sm:inline">Overview</span>
-          </Link>
+          <Tooltip content="Return to landing page" side="bottom">
+            <Link
+              href="/"
+              className="h-10 flex items-center justify-center gap-1.5 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+              <span className="hidden sm:inline">Overview</span>
+            </Link>
+          </Tooltip>
 
           <div className="h-10 flex items-center justify-center gap-2 px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl shrink-0">
             <img
@@ -323,118 +355,159 @@ export default function Home() {
               v2.4
             </span>
           </div>
-
-          {/* 7-Agent Horizontal Dock (Positioned on the Left) */}
-          <nav className="h-10 hidden md:flex items-center justify-start gap-0.5 sm:gap-1 p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl shrink-0">
-            <span className="px-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 dark:text-zinc-400 flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-              Gates:
-            </span>
-            {AGENT_DOCK.map((agent) => {
-              const isActive = selectedNode?.id === agent.id;
-              return (
-                <button
-                  key={agent.id}
-                  type="button"
-                  onClick={() => handleSelectAgentFromDock(agent.id)}
-                  className={`h-8 px-2 sm:px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    isActive
-                      ? 'bg-cyan-500 dark:bg-[#00ffff] text-black font-bold shadow-[0_0_12px_rgba(0,255,255,0.4)]'
-                      : 'text-slate-600 dark:text-zinc-300 hover:text-slate-950 dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10'
-                  }`}
-                >
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      isActive ? 'bg-black' : 'bg-cyan-500 dark:bg-[#00ffff]'
-                    }`}
-                  />
-                  <span>{agent.code}</span>
-                </button>
-              );
-            })}
-          </nav>
         </div>
 
-        {/* Right: Search Palette Trigger + Vault State Switcher + Theme Toggle + Auto-Spin */}
+        {/* Right: Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          {/* Governance Matrix & Contradiction Inspector (GR-04, X-01..05) */}
-          <button
-            type="button"
-            onClick={() => setIsMatrixOpen(true)}
-            className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
-            title="Inspect Brain ↔ 7 Agent Matrix & Resolved Contradictions"
-          >
-            <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span className="hidden 2xl:inline">Governance Matrix</span>
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
-              0 Overlaps
-            </span>
-          </button>
+          <Tooltip content="Brain ↔ 7 Agent matrix & resolved contradictions" side="bottom">
+            <button
+              type="button"
+              onClick={() => setIsMatrixOpen(true)}
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+              <span className="hidden 2xl:inline">Governance Matrix</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/20">
+                0 Overlaps
+              </span>
+            </button>
+          </Tooltip>
 
-          {/* Global Search Palette Button (GR-04) */}
-          <button
-            type="button"
-            onClick={() => setIsCmdPaletteOpen(true)}
-            className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
-            title="Search Rules & Agents (Ctrl+K / ⌘K)"
-          >
-            <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-            <span className="hidden xl:inline">Search</span>
-            <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
-              ⌘K
-            </kbd>
-          </button>
+          <Tooltip content="Search rules & agents (Ctrl+K)" side="bottom">
+            <button
+              type="button"
+              onClick={() => setIsCmdPaletteOpen(true)}
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+              <span className="hidden xl:inline">Search</span>
+              <kbd className="text-[9px] px-1 py-0.5 rounded bg-slate-200 dark:bg-zinc-800 border border-slate-300 dark:border-white/15 text-slate-500 dark:text-zinc-400 font-mono">
+                ⌘K
+              </kbd>
+            </button>
+          </Tooltip>
 
           <div className="h-10 hidden sm:flex items-center justify-center p-1 rounded-xl bg-white/90 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-300 dark:border-white/10 shadow-xl">
-            <button
-              type="button"
-              onClick={() => handleToggleVaultMode('assessed')}
-              className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                vaultMode === 'assessed'
-                  ? 'bg-cyan-500/15 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/30 dark:border-cyan-400/35 font-semibold'
-                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="View Neil's fully assessed 360-node Cortex"
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>Assessed</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleVaultMode('blank')}
-              className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                vaultMode === 'blank'
-                  ? 'bg-amber-500/15 dark:bg-amber-400/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 dark:border-amber-400/35 font-semibold'
-                  : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Preview blank-slate fork"
-            >
-              <Eye className="w-3 h-3" />
-              <span>Blank</span>
-            </button>
+            <Tooltip content="View the fully assessed 360-node Cortex" side="bottom">
+              <button
+                type="button"
+                onClick={() => handleToggleVaultMode('assessed')}
+                className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  vaultMode === 'assessed'
+                    ? 'bg-cyan-500/15 dark:bg-[#00ffff]/15 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/30 dark:border-cyan-400/35 font-semibold'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Sparkles className="w-3 h-3" />
+                <span>Assessed</span>
+              </button>
+            </Tooltip>
+            <Tooltip content="Preview the blank-slate fork" side="bottom">
+              <button
+                type="button"
+                onClick={() => handleToggleVaultMode('blank')}
+                className={`h-8 px-2.5 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                  vaultMode === 'blank'
+                    ? 'bg-amber-500/15 dark:bg-amber-400/15 text-amber-600 dark:text-amber-300 border border-amber-500/30 dark:border-amber-400/35 font-semibold'
+                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Eye className="w-3 h-3" />
+                <span>Blank</span>
+              </button>
+            </Tooltip>
           </div>
 
           <ThemeToggle />
 
-          <button
-            type="button"
-            onClick={() => setAutoSpin((prev) => !prev)}
-            className={`h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-xl ${
-              autoSpin
-                ? 'bg-white/90 dark:bg-[#09090b]/85 border-cyan-500/40 dark:border-cyan-400/35 text-cyan-600 dark:text-[#00ffff]'
-                : 'bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-            title="Toggle 3D Auto-Orbit"
-          >
-            {autoSpin ? (
-              <RotateCw className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff] animate-spin" />
-            ) : (
-              <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
-            )}
-            <span className="hidden sm:inline">Spin: {autoSpin ? 'ON' : 'OFF'}</span>
-          </button>
+          <Tooltip content={autoSpin ? 'Pause auto-orbit' : 'Resume auto-orbit'} side="bottom">
+            <button
+              type="button"
+              onClick={() => setAutoSpin((prev) => !prev)}
+              className={`h-10 flex items-center justify-center gap-2 px-3.5 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-xl ${
+                autoSpin
+                  ? 'bg-white/90 dark:bg-[#09090b]/85 border-cyan-500/40 dark:border-cyan-400/35 text-cyan-600 dark:text-[#00ffff]'
+                  : 'bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              {autoSpin ? (
+                <RotateCw className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff] animate-spin" />
+              ) : (
+                <Pause className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+              )}
+              <span className="hidden sm:inline">Spin: {autoSpin ? 'ON' : 'OFF'}</span>
+            </button>
+          </Tooltip>
         </div>
       </header>
+
+      {/* Left Sidebar: Gates Directory */}
+      <aside
+        aria-label="Gates directory"
+        className="hidden md:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col bg-[#050505]/95 backdrop-blur-xl border-r border-white/10 text-white"
+        style={{
+          fontFamily:
+            "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        }}
+      >
+        <div className="px-5 pt-6 pb-4 border-b border-white/10">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#00ffff]" />
+            <span>Gates Directory</span>
+          </div>
+          <p className="mt-1.5 text-[11px] text-zinc-500">
+            Filter the constellation by agent.
+          </p>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+          <button
+            type="button"
+            onClick={() => setActiveGate(null)}
+            aria-pressed={activeGate === null}
+            className={`w-full h-9 px-3 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer border ${
+              activeGate === null
+                ? 'bg-[#00ffff]/10 border-[#00ffff]/30 text-[#00ffff] font-semibold'
+                : 'border-transparent text-zinc-400 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <span>Show All</span>
+            <span className="text-[10px] text-zinc-500">{AGENT_DOCK.length} gates</span>
+          </button>
+
+          <div className="my-2 border-t border-white/5" />
+
+          {AGENT_DOCK.map((agent) => {
+            const isActive = activeGate === agent.code;
+            return (
+              <Tooltip key={agent.id} content={agent.fullName} side="right" className="w-full">
+                <button
+                  type="button"
+                  onClick={() => setActiveGate(isActive ? null : agent.code)}
+                  aria-pressed={isActive}
+                  className={`w-full h-10 px-3 rounded-lg flex items-center gap-3 text-xs transition-all cursor-pointer border ${
+                    isActive
+                      ? 'bg-[#00ffff]/10 border-[#00ffff]/40 text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
+                      : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 hover:border-white/10'
+                  }`}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isActive ? 'bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
+                    }`}
+                  />
+                  <span className="font-bold tracking-wider w-8 text-left">{agent.code}</span>
+                  <span className="text-[11px] text-zinc-500 truncate">{agent.label}</span>
+                </button>
+              </Tooltip>
+            );
+          })}
+        </nav>
+
+        <div className="px-5 py-3 border-t border-white/10 text-[10px] text-zinc-500">
+          {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 139} rules • {fps} FPS
+        </div>
+      </aside>
 
       {/* Blank Fork Preview Mode Banner */}
       <AnimatePresence>
@@ -444,7 +517,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 12 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#09090b]/90 backdrop-blur-xl border border-amber-400/35 shadow-2xl text-xs font-mono"
+            className="fixed bottom-6 left-1/2 md:left-[calc(50%+8rem)] -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#09090b]/90 backdrop-blur-xl border border-amber-400/35 shadow-2xl text-xs font-mono"
           >
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-amber-200">
@@ -529,7 +602,6 @@ export default function Home() {
                     handleCloseSidebar();
                   }}
                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-200 dark:bg-zinc-900 hover:bg-red-500/15 border border-slate-300 dark:border-white/10 hover:border-red-400/40 text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-200 text-xs font-mono transition-colors cursor-pointer"
-                  title="Close Inspector (Esc)"
                   aria-label="Close panel"
                 >
                   <X className="w-3.5 h-3.5" />
