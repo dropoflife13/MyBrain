@@ -23,7 +23,6 @@ import {
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
-import NeuralTransition from '../components/NeuralTransition';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
@@ -67,15 +66,13 @@ const FAQ_ITEMS: FaqItem[] = [
 
 export default function LandingPage() {
   const router = useRouter();
-  const [isDiving, setIsDiving] = useState<boolean>(false);
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedPluginSnippet, setCopiedPluginSnippet] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const handleOpenMind = () => {
-    if (isDiving) return;
-    setIsDiving(true);
+    router.push('/console');
   };
 
   const handleCopyPrompt = () => {
@@ -107,7 +104,6 @@ export default function LandingPage() {
         <Brain3D
           autoSpin={true}
           isBackground={true}
-          divingIn={isDiving}
           onNodeHover={() => {}}
         />
       </div>
@@ -239,15 +235,10 @@ export default function LandingPage() {
           <button
             type="button"
             onClick={handleOpenMind}
-            disabled={isDiving}
-            className="group relative inline-flex items-center gap-3.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-lg md:text-xl px-10 py-5 rounded-full transition-all duration-300 shadow-[0_0_35px_rgba(34,211,238,0.5)] hover:shadow-[0_0_60px_rgba(34,211,238,0.85)] hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-75"
+            className="group relative inline-flex items-center gap-3.5 bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold text-lg md:text-xl px-10 py-5 rounded-full transition-all duration-300 shadow-[0_0_35px_rgba(34,211,238,0.5)] hover:shadow-[0_0_60px_rgba(34,211,238,0.85)] hover:scale-105 active:scale-95 cursor-pointer"
           >
-            <span>{isDiving ? 'Engaging Synapses...' : 'Open Your Mind'}</span>
-            <ArrowRight
-              className={`w-6 h-6 transition-transform ${
-                isDiving ? 'translate-x-3' : 'group-hover:translate-x-1.5'
-              }`}
-            />
+            <span>Open Your Mind</span>
+            <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-1.5" />
           </button>
 
           {/* Telemetry Indicator */}
@@ -710,18 +701,7 @@ export default function LandingPage() {
         </footer>
       </div>
 
-      {/* 7. Neural Wiring Full-Screen Transition Overlay */}
-      <AnimatePresence>
-        {isDiving && (
-          <NeuralTransition
-            onComplete={() => {
-              router.push('/console');
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* 8. Fork this Brain Modal */}
+      {/* 7. Fork this Brain Modal */}
       <AnimatePresence>
         {isShareOpen && (
           <motion.div

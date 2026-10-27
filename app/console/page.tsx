@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Brain3D from '../../components/Brain3D';
+import NeuralLoader from '../../components/NeuralLoader';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import {
   BrainDocNode,
@@ -58,10 +59,8 @@ export default function Home() {
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
 
-  // Custom Boot Loader State
-  const [isBooting, setIsBooting] = useState<boolean>(true);
-  const [bootProgress, setBootProgress] = useState<number>(12);
-  const [sceneReady, setSceneReady] = useState<boolean>(false);
+  // 3D Graph Ready State for Seamless Neural Transition
+  const [isGraphReady, setIsGraphReady] = useState<boolean>(false);
 
   const [assessedGraphData, setAssessedGraphData] = useState<BrainGraphData>(() =>
     getBrainData({ nodeCount: 360, mode: 'assessed' })
@@ -86,7 +85,7 @@ export default function Home() {
         if (payload) {
           setAssessedGraphData(payload);
           if (payload.gateStatus?.passed) {
-            setIsBooting(false);
+            setIsGraphReady(true);
           }
         }
       })
@@ -96,35 +95,11 @@ export default function Home() {
       });
   };
 
-  // Smooth Boot Loader Progression
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBootProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        const step = sceneReady ? 18 : 7;
-        return Math.min(100, prev + step);
-      });
-    }, 65);
-
-    return () => clearInterval(interval);
-  }, [sceneReady]);
-
-  useEffect(() => {
-    if (bootProgress >= 100) {
-      const doneTimer = setTimeout(() => setIsBooting(false), 220);
-      return () => clearTimeout(doneTimer);
-    }
-  }, [bootProgress]);
-
-  // Safety fallback so loader never hangs > 2.2s
+  // Safety fallback so loader never hangs > 2.4s
   useEffect(() => {
     const fallback = setTimeout(() => {
-      setBootProgress(100);
-      setIsBooting(false);
-    }, 2200);
+      setIsGraphReady(true);
+    }, 2400);
     return () => clearTimeout(fallback);
   }, []);
 
@@ -137,7 +112,7 @@ export default function Home() {
         if (active && payload) {
           setAssessedGraphData(payload);
           if (payload.gateStatus && !payload.gateStatus.passed) {
-            setIsBooting(false);
+            setIsGraphReady(true);
           }
         }
       })
@@ -215,7 +190,12 @@ export default function Home() {
       className="relative w-screen h-screen overflow-hidden bg-[#050505] text-white select-none"
     >
       {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
-      <div className="absolute inset-0 w-full h-full z-0">
+      <motion.div
+        className="absolute inset-0 w-full h-full z-0 bg-[#050505]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isGraphReady ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
         <Brain3D
           data={graphData}
           selectedNode={selectedNode}
@@ -227,10 +207,10 @@ export default function Home() {
               setQueryText('');
             }
           }}
-          onReady={() => setSceneReady(true)}
+          onReady={() => setIsGraphReady(true)}
           onFpsUpdate={setFps}
         />
-      </div>
+      </motion.div>
 
       {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
       <div
@@ -906,49 +886,10 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 9. Custom Initial Boot Loader Overlay */}
+      {/* 9. Seamless Neural Wiring Loader */}
       <AnimatePresence>
-        {isBooting && (
-          <motion.div
-            key="cortex-boot-loader"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.08) 0%, transparent 60%)',
-            }}
-          >
-            {/* Orbital Spinner + Cortex Logo */}
-            <div className="relative flex items-center justify-center w-28 h-28 mb-6">
-              <div className="absolute inset-0 rounded-full border border-cyan-400/20 animate-ping" />
-              <div className="absolute inset-1 rounded-full border-2 border-t-[#00ffff] border-r-transparent border-b-blue-600/50 border-l-transparent animate-spin" />
-              <img
-                src="/cortex-logo-cyan.svg"
-                alt="Cortex Boot"
-                className="w-12 h-12 object-contain drop-shadow-[0_0_16px_rgba(0,255,255,0.6)]"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-mono tracking-[0.2em] text-white uppercase mb-2">
-              <Cpu className="w-3.5 h-3.5 text-[#00ffff]" />
-              <span>SYNTHESIZING CORTEX MATRIX</span>
-            </div>
-
-            <p className="text-[11px] font-mono text-zinc-500 mb-5">
-              HYDRATING 7-AGENT GATE SUITE &amp; 360 SYNAPTIC NODES...
-            </p>
-
-            {/* Progress Bar */}
-            <div className="w-64 h-1 rounded-full bg-zinc-900 overflow-hidden border border-white/10">
-              <div
-                className="h-full bg-gradient-to-r from-blue-600 to-[#00ffff] transition-all duration-100"
-                style={{ width: `${bootProgress}%` }}
-              />
-            </div>
-            <span className="mt-2 text-[10px] font-mono text-[#00ffff]">{bootProgress}%</span>
-          </motion.div>
+        {!isGraphReady && (
+          <NeuralLoader key="cortex-neural-loader" />
         )}
       </AnimatePresence>
     </main>
