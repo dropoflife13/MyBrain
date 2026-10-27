@@ -128,6 +128,17 @@ export default function CommandPalette({
       keywords: ['agents', 'suite', 'directory', 'specs', 'gatekeepers'],
     });
 
+    items.push({
+      id: 'nav-assess',
+      title: 'Launcher L-01 Self-Assessment Quiz',
+      subtitle: 'Interactive diagnostic quiz to generate your personal markdown rules',
+      category: 'navigation',
+      badge: 'NAV • ASSESS',
+      icon: <Sparkles className="w-4 h-4 text-amber-400" />,
+      href: '/assess',
+      keywords: ['assess', 'quiz', 'test', 'l-01', 'launcher', 'elicitation', 'blank'],
+    });
+
     // 2. Map nodes (Agents + Document Nodes + Synapses)
     const seenNodeIds = new Set<string>();
 

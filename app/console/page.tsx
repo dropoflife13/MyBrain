@@ -25,6 +25,7 @@ import {
   X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import Brain3D from '../../components/Brain3D';
 import AuditInspector from '../../components/AuditInspector';
 import CommandPalette from '../../components/CommandPalette';
@@ -59,6 +60,7 @@ const AGENT_DOCK: Array<{
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
 export default function Home() {
+  const router = useRouter();
   const [hoveredNode, setHoveredNode] = useState<BrainDocNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<BrainDocNode | null>(null);
   const [autoSpin, setAutoSpin] = useState<boolean>(true);
@@ -182,6 +184,7 @@ export default function Home() {
     setVaultMode(nextMode);
     setSelectedNode(null);
     setHoveredNode(null);
+    setActiveGate(null);
   };
 
   // Pressing Escape closes modals; Cmd+K and '/' open Global Command Palette (GR-04)
@@ -206,15 +209,19 @@ export default function Home() {
           setIsCmdPaletteOpen(false);
         } else if (isMatrixOpen) {
           setIsMatrixOpen(false);
-        } else {
-          setSelectedNode(null);
+        } else if (isShareOpen) {
           setIsShareOpen(false);
+        } else if (selectedNode) {
+          setSelectedNode(null);
+          setQueryText('');
+        } else if (activeGate) {
+          setActiveGate(null);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCmdPaletteOpen]);
+  }, [isCmdPaletteOpen, isMatrixOpen, isShareOpen, selectedNode, activeGate]);
 
   // Deep-link support for ?node=<id> URL parameter
   useEffect(() => {
@@ -313,7 +320,7 @@ export default function Home() {
 
       {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
       <div
-        className="pointer-events-none fixed inset-y-0 right-0 left-0 md:left-64 z-10"
+        className="pointer-events-none fixed inset-y-0 right-0 left-0 md:left-64 z-10 opacity-0 dark:opacity-100 transition-opacity duration-300"
         style={{
           backgroundImage: `
             radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
@@ -444,18 +451,18 @@ export default function Home() {
       {/* Left Sidebar: Gates Directory */}
       <aside
         aria-label="Gates directory"
-        className="hidden md:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col bg-[#050505]/95 backdrop-blur-xl border-r border-white/10 text-white"
+        className="hidden md:flex fixed left-0 top-0 z-40 w-64 h-screen flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white transition-colors duration-300"
         style={{
           fontFamily:
             "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
         }}
       >
-        <div className="px-5 pt-6 pb-4 border-b border-white/10">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-400">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#00ffff]" />
+        <div className="px-5 pt-6 pb-4 border-b border-slate-200 dark:border-white/10">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
             <span>Gates Directory</span>
           </div>
-          <p className="mt-1.5 text-[11px] text-zinc-500">
+          <p className="mt-1.5 text-[11px] text-slate-500 dark:text-zinc-500">
             Filter the constellation by agent.
           </p>
         </div>
@@ -467,15 +474,15 @@ export default function Home() {
             aria-pressed={activeGate === null}
             className={`w-full h-9 px-3 rounded-lg flex items-center justify-between text-xs transition-colors cursor-pointer border ${
               activeGate === null
-                ? 'bg-[#00ffff]/10 border-[#00ffff]/30 text-[#00ffff] font-semibold'
-                : 'border-transparent text-zinc-400 hover:text-white hover:bg-white/5'
+                ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/30 dark:border-[#00ffff]/30 text-cyan-700 dark:text-[#00ffff] font-semibold'
+                : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
             }`}
           >
             <span>Show All</span>
-            <span className="text-[10px] text-zinc-500">{AGENT_DOCK.length} gates</span>
+            <span className="text-[10px] text-slate-400 dark:text-zinc-500">{AGENT_DOCK.length} gates</span>
           </button>
 
-          <div className="my-2 border-t border-white/5" />
+          <div className="my-2 border-t border-slate-200 dark:border-white/5" />
 
           {AGENT_DOCK.map((agent) => {
             const isActive = activeGate === agent.code;
@@ -487,25 +494,25 @@ export default function Home() {
                   aria-pressed={isActive}
                   className={`w-full h-10 px-3 rounded-lg flex items-center gap-3 text-xs transition-all cursor-pointer border ${
                     isActive
-                      ? 'bg-[#00ffff]/10 border-[#00ffff]/40 text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
-                      : 'border-transparent text-zinc-300 hover:text-white hover:bg-white/5 hover:border-white/10'
+                      ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
+                      : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
                   }`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      isActive ? 'bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
+                      isActive ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
                     }`}
                   />
                   <span className="font-bold tracking-wider w-8 text-left">{agent.code}</span>
-                  <span className="text-[11px] text-zinc-500 truncate">{agent.label}</span>
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-500 truncate">{agent.label}</span>
                 </button>
               </Tooltip>
             );
           })}
         </nav>
 
-        <div className="px-5 py-3 border-t border-white/10 text-[10px] text-zinc-500">
-          {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 139} rules • {fps} FPS
+        <div className="px-5 py-3 border-t border-slate-200 dark:border-white/10 text-[10px] text-slate-500 dark:text-zinc-500">
+          {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 159} rules • {fps} FPS
         </div>
       </aside>
 
@@ -1103,6 +1110,7 @@ export default function Home() {
         onClose={() => setIsCmdPaletteOpen(false)}
         nodes={graphData.nodes}
         onSelectNode={handleSelectNodeFromPalette}
+        onNavigate={(href) => router.push(href)}
       />
     </main>
   );

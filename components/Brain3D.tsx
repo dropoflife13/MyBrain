@@ -56,10 +56,12 @@ export default function Brain3D({
   const desiredTargetPosRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 0));
   const isReturningHomeRef = useRef<boolean>(false);
 
-  // Highlight update callback ref
+  // Highlight & theme update callback refs (avoid destroying WebGLRenderer on theme switch)
+  const isLightRef = useRef<boolean>(isLight);
   const applyVisualStateRef = useRef<((hoverId: string | null, selectId: string | null) => void) | null>(
     null
   );
+  const applyThemeRef = useRef<((lightMode: boolean) => void) | null>(null);
 
   const graphData = useMemo(() => {
     return data && data.nodes?.length ? data : getBrainData({ nodeCount: 360 });
@@ -77,6 +79,12 @@ export default function Brain3D({
     onReadyRef.current = onReady;
     onFpsUpdateRef.current = onFpsUpdate;
   }, [onNodeHover, onNodeClick, onReady, onFpsUpdate]);
+
+  // Update Three.js materials & scene background in-place when light/dark mode toggles (zero WebGL flash)
+  useEffect(() => {
+    isLightRef.current = isLight;
+    applyThemeRef.current?.(isLight);
+  }, [isLight]);
 
   // Re-apply visual state whenever the gate filter changes
   useEffect(() => {
@@ -302,23 +310,29 @@ export default function Brain3D({
       const b = nodeById.get(String(tgtId));
       if (a && b) {
         validLinks.push({ src: a, tgt: b });
-        baseLineCoords.push(
-          a.fx ?? a.x ?? 0,
-          a.fy ?? a.y ?? 0,
-          a.fz ?? a.z ?? 0,
-          b.fx ?? b.x ?? 0,
-          b.fy ?? b.y ?? 0,
-          b.fz ?? b.z ?? 0
-        );
+        // Keep the resting cortical wireframe clean by omitting long-range agent-to-synapse spokes at rest
+        // (they still illuminate in glowing cyan via validLinks when hovering or selecting either node!)
+        const isLongRangeAgentToSynapse =
+          (a.group === 1 && b.category === 'synapse') || (b.group === 1 && a.category === 'synapse');
+        if (!isLongRangeAgentToSynapse) {
+          baseLineCoords.push(
+            a.fx ?? a.x ?? 0,
+            a.fy ?? a.y ?? 0,
+            a.fz ?? a.z ?? 0,
+            b.fx ?? b.x ?? 0,
+            b.fy ?? b.y ?? 0,
+            b.fz ?? b.z ?? 0
+          );
+        }
       }
     });
 
     const baseLineGeo = new THREE.BufferGeometry();
     baseLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(baseLineCoords, 3));
     const baseLineMat = new THREE.LineBasicMaterial({
-      color: isLight ? 0xcbd5e1 : 0x1e3a8a,
+      color: isLightRef.current ? 0xcbd5e1 : 0x1e3a8a,
       transparent: true,
-      opacity: isLight ? 0.65 : 0.42,
+      opacity: isLightRef.current ? 0.65 : 0.42,
     });
     const baseLineSegments = new THREE.LineSegments(baseLineGeo, baseLineMat);
     brainGroup.add(baseLineSegments);
@@ -326,7 +340,7 @@ export default function Brain3D({
     // Dynamic highlighted links connected to hovered/selected node
     const highlightLineGeo = new THREE.BufferGeometry();
     const highlightLineMat = new THREE.LineBasicMaterial({
-      color: isLight ? 0x0284c7 : 0x00ffff,
+      color: isLightRef.current ? 0x0284c7 : 0x00ffff,
       transparent: true,
       opacity: 0.92,
     });
@@ -336,6 +350,9 @@ export default function Brain3D({
     // Function to update node scale/glow and active links on hover or select
     const applyVisualState = (hoverId: string | null, selectId: string | null) => {
       const activeId = hoverId || selectId;
+      const light = isLightRef.current;
+      const curAgentColor = light ? 0x0284c7 : 0x00ffff;
+      const curRuleColor = light ? 0x1e3a8a : 0xffffff;
 
       meshById.forEach((mesh, id) => {
         const node = mesh.userData.node as BrainDocNode;
@@ -349,18 +366,20 @@ export default function Brain3D({
         const haloMat = halo?.material as THREE.MeshBasicMaterial | undefined;
 
         if (isActive) {
-          mat.color.setHex(isLight ? 0x0284c7 : 0x00ffff);
+          mat.color.setHex(curAgentColor);
           mesh.scale.setScalar(isAgent ? 1.45 : 1.9);
           if (halo && haloMat) {
+            haloMat.color.setHex(curAgentColor);
             halo.scale.setScalar(1.35);
-            haloMat.opacity = isLight ? 0.55 : 0.45;
+            haloMat.opacity = light ? 0.55 : 0.45;
           }
         } else {
-          mat.color.setHex(isAgent ? agentColor : ruleColor);
+          mat.color.setHex(isAgent ? curAgentColor : curRuleColor);
           mesh.scale.setScalar(1.0);
           if (halo && haloMat) {
+            haloMat.color.setHex(curAgentColor);
             halo.scale.setScalar(1.0);
-            haloMat.opacity = isAgent ? (isLight ? 0.28 : 0.22) : 0.0;
+            haloMat.opacity = isAgent ? (light ? 0.28 : 0.22) : 0.0;
           }
         }
       });
@@ -376,7 +395,7 @@ export default function Brain3D({
         mat.opacity = dimmed ? 0.08 : 1;
         if (dimmed && haloMat) haloMat.opacity = 0;
       });
-      baseLineMat.opacity = focus ? 0.08 : isLight ? 0.65 : 0.42;
+      baseLineMat.opacity = focus ? 0.08 : light ? 0.65 : 0.42;
 
       if (!activeId) {
         highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
@@ -400,6 +419,29 @@ export default function Brain3D({
     };
 
     applyVisualStateRef.current = applyVisualState;
+
+    // Seamless in-place theme update (zero WebGL recreation / zero flash)
+    applyThemeRef.current = (lightMode: boolean) => {
+      const nextBg = lightMode ? 0xf0f4f8 : 0x050505;
+      scene.background = new THREE.Color(nextBg);
+      scene.fog = new THREE.FogExp2(nextBg, lightMode ? 0.0016 : 0.0022);
+      ringMat1.color.setHex(lightMode ? 0x94a3b8 : 0x1e3a8a);
+      ringMat1.opacity = lightMode ? 0.35 : 0.28;
+      ringMat2.color.setHex(lightMode ? 0x0284c7 : 0x00ffff);
+      ringMat2.opacity = lightMode ? 0.22 : 0.12;
+      (gridHelper.material as THREE.Material).opacity = lightMode ? 0.35 : 0.25;
+      starMat.color.setHex(lightMode ? 0x64748b : 0x38bdf8);
+      starMat.size = lightMode ? 0.95 : 0.85;
+      starMat.opacity = lightMode ? 0.32 : 0.35;
+      baseLineMat.color.setHex(lightMode ? 0xcbd5e1 : 0x1e3a8a);
+      highlightLineMat.color.setHex(lightMode ? 0x0284c7 : 0x00ffff);
+      applyVisualState(
+        hoveredNodeRef.current ? String(hoveredNodeRef.current.id) : null,
+        selectedNodeRef.current && selectedNodeRef.current.id !== 'hub'
+          ? String(selectedNodeRef.current.id)
+          : null
+      );
+    };
 
     // 7. Raycaster for Instant Hover & Click Detection
     const raycaster = new THREE.Raycaster();
@@ -555,10 +597,12 @@ export default function Brain3D({
         renderer.domElement.removeEventListener('dblclick', handleDblClick);
       }
       cancelAnimationFrame(animId);
+      applyThemeRef.current = null;
+      applyVisualStateRef.current = null;
       controls.dispose();
       renderer.dispose();
     };
-  }, [graphData, isLight]);
+  }, [graphData]);
 
   return (
     <div

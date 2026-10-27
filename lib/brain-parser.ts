@@ -137,6 +137,60 @@ const SEVEN_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' 
 };
 
 /**
+ * Deterministic mapping of any rule prefix or document ID to its owning Core Agent Gatekeeper.
+ * Ensures every CS- rule connects to SEC, every DB- rule connects to DB, etc., with zero orphans.
+ */
+export function resolveAgentOwner(idOrPrefix: string): {
+  agentId: string;
+  agentCode: 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC';
+} {
+  const clean = idOrPrefix.split('::')[0].trim();
+  const prefix = clean.split('-')[0].toUpperCase();
+
+  if (clean === 'dbaagent' || prefix === 'DB') {
+    return { agentId: 'dbaagent', agentCode: 'DB' };
+  }
+  if (clean === 'securityagent' || clean === 'cybersec' || prefix === 'SEC' || prefix === 'CS') {
+    return { agentId: 'securityagent', agentCode: 'SEC' };
+  }
+  if (
+    clean === 'uiuxagent' ||
+    clean === 'ui-frontend' ||
+    clean === 'TASTE' ||
+    prefix === 'UX' ||
+    prefix === 'UI' ||
+    prefix === 'TA'
+  ) {
+    return { agentId: 'uiuxagent', agentCode: 'UX' };
+  }
+  if (
+    clean === 'systemsdesignagent' ||
+    clean === 'solutions' ||
+    prefix === 'SD' ||
+    prefix === 'SO'
+  ) {
+    return { agentId: 'systemsdesignagent', agentCode: 'SD' };
+  }
+  if (
+    clean === 'integrationagent' ||
+    clean === 'HEURISTICS' ||
+    clean === 'PATTERNS' ||
+    clean === 'RED-FLAGS' ||
+    prefix === 'IR' ||
+    prefix === 'RF' ||
+    prefix === 'H' ||
+    prefix === 'P'
+  ) {
+    return { agentId: 'integrationagent', agentCode: 'IR' };
+  }
+  if (clean === 'growthagent' || prefix === 'GR') {
+    return { agentId: 'growthagent', agentCode: 'GR' };
+  }
+  // Default: PM / BA / OP / empathy-personas / OPERATING-PRINCIPLES / DIGEST / ABOUT-ME
+  return { agentId: 'productmanageragent', agentCode: 'PM' };
+}
+
+/**
  * Extracts `name` (from `# Title`), `description` (from the first `- ` rule line),
  * and assigns `group: 1` to the 7 core agents (PM, UX, GR, SD, IR, DB, SEC) and `group: 2` to all other rule nodes.
  */
@@ -194,15 +248,16 @@ export function parseMarkdownNode(
     description = description.slice(0, 157).trimEnd() + '...';
   }
 
-  const agentCode = SEVEN_CORE_AGENTS[id];
-  const isCoreAgent = Boolean(agentCode || category === 'agent');
+  const coreAgentCode = SEVEN_CORE_AGENTS[id];
+  const isCoreAgent = Boolean(coreAgentCode || category === 'agent');
+  const resolvedOwner = resolveAgentOwner(id);
 
   return {
     id,
     name,
     description,
     group: isCoreAgent ? 1 : 2,
-    agentCode,
+    agentCode: coreAgentCode ?? resolvedOwner.agentCode,
     category: isCoreAgent ? 'agent' : category,
     content: contentWithoutFrontmatter.trim(),
     rules,
@@ -257,10 +312,16 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **UX-03** Sticky header: fixed height token, zero layout shift, scroll-margin-top on anchors.
 - **UX-04** Hover states: gated by @media (hover: hover), solid-color surface darkening, never sole carrier of information.
 - **UX-05** Loading: skeleton matching final layout dimensions (zero CLS), honors prefers-reduced-motion.
+- **UX-06** Expandable FAQ: native <details> or button with aria-expanded; keyboard operable; deep-linkable by #id.
 - **UX-07** Confirmation modals only for destructive actions; buttons name the exact verb + object ("Discard 3 entries"), never "OK".
 - **UX-08** Toasts: role="status" / role="alert", pause on hover, never fake optimistic saves before server confirmation.
+- **UX-09** Custom 404: Next.js not-found; true HTTP 404 (no soft-404); same shell, search entry, primary links.
+- **UX-10** Scroll progress: decorative (aria-hidden), transform-based (no layout), passive listeners, disabled under reduced motion.
+- **UX-11** Copy-to-clipboard: Clipboard API with selection fallback; success via toast and button label swap with aria-live.
 - **UX-12** Sync surfaces: persistent connectivity indicator with pending/synced/flagged/rejected state badges.
-- **UX-13** Performance & motion discipline: auto-downgrade heavy WebGL when FPS < 30 or prefers-reduced-motion is active.`,
+- **UX-13** Performance & motion discipline: WCAG 2.2 AA baseline; auto-downgrade heavy WebGL when FPS < 30 or prefers-reduced-motion is active.
+- **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual.
+- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes.`,
   },
   {
     id: 'productmanageragent',
@@ -271,9 +332,17 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **PM-02** Docs state current truth only; history lives in git, never in the document body.
 - **PM-03** PRD defines problem, roles, As-Is/To-Be, Given/When/Then criteria, baseline metrics, and explicit non-goals.
 - **PM-04** Every business rule has ID BRnn, one enforcement layer, one owning agent, and one verification test.
+- **PM-05** TRD contains stack, constraints, FR/NFR IDs, RPC/API contracts, error taxonomy, environments, and risks linked to SLO.md.
+- **PM-06** App Flow covers happy, empty, loading, error, offline, and unauthorized states per screen and role in Mermaid.
+- **PM-07** Design Brief states audience, device/network constraints, tone, brand tokens, a11y target, and content inventory.
+- **PM-08** Schema plan is logical only: entities, relations, cardinality, lifecycle/retention, PII class, and role×entity access matrix.
 - **PM-09** Implementation plan: phased vertical slices, riskiest invariant first, Gate PASS required from every touched agent.
 - **PM-10** Scope change amends PRD first; unapproved mid-sprint features park in LATER.md.
-- **PM-11** Defense QA maps each likely panel attack to rule ID and concrete test/query evidence.`,
+- **PM-11** Defense QA maps each likely panel attack to rule ID and concrete test/query evidence.
+- **PM-12** Waivers: any Gate waiver is recorded in docs/WAIVERS.md (rule ID, rationale, approver, expiry); no agent may self-waive.
+- **PM-13** Open questions are resolved or logged as assumptions (owner, date) before a doc reaches approved.
+- **PM-14** The Empathy Map Gate: WHEN defining a new feature or system → DO NOT write technical requirements yet. First, generate an Empathy Map (Says, Thinks, Does, Feels) for the primary user.
+- **PM-15** Target Audience Definition: WHEN writing a PRD → DO explicitly define the Target User and Secondary Users with device/literacy constraints; every feature must trace back to a specific user pain point.`,
   },
   {
     id: 'systemsdesignagent',
@@ -283,9 +352,15 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **SD-01** CAP/PACELC declared per workflow in an ADR: offline logging is AP; approval transitions are CP.
 - **SD-02** Every data class defines its consistency model and max staleness window in seconds.
 - **SD-03** SLOs define availability %, p95/p99 latency per operation, peak throughput, and RPO/RTO with capacity math.
+- **SD-04** BOTTLENECKS.md ranks top 3 bottlenecks with load-test/EXPLAIN evidence plus capacity model.
 - **SD-05** No scaling mechanism (cache, replica, queue, partition, shard) without a measured bottleneck in an ADR.
 - **SD-06** Scaling order: vertical first; horizontal only for stateless tiers; sharding requires an approved ADR.
-- **SD-09** Fault tolerance: writes never depend on reads, caches, or derived views.`,
+- **SD-07** Redundancy: N+1 per tier; DB HA + PITR meeting RPO/RTO; quarterly restore drill.
+- **SD-08** SPOF register lists every component and third party with failure mode, blast radius, and mitigation.
+- **SD-09** Fault tolerance: writes never depend on reads, caches, or derived views.
+- **SD-10** CQRS only when read and write models diverge in shape, scale, or consistency need, recorded in an ADR.
+- **SD-11** Latency/throughput budget per user journey end-to-end on target device and network.
+- **SD-12** ADRs live in docs/adr/NNN-title.md; any architectural decision without an ADR fails Gate.`,
   },
   {
     id: 'integrationagent',
@@ -297,7 +372,10 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **IR-03** Idempotency: every client-originated mutation carries a client UUID/ULID persisted before any network call.
 - **IR-04** Outbox state machine: pending -> inflight -> synced | rejected | flagged; removed only after server ack.
 - **IR-05** Retries: exponential backoff with full jitter on network/5xx/429; 4xx is terminal.
-- **IR-07** Long-running jobs exceeding request budget (>500 rows or >2s) offload to async queue + worker pool.`,
+- **IR-06** Circuit breakers per external dependency: closed/open/half-open with observable state and fail-fast fallback.
+- **IR-07** Long-running jobs exceeding request budget (>500 rows or >2s) offload to async queue + worker pool.
+- **IR-08** Self-healing: health endpoint, stuck-job reaper, client-server reconciliation sweep, and logged DLQ replay.
+- **IR-09** Sync triggers: trigger on online, app foreground, post-write, and visible-tab timer with Web Locks single-flight.`,
   },
   {
     id: 'growthagent',
@@ -306,9 +384,12 @@ const VAULT_MARKDOWN_SOURCES: Array<{
     markdown: `# [GR] Growth Agent — The Marketing
 - **GR-01** Newsletter & onboarding: double opt-in, explicit consent record, PH Data Privacy Act (RA 10173) compliance.
 - **GR-02** UTM links: built only by a single helper, lowercase kebab-case registered in UTM_REGISTRY.md, zero PII.
+- **GR-03** Updated dates: visible Last updated binds to substantive updated_at with ISO 8601 <time> and matching JSON-LD.
 - **GR-04** Cmd+K search: 150ms debounce, indexes public published content only, never drafts or authenticated PII.
 - **GR-05** SEO baseline: unique title/description per route, canonical URLs, JSON-LD structured data, noindex on auth routes.
-- **GR-07** Public claims: every metric traces to a measured baseline; zero unverifiable superlatives.`,
+- **GR-06** Analytics: privacy-first, zero PII in events, consent honored, event names registered in docs/EVENTS.md.
+- **GR-07** Public claims: every metric traces to a measured baseline; zero unverifiable superlatives.
+- **GR-08** Public copy lives in structured content files or CMS with plain-language reading level.`,
   },
   {
     id: 'cybersec',
@@ -364,6 +445,16 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **UI-07** WHEN animating an interactive Three.js / WebGL scene with OrbitControls → DO delegate continuous 360-degree rotation exclusively to controls.autoRotate = true and never call camera.position.lerp() while autoRotate is active | conf: 5
 - **UI-08** WHEN transitioning between landing and heavy console routes → DO execute router.push() immediately and mount a single destination-owned NeuralLoader gated by isReady = isGraphReady && minTimerDone | conf: 5
 - **UI-09** WHEN building a 3-group command bar and dual-theme 3D workspace → DO enforce grid-cols-[1fr_auto_1fr] with h-10 heights and pair dark obsidian (#050505) with Blueprint Light Mode (#f0f4f8 / #1e3a8a) | conf: 5`,
+  },
+  {
+    id: 'empathy-personas',
+    category: 'domain',
+    anchor: [6, 16, 36],
+    markdown: `# User Personas & Empathy Maps
+- **Says:** What quotes or phrases do they use? ("I just need this to work fast.")
+- **Thinks:** What worries them? ("Am I going to lose my data if the internet drops?")
+- **Does:** What is their current behavior? (Writes it down on paper first, then types it later.)
+- **Feels:** What is their emotional state? (Frustrated, overwhelmed, afraid of making a mistake.)`,
   },
   {
     id: 'OPERATING-PRINCIPLES',
@@ -584,15 +675,14 @@ export function getBrainData(options?: {
       });
     }
 
-    // Connect each empty domain/identity slot to the central seed and nearest agent gate
-    emptyFiles.forEach((doc, idx) => {
+    // Connect each empty domain/identity slot to the central seed and its deterministic owning agent gate
+    emptyFiles.forEach((doc) => {
+      const owner = resolveAgentOwner(doc.id);
       links.push({ source: 'hub', target: doc.id });
-      if (coreAgents.length > 0) {
-        links.push({
-          source: coreAgents[idx % coreAgents.length].id,
-          target: doc.id,
-        });
-      }
+      links.push({
+        source: owner.agentId,
+        target: doc.id,
+      });
     });
 
     return {
@@ -663,8 +753,10 @@ export function getBrainData(options?: {
   procedural.nodes.forEach((pNode, index) => {
     if (index < docNodes.length) {
       const doc = docNodes[index];
+      const owner = resolveAgentOwner(doc.id);
       nodes.push({
         ...doc,
+        agentCode: doc.agentCode ?? owner.agentCode,
         fx: doc.fx ?? pNode.ax,
         fy: doc.fy ?? pNode.ay,
         fz: doc.fz ?? pNode.az,
@@ -673,20 +765,33 @@ export function getBrainData(options?: {
         source: 'hub',
         target: doc.id,
       });
+      if (doc.group !== 1 && owner.agentId !== doc.id) {
+        links.push({
+          source: owner.agentId,
+          target: doc.id,
+        });
+      }
     } else {
       const ruleEntry = allRulesCatalog[index % allRulesCatalog.length];
       const nodeId = `${ruleEntry.ruleId}::${pNode.id}`;
+      const owner = resolveAgentOwner(ruleEntry.ruleId);
       nodes.push({
         id: nodeId,
         name: `${ruleEntry.ruleId} — ${ruleEntry.parentName.replace(/^\[[A-Z]+\]\s*/, '').split('—')[0].trim()}`,
         description: ruleEntry.description,
         group: 2,
+        agentCode: owner.agentCode,
         category: 'synapse',
         content: ruleEntry.parentContent,
         val: 1.0,
         fx: pNode.ax,
         fy: pNode.ay,
         fz: pNode.az,
+      });
+      // Deterministic rule-to-agent link: CS-* -> securityagent (SEC), DB-* -> dbaagent (DB), etc.
+      links.push({
+        source: owner.agentId,
+        target: nodeId,
       });
     }
   });
