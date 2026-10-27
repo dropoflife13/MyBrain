@@ -341,3 +341,4 @@ export default function NeuralTransition({
     </motion.div>
   );
 }
+

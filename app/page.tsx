@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
   ArrowRight,
+  BookOpen,
   Check,
   ChevronDown,
   Copy,
@@ -169,6 +170,13 @@ export default function LandingPage() {
           >
             <Users className="w-3.5 h-3.5" />
             <span>The Agents</span>
+          </Link>
+          <Link
+            href="/start"
+            className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Beginner&apos;s Guide</span>
           </Link>
           <a href="#faq" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
             FAQ
@@ -663,6 +671,10 @@ export default function LandingPage() {
           <div className="flex items-center gap-6 text-slate-600 dark:text-zinc-400">
             <Link href="/agents" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               The Agents
+            </Link>
+
+            <Link href="/start" className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors text-emerald-600 dark:text-emerald-400">
+              Beginner&apos;s Guide
             </Link>
 
             <a

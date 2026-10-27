@@ -163,6 +163,12 @@ export default function AgentsPage() {
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
           <Link
+            href="/start"
+            className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl backdrop-blur-xl"
+          >
+            <span>Beginner&apos;s Guide</span>
+          </Link>
+          <Link
             href="/console"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(34,211,238,0.4)]"
           >
