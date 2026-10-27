@@ -20,7 +20,12 @@ import {
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
-import { BrainDocNode, BrainGraphData, getBrainData } from '../lib/brain-parser';
+import {
+  BrainDocNode,
+  BrainGraphData,
+  getBrainData,
+  verifySevenAgentsGate,
+} from '../lib/brain-parser';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 
@@ -34,7 +39,7 @@ const AGENT_DOCK: Array<{ id: string; code: string; label: string }> = [
   { id: 'growthagent', code: 'GR', label: 'Growth' },
 ];
 
-const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md. My vault is currently a blank slate (0 rules). Run Launcher L-01 to assess me: guide me through the Self-Map (0-3) and the 3 Fast Excavation Micro-Triggers (Artifact Archaeology, Visceral Cringe Test, and 30-Second Trade-Off Triads) one question at a time so I can earn my own rules.`;
+const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
 export default function Home() {
   const [hoveredNode, setHoveredNode] = useState<BrainDocNode | null>(null);
@@ -61,6 +66,10 @@ export default function Home() {
   );
 
   const graphData = vaultMode === 'blank' ? blankGraphData : assessedGraphData;
+  const agentGate = useMemo(
+    () => graphData.gateStatus ?? verifySevenAgentsGate(graphData.nodes),
+    [graphData]
+  );
 
   // Smooth Boot Loader Progression
   useEffect(() => {
@@ -572,6 +581,24 @@ export default function Home() {
                 </Button>
               </div>
 
+              {/* Strict Pre-Flight Gate Warning (BN-00: 7 Agents Required) */}
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 text-xs font-mono text-red-200 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-red-300 uppercase tracking-wider">
+                    ⚠ STRICT CLONE RULE (GATE: BN-00)
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-200 border border-red-400/30">
+                    7 AGENTS REQUIRED
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 leading-relaxed">
+                  You <strong className="text-white">cannot start</strong> or assess a Brain Vault unless all{' '}
+                  <span className="text-[#00ffff]">7 Core Agents (PM, UX, GR, SD, IR, DB, SEC)</span> are present in{' '}
+                  <code className="text-white">/agents</code>. Deleting any agent triggers{' '}
+                  <code className="text-red-300">GATE: FAIL BN-00</code> and halts initialization.
+                </p>
+              </div>
+
               {/* 3-Step Self-Assessment Pipeline */}
               <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 text-xs font-mono text-zinc-300 space-y-2">
                 <div className="text-[11px] text-[#00ffff] uppercase tracking-wider font-semibold">
@@ -674,7 +701,45 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 8. Custom Initial Boot Loader Overlay */}
+      {/* 8. Strict Pre-Flight Gate Hard Stop (GATE: FAIL BN-00 if any of the 7 Agents are missing) */}
+      <AnimatePresence>
+        {!agentGate.passed && (
+          <motion.div
+            key="bn00-hard-stop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[95] flex items-center justify-center bg-[#050505]/95 backdrop-blur-xl p-6"
+          >
+            <div className="w-full max-w-lg rounded-2xl bg-[#09090b] border border-red-500/40 p-6 shadow-2xl font-mono space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                <span className="text-xs font-bold text-red-400 tracking-wider uppercase">
+                  GATE: FAIL BN-00 • INITIALIZATION HALTED
+                </span>
+                <span className="px-2 py-0.5 rounded bg-red-500/20 text-red-300 text-[10px] border border-red-500/30">
+                  7-AGENT SUITE INCOMPLETE
+                </span>
+              </div>
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                This Brain Vault <strong className="text-white">cannot start</strong> without all 7 Core Execution Agents (<code className="text-[#00ffff]">PM, UX, GR, SD, IR, DB, SEC</code>) present in <code className="text-white">/agents</code>.
+              </p>
+              <div className="p-3 rounded-lg bg-red-950/30 border border-red-500/30 text-xs text-red-200 space-y-1">
+                <div className="text-[10px] uppercase text-red-400 font-semibold">
+                  Missing Required Agent Files:
+                </div>
+                {agentGate.missingAgents.map((item) => (
+                  <div key={item}>• {item}</div>
+                ))}
+              </div>
+              <p className="text-[11px] text-zinc-400">
+                Restore the missing files from <code className="text-white">/brain-template.zip</code> or re-clone the complete repository to unlock the Cortex.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 9. Custom Initial Boot Loader Overlay */}
       <AnimatePresence>
         {isBooting && (
           <motion.div

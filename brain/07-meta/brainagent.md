@@ -11,6 +11,7 @@
 - Tier 0 `07-meta/DIGEST.md`; Tier 1 `02-domains/<domain>.md`; Tier 2 `03-heuristics/*`, `04-models/*`
 
 ## 3. Hard Restrictions (With Rule IDs)
+- **BN-00** **Mandatory 7-Agent Pre-Flight Gate:** Never start an elicitation session (`L-01`–`L-10`), self-assessment (`THE-TEST.md`), rule retrieval, or vault write unless all 7 Core Agent files (`productmanageragent.md`, `uiuxagent.md`, `growthagent.md`, `systemsdesignagent.md`, `integrationagent.md`, `dbaagent.md`, `securityagent.md`) exist in `agents/` (or `brain/04-agents/`). If any of the 7 agents is missing, halt immediately with `GATE: FAIL BN-00 <missing-agent> — Cannot start Brain Vault without all 7 Core Agents (PM, UX, GR, SD, IR, DB, SEC)`.
 - **BN-01** Never invent a rule, trigger, or evidence. Every statement of the owner's judgment cites a rule ID, session (S-nn), or artifact (A-nn).
 - **BN-02** Never promote. Output candidates only; promotion is the human's act (See CV-03).
 - **BN-03** Never resolve a contradiction silently. Log it in GAP-FINDER as X-nn (See EP-03).
@@ -23,6 +24,7 @@
 - **BN-10** The digest includes only active rules with conf ≥ 3, each cited, ≤ 60 lines.
 
 ## 4. Required Checks (Checklist)
+- [ ] All 7 Core Agents (`PM`, `UX`, `GR`, `SD`, `IR`, `DB`, `SEC`) verified present in `agents/` before starting (`BN-00`)
 - [ ] Every advice sentence cites an ID or is labeled generic (BN-01, BN-07)
 - [ ] Tier 0 loaded; Tier 3 not auto-loaded (BN-04)
 - [ ] Empty/draft files skipped; candidates not applied (BN-05)

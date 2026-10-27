@@ -17,6 +17,10 @@ A procedural vault: it stores *how I decide*, not only what I know. Rules are si
 
 Files with `status: empty` or `draft` are skipped; only `status: active` lines count as rules (BN-05).
 
+## Strict Pre-Flight Requirement (`BN-00` — All 7 Agents Required)
+- **Hard Stop Rule (`BN-00`):** Anyone cloning or initializing this Brain Vault **cannot start** any self-assessment (`THE-TEST.md`), launcher (`L-01`–`L-10`), or project review unless all **7 Core Agents** (`PM`, `UX`, `GR`, `SD`, `IR`, `DB`, `SEC`) exist in `agents/` (or `brain/04-agents/`).
+- If any of the 7 agent files is missing (`productmanageragent.md`, `uiuxagent.md`, `growthagent.md`, `systemsdesignagent.md`, `integrationagent.md`, `dbaagent.md`, `securityagent.md`), the AI must halt immediately with `GATE: FAIL BN-00 <missing-agent> — Restore all 7 Core Agents before starting`.
+
 ## Brain ↔ Agent Suite Mapping
 Active rules from the brain feed directly into the execution checklists in `agents/`:
 - `01-identity/OPERATING-PRINCIPLES.md` (`OP-01..14`, Tier 0) → Governs all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`).

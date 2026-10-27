@@ -1,12 +1,26 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getBrainData, parseMarkdownNode, BrainDocNode } from '../../../lib/brain-parser';
+import {
+  getBrainData,
+  parseMarkdownNode,
+  BrainDocNode,
+  REQUIRED_SEVEN_AGENTS,
+} from '../../../lib/brain-parser';
 
 export async function GET() {
   try {
     const baseGraph = getBrainData({ nodeCount: 360 });
     const rootDir = process.cwd();
+
+    // Enforce BN-00: Verify all 7 Core Agent files exist in /agents
+    const missingAgents: string[] = [];
+    for (const agent of REQUIRED_SEVEN_AGENTS) {
+      const fullAgentPath = path.join(rootDir, agent.file);
+      if (!fs.existsSync(fullAgentPath)) {
+        missingAgents.push(`${agent.file} ([${agent.code}])`);
+      }
+    }
 
     const fileMap: Array<{ id: string; relPath: string; category: BrainDocNode['category'] }> = [
       { id: 'dbaagent', relPath: 'agents/dbaagent.md', category: 'agent' },
@@ -56,6 +70,11 @@ export async function GET() {
     return NextResponse.json({
       nodes: updatedNodes,
       links: baseGraph.links,
+      gateStatus: {
+        passed: missingAgents.length === 0,
+        ruleId: 'BN-00',
+        missingAgents,
+      },
     });
   } catch (error: any) {
     return NextResponse.json(getBrainData({ nodeCount: 360 }));

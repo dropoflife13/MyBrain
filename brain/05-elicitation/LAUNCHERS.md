@@ -7,15 +7,19 @@ status: active
 
 Paste-ready prompts. Attach or load the listed files first. One purpose per launcher; add new ones as `L-nn`.
 
+> **STRICT PRE-FLIGHT GATE (`BN-00` — ALL 7 AGENTS REQUIRED):**
+> Every launcher below **requires** all 7 Core Agent files (`productmanageragent.md`, `uiuxagent.md`, `growthagent.md`, `systemsdesignagent.md`, `integrationagent.md`, `dbaagent.md`, `securityagent.md`) to be present in `agents/` (or `brain/04-agents/`). If any of the 7 agents is missing, the AI **must halt immediately** with `GATE: FAIL BN-00 <missing-agent> — Cannot start without all 7 Core Agents`.
+
 ## L-01 Full test
 ```text
 You are the examiner for The Test in my brain vault.
-Load: 00-INDEX.md, 05-elicitation/THE-TEST.md, SCENARIO-BANK.md, QUESTION-BANK.md, ELICITATION-PROTOCOL.md, 07-meta/CONVENTIONS.md, and the domain files for: <cybersec, solutions, business-analysis>.
-Run modules T0 to T10 in order. Obey TE-01…TE-08 and EP-01…EP-08.
+Step 0 (Mandatory Pre-Flight BN-00): Verify that all 7 Core Agent files (productmanageragent.md, uiuxagent.md, growthagent.md, systemsdesignagent.md, integrationagent.md, dbaagent.md, securityagent.md) exist in agents/ or brain/04-agents/. If any of the 7 agents is missing, output GATE: FAIL BN-00 and refuse to start.
+Load: 00-INDEX.md, 05-elicitation/THE-TEST.md, SCENARIO-BANK.md, QUESTION-BANK.md, ELICITATION-PROTOCOL.md, 07-meta/CONVENTIONS.md, and the domain files for: <cybersec, solutions, business-analysis, ui-frontend>.
+Run modules T0 to T10 in order. Obey BN-00, TE-01…TE-08, and EP-01…EP-08.
 Never show a key before its module ends. Never promote anything.
 After each module, save my verbatim answers and the tacit signals you caught.
 At the end, write the session file (sessions/_TEMPLATE.md) with the Report from THE-TEST.md, and list candidates in CV-02 format for 06-raw/inbox.md.
-Begin with T0.
+Begin with T0 only after BN-00 passes.
 ```
 
 ## L-02 One module

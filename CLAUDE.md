@@ -1,8 +1,28 @@
 # Brainweb Router — Dual System Architecture
 
-This repository contains two cooperating layers:
-1. **The 7-Agent Suite (`agents/`):** The **execution layer** that enforces strict gates and reviews implementation tickets.
-2. **The Procedural Brain (`brain/`):** The **judgment layer** that stores tacit knowledge, trade-offs, and boundary conditions (`breaks:`) before they become fixed agent gates.
+This repository contains two cooperating layers that **cannot operate independently**:
+1. **The 7-Agent Suite (`agents/`):** The **execution layer** (`PM`, `UX`, `GR`, `SD`, `IR`, `DB`, `SEC`) that enforces strict gates and reviews implementation tickets.
+2. **The Procedural Brain (`brain/`):** The **judgment layer** that stores tacit knowledge, trade-offs, and boundary conditions (`breaks:`) that feed into the 7 agents.
+
+---
+
+## 0. Strict Clone & Initialization Rule (`BN-00` — Hard Stop Without All 7 Agents)
+
+> **MANDATORY PRE-FLIGHT CHECK (HARD INVARIANT):**
+> Before running **any** self-assessment (`THE-TEST.md`), launcher (`L-01`–`L-10`), rule promotion, or build task, you **MUST** verify that all **7 Core Agent files** exist in `agents/` (or `brain/04-agents/`):
+> 1. `agents/productmanageragent.md` (`[PM]`)
+> 2. `agents/uiuxagent.md` (`[UX]`)
+> 3. `agents/growthagent.md` (`[GR]`)
+> 4. `agents/systemsdesignagent.md` (`[SD]`)
+> 5. `agents/integrationagent.md` (`[IR]`)
+> 6. `agents/dbaagent.md` (`[DB]`)
+> 7. `agents/securityagent.md` (`[SEC]`)
+>
+> **If even ONE of the 7 agents is missing or deleted:**
+> - **DO NOT START** the self-assessment, elicitation session, or build workflow.
+> - Immediately output:
+>   `GATE: FAIL BN-00 <missing-agent-file> — Cannot initialize Brain Vault without all 7 Core Agents (PM, UX, GR, SD, IR, DB, SEC). Restore the /agents directory from the starter template before proceeding.`
+> - **Why:** A Procedural Brain without the 7 Execution Gatekeepers has no enforcement targets (`SP-02`) and cannot anchor its synaptic graph.
 
 ---
 
