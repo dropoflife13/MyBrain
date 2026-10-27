@@ -9,7 +9,9 @@ export interface Brain3DProps {
   data?: BrainGraphData;
   selectedNode?: BrainDocNode | null;
   autoSpin?: boolean;
-  onNodeHover: (node: BrainDocNode | null) => void;
+  isBackground?: boolean;
+  divingIn?: boolean;
+  onNodeHover?: (node: BrainDocNode | null) => void;
   onNodeClick?: (node: BrainDocNode | null) => void;
   onReady?: () => void;
   onFpsUpdate?: (fps: number) => void;
@@ -19,6 +21,8 @@ export default function Brain3D({
   data,
   selectedNode,
   autoSpin = true,
+  isBackground = false,
+  divingIn = false,
   onNodeHover,
   onNodeClick,
   onReady,
@@ -28,6 +32,8 @@ export default function Brain3D({
 
   // Latest prop refs for use inside the 60fps animation & event loop
   const autoSpinRef = useRef<boolean>(autoSpin);
+  const isBackgroundRef = useRef<boolean>(isBackground);
+  const divingInRef = useRef<boolean>(divingIn);
   const selectedNodeRef = useRef<BrainDocNode | null>(selectedNode || null);
   const hoveredNodeRef = useRef<BrainDocNode | null>(null);
   const onNodeHoverRef = useRef(onNodeHover);
@@ -51,7 +57,9 @@ export default function Brain3D({
 
   useEffect(() => {
     autoSpinRef.current = autoSpin;
-  }, [autoSpin]);
+    isBackgroundRef.current = isBackground;
+    divingInRef.current = divingIn;
+  }, [autoSpin, isBackground, divingIn]);
 
   useEffect(() => {
     onNodeHoverRef.current = onNodeHover;
@@ -125,10 +133,16 @@ export default function Brain3D({
     controls.enableDamping = true;
     controls.dampingFactor = 0.055;
     controls.autoRotate = autoSpinRef.current;
-    controls.autoRotateSpeed = 1.45;
+    controls.autoRotateSpeed = isBackgroundRef.current ? 0.95 : 1.45;
     controls.minDistance = 28;
     controls.maxDistance = 340;
     controls.target.set(0, 0, 0);
+
+    if (isBackgroundRef.current) {
+      controls.enableRotate = false;
+      controls.enableZoom = false;
+      controls.enablePan = false;
+    }
 
     // 5. Ambient Deep-Space Starfield & Tactical Orbital Rings
     const environmentGroup = new THREE.Group();
@@ -360,7 +374,7 @@ export default function Brain3D({
           nextHoverId,
           selectedNodeRef.current ? String(selectedNodeRef.current.id) : null
         );
-        onNodeHoverRef.current(hitNode);
+        onNodeHoverRef.current?.(hitNode);
       }
     };
 
@@ -393,9 +407,11 @@ export default function Brain3D({
       }
     };
 
-    renderer.domElement.addEventListener('mousemove', handlePointerMove);
-    renderer.domElement.addEventListener('mousedown', handlePointerDown);
-    renderer.domElement.addEventListener('mouseup', handlePointerUp);
+    if (!isBackgroundRef.current) {
+      renderer.domElement.addEventListener('mousemove', handlePointerMove);
+      renderer.domElement.addEventListener('mousedown', handlePointerDown);
+      renderer.domElement.addEventListener('mouseup', handlePointerUp);
+    }
 
     // 8. 60fps Animation Loop (Auto-Spin + Camera Focus Lerp + Agent Pulse)
     let animId: number;
@@ -404,6 +420,13 @@ export default function Brain3D({
 
     const animate = (now: number) => {
       animId = requestAnimationFrame(animate);
+
+      if (divingInRef.current) {
+        // Dramatic dive-in zoom effect into the center of the constellation
+        camera.position.lerp(new THREE.Vector3(0, 4, 12), 0.09);
+        camera.fov = THREE.MathUtils.lerp(camera.fov, 16, 0.08);
+        camera.updateProjectionMatrix();
+      }
 
       const isLockedOnNode = Boolean(selectedNodeRef.current && selectedNodeRef.current.id !== 'hub');
       const isHoveringNode = Boolean(hoveredNodeRef.current);
@@ -471,9 +494,11 @@ export default function Brain3D({
       clearTimeout(readyTimer);
       window.removeEventListener('resize', handleResize);
       if (resizeObserver) resizeObserver.disconnect();
-      renderer.domElement.removeEventListener('mousemove', handlePointerMove);
-      renderer.domElement.removeEventListener('mousedown', handlePointerDown);
-      renderer.domElement.removeEventListener('mouseup', handlePointerUp);
+      if (!isBackgroundRef.current) {
+        renderer.domElement.removeEventListener('mousemove', handlePointerMove);
+        renderer.domElement.removeEventListener('mousedown', handlePointerDown);
+        renderer.domElement.removeEventListener('mouseup', handlePointerUp);
+      }
       cancelAnimationFrame(animId);
       controls.dispose();
       renderer.dispose();

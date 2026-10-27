@@ -1,148 +1,78 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
-  AlertTriangle,
+  ArrowRight,
   Check,
+  ChevronDown,
   Copy,
   Cpu,
   Download,
   ExternalLink,
-  Eye,
-  FileCode2,
   GitFork,
-  Pause,
-  RefreshCw,
-  RotateCw,
-  Search,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Terminal,
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
-import {
-  BrainDocNode,
-  BrainGraphData,
-  getBrainData,
-  verifySevenAgentsGate,
-} from '../lib/brain-parser';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 
-const AGENT_DOCK: Array<{ id: string; code: string; label: string }> = [
-  { id: 'dbaagent', code: 'DB', label: 'Database' },
-  { id: 'securityagent', code: 'SEC', label: 'Security' },
-  { id: 'uiuxagent', code: 'UX', label: 'UI / UX' },
-  { id: 'productmanageragent', code: 'PM', label: 'Product' },
-  { id: 'systemsdesignagent', code: 'SD', label: 'Systems' },
-  { id: 'integrationagent', code: 'IR', label: 'Integration' },
-  { id: 'growthagent', code: 'GR', label: 'Growth' },
-];
-
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
-export default function Home() {
-  const [hoveredNode, setHoveredNode] = useState<BrainDocNode | null>(null);
-  const [selectedNode, setSelectedNode] = useState<BrainDocNode | null>(null);
-  const [autoSpin, setAutoSpin] = useState<boolean>(true);
-  const [fps, setFps] = useState<number>(60);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [queryText, setQueryText] = useState<string>('');
+interface FaqItem {
+  question: string;
+  answer: string;
+  hasDownloadButton?: boolean;
+}
+
+const FAQ_ITEMS: FaqItem[] = [
+  {
+    question: 'How do I deploy my own Brain Vault?',
+    answer:
+      'Clone the repository and push it directly to Vercel, or download the clean starter template below. Both packages contain the full Next.js 3D WebGL engine, the 7-Agent Execution Suite (/agents), and the diagnostic excavation tests (/brain/05-elicitation).',
+    hasDownloadButton: true,
+  },
+  {
+    question: 'Why does the forked template start 100% empty (0 rules)?',
+    answer:
+      "You cannot copy-paste someone else's engineering judgment. An unearned vault filled with someone else's decisions is generic slop. The template starts with status: empty (0 active rules) so that you run Launcher L-01 (THE-TEST.md) and earn every single synaptic node through rigorous self-assessment.",
+  },
+  {
+    question: 'What are the 7 Core Agents in the suite?',
+    answer:
+      'The 7 Execution Gatekeepers are: Database Architect (DB), Security Gatekeeper (SEC), UI/UX Frontend Lead (UX), Product Manager (PM), Systems Design Architect (SD), Integration & Reliability Engineer (IR), and Growth Specialist (GR). Each agent owns a specific architectural boundary and executes non-negotiable GATE: PASS or GATE: FAIL checks.',
+  },
+  {
+    question: 'What is the BN-00 Pre-Flight Invariant?',
+    answer:
+      'Rule BN-00 is a hard-stop architectural invariant: a Procedural Brain cannot operate in headless or ungoverned mode. If anyone clones the repository and deletes or omits even one of the 7 agent files in /agents, the procedural kernel crashes with a full-screen sci-fi panic overlay and refuses to execute.',
+  },
+  {
+    question: 'How do I connect this vault to Claude Code, Cursor, or Antigravity?',
+    answer:
+      'Through CLAUDE.md and VS Code Multi-Root Workspaces. When you connect an AI agent to this workspace, it automatically loads Tier 0 governance principles on every prompt, checks active domain rules, and evaluates agent gate checklists before touching code.',
+  },
+];
+
+export default function LandingPage() {
+  const router = useRouter();
+  const [isDiving, setIsDiving] = useState<boolean>(false);
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
-  const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
-  // Custom Boot Loader State
-  const [isBooting, setIsBooting] = useState<boolean>(true);
-  const [bootProgress, setBootProgress] = useState<number>(12);
-  const [sceneReady, setSceneReady] = useState<boolean>(false);
-
-  const [assessedGraphData, setAssessedGraphData] = useState<BrainGraphData>(() =>
-    getBrainData({ nodeCount: 360, mode: 'assessed' })
-  );
-  const blankGraphData = useMemo(
-    () => getBrainData({ mode: 'blank' }),
-    []
-  );
-
-  const graphData = vaultMode === 'blank' ? blankGraphData : assessedGraphData;
-  const agentGate = useMemo(
-    () => graphData.gateStatus ?? verifySevenAgentsGate(graphData.nodes),
-    [graphData]
-  );
-  const [isCheckingGate, setIsCheckingGate] = useState<boolean>(false);
-
-  const handleRecheckGate = () => {
-    setIsCheckingGate(true);
-    fetch('/api/brain')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (payload) {
-          setAssessedGraphData(payload);
-          if (payload.gateStatus?.passed) {
-            setIsBooting(false);
-          }
-        }
-      })
-      .catch(() => {})
-      .finally(() => {
-        setTimeout(() => setIsCheckingGate(false), 350);
-      });
+  const handleOpenMind = () => {
+    setIsDiving(true);
+    setTimeout(() => {
+      router.push('/console');
+    }, 550);
   };
-
-  // Smooth Boot Loader Progression
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBootProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        const step = sceneReady ? 18 : 7;
-        return Math.min(100, prev + step);
-      });
-    }, 65);
-
-    return () => clearInterval(interval);
-  }, [sceneReady]);
-
-  useEffect(() => {
-    if (bootProgress >= 100) {
-      const doneTimer = setTimeout(() => setIsBooting(false), 220);
-      return () => clearTimeout(doneTimer);
-    }
-  }, [bootProgress]);
-
-  // Safety fallback so loader never hangs > 2.2s
-  useEffect(() => {
-    const fallback = setTimeout(() => {
-      setBootProgress(100);
-      setIsBooting(false);
-    }, 2200);
-    return () => clearTimeout(fallback);
-  }, []);
-
-  // Sync live markdown files from /api/brain on mount
-  useEffect(() => {
-    let active = true;
-    fetch('/api/brain')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (active && payload) {
-          setAssessedGraphData(payload);
-          if (payload.gateStatus && !payload.gateStatus.passed) {
-            setIsBooting(false);
-          }
-        }
-      })
-      .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const handleCopyPrompt = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
@@ -152,412 +82,502 @@ export default function Home() {
     }
   };
 
-  const handleToggleVaultMode = (nextMode: 'assessed' | 'blank') => {
-    setVaultMode(nextMode);
-    setSelectedNode(null);
-    setHoveredNode(null);
+  const toggleFaq = (idx: number) => {
+    setOpenFaqIndex((prev) => (prev === idx ? null : idx));
   };
-
-  // Pressing Escape closes the sidebar and deselects the node (or closes Share modal)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setSelectedNode(null);
-        setIsShareOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleCloseSidebar = () => {
-    setSelectedNode(null);
-    setQueryText('');
-  };
-
-  const handleSelectAgentFromDock = (agentId: string) => {
-    const target = graphData.nodes.find((n) => n.id === agentId);
-    if (target) {
-      if (selectedNode?.id === target.id) {
-        handleCloseSidebar();
-      } else {
-        setSelectedNode(target);
-        setQueryText('');
-      }
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    setMousePos({ x: e.clientX, y: e.clientY });
-  };
-
-  const showHoverTooltip = Boolean(hoveredNode && hoveredNode.id !== 'hub');
-  const selectedIdClean = selectedNode?.id ? String(selectedNode.id).split('::')[0] : '';
-
-  const formattedLines: string[] = useMemo(() => {
-    if (!selectedNode) return [];
-    const raw = selectedNode.content || selectedNode.description || '';
-    return raw
-      .split(/\r?\n/)
-      .filter((line: string) =>
-        queryText.trim()
-          ? line.toLowerCase().includes(queryText.toLowerCase())
-          : line.trim().length > 0
-      );
-  }, [selectedNode, queryText]);
 
   return (
-    <main
-      onMouseMove={handleMouseMove}
-      className="relative w-screen h-screen overflow-hidden bg-[#050505] text-white select-none"
-    >
-      {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
-      <div className="absolute inset-0 w-full h-full z-0">
+    <div className="relative min-h-screen bg-[#050505] text-white selection:bg-cyan-500 selection:text-black overflow-x-hidden">
+      {/* 1. Full-Screen Fixed 3D Synaptic Constellation Background */}
+      <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
         <Brain3D
-          data={graphData}
-          selectedNode={selectedNode}
-          autoSpin={autoSpin}
-          onNodeHover={setHoveredNode}
-          onNodeClick={(node) => {
-            if (node) {
-              setSelectedNode(node);
-              setQueryText('');
-            }
-          }}
-          onReady={() => setSceneReady(true)}
-          onFpsUpdate={setFps}
+          autoSpin={true}
+          isBackground={true}
+          divingIn={isDiving}
+          onNodeHover={() => {}}
         />
       </div>
 
-      {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
+      {/* 2. Atmospheric Overlays (Radial Gradient + Blueprint Grid + Corner Reticles) */}
       <div
-        className="pointer-events-none fixed inset-0 z-10"
+        className="fixed inset-0 pointer-events-none z-[1]"
         style={{
           backgroundImage: `
-            radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
-            radial-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px)
+            radial-gradient(circle at 50% 50%, rgba(5, 5, 5, 0.45) 0%, rgba(2, 4, 10, 0.88) 100%),
+            radial-gradient(rgba(0, 255, 255, 0.04) 1px, transparent 1px)
           `,
           backgroundSize: '100% 100%, 32px 32px',
         }}
       />
 
-      {/* Precision Corner Telemetry Reticles */}
-      <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-400/30" />
-      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-400/30" />
-      <div className="pointer-events-none fixed bottom-6 left-6 z-10 w-3 h-3 border-b border-l border-cyan-400/30" />
+      <div className="pointer-events-none fixed top-20 left-6 z-10 w-3 h-3 border-t border-l border-cyan-400/30 hidden md:block" />
+      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-400/30 hidden md:block" />
 
-      {/* 3. Top Desktop Command Bar (Brand + 7-Agent Quick Dock + Auto-Spin Control) */}
-      <header className="fixed top-4 left-6 right-6 z-30 flex items-center justify-between gap-4 pointer-events-none">
-        {/* Left: Cortex Brand & Telemetry Pill */}
-        <div className="pointer-events-auto flex items-center gap-3.5 px-3.5 py-2 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
+      {/* 3. Top Floating Glassmorphic Navigation Bar */}
+      <header className="fixed top-4 left-4 right-4 md:left-8 md:right-8 z-40 flex items-center justify-between gap-4 pointer-events-none">
+        {/* Brand Pill */}
+        <div className="pointer-events-auto flex items-center gap-3 px-3.5 py-2 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
           <img
             src="/cortex-logo-cyan.svg"
             alt="Cortex Logo"
             className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.45)]"
           />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold tracking-widest text-white uppercase">
-                CORTEX
-              </span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-400/10 text-[#00ffff] border border-cyan-400/20">
-                v2.4
-              </span>
-            </div>
-            <div className="flex items-center gap-3 mt-0.5 text-[10px] font-mono text-zinc-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#00ffff] shadow-[0_0_6px_#00ffff]" />
-                7 Agents
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-white" />
-                {graphData.nodes.length - 1} Synapses
-              </span>
-              <span className="hidden sm:inline-flex items-center gap-1 text-emerald-400">
-                <Activity className="w-3 h-3" />
-                {fps} FPS
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold tracking-widest text-white uppercase">
+              CORTEX
+            </span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-400/10 text-[#00ffff] border border-cyan-400/20">
+              v2.4
+            </span>
           </div>
         </div>
 
-        {/* Center: 7-Agent Quick-Jump Dock */}
-        <nav className="pointer-events-auto hidden lg:flex items-center gap-1 p-1.5 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
-          <span className="px-2.5 text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#00ffff]" />
-            Gates:
-          </span>
-          {AGENT_DOCK.map((agent) => {
-            const isActive = selectedNode?.id === agent.id;
-            return (
-              <button
-                key={agent.id}
-                type="button"
-                onClick={() => handleSelectAgentFromDock(agent.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isActive
-                    ? 'bg-[#00ffff] text-zinc-950 font-bold shadow-[0_0_12px_rgba(0,255,255,0.4)]'
-                    : 'text-zinc-300 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isActive ? 'bg-zinc-950' : 'bg-[#00ffff]'
-                  }`}
-                />
-                <span>{agent.code}</span>
-              </button>
-            );
-          })}
+        {/* Center Links (Desktop) */}
+        <nav className="pointer-events-auto hidden md:flex items-center gap-6 px-5 py-2 rounded-xl bg-[#09090b]/80 backdrop-blur-xl border border-white/10 text-xs font-mono text-zinc-400">
+          <a href="#architecture" className="hover:text-cyan-400 transition-colors">
+            Architecture
+          </a>
+          <a href="#how-it-works" className="hover:text-cyan-400 transition-colors">
+            How It Works
+          </a>
+          <a href="#faq" className="hover:text-cyan-400 transition-colors">
+            FAQ
+          </a>
         </nav>
 
-        {/* Right: Vault State Switcher (Assessed vs Blank Fork) + Auto-Spin Control */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          <div className="hidden sm:flex items-center p-1 rounded-xl bg-[#09090b]/85 backdrop-blur-xl border border-white/10 shadow-2xl">
-            <button
-              type="button"
-              onClick={() => handleToggleVaultMode('assessed')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-                vaultMode === 'assessed'
-                  ? 'bg-[#00ffff]/15 text-[#00ffff] border border-cyan-400/35 font-semibold'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="View Neil's fully assessed 360-node Cortex"
-            >
-              <Sparkles className="w-3 h-3" />
-              <span>Assessed (86 Rules)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleToggleVaultMode('blank')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-                vaultMode === 'blank'
-                  ? 'bg-amber-400/15 text-amber-300 border border-amber-400/35 font-semibold'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-              title="Preview what a freshly forked Blank-Slate Brain looks like before self-assessment"
-            >
-              <Eye className="w-3 h-3" />
-              <span>Blank Fork (0 Rules)</span>
-            </button>
-          </div>
+        {/* Right CTA Actions */}
+        <div className="pointer-events-auto flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsShareOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#09090b]/85 hover:bg-zinc-900 border border-white/15 hover:border-cyan-400/40 text-xs font-mono text-zinc-200 transition-all shadow-2xl cursor-pointer"
+          >
+            <GitFork className="w-3.5 h-3.5 text-[#00ffff]" />
+            <span className="hidden sm:inline">Fork this Brain</span>
+          </button>
 
           <button
             type="button"
-            onClick={() => setAutoSpin((prev) => !prev)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl backdrop-blur-xl border text-xs font-mono transition-all cursor-pointer shadow-2xl ${
-              autoSpin
-                ? 'bg-[#09090b]/85 border-cyan-400/35 text-[#00ffff]'
-                : 'bg-[#09090b]/85 border-white/10 text-zinc-400 hover:text-white'
-            }`}
-            title="Toggle 3D Auto-Orbit"
+            onClick={handleOpenMind}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] hover:shadow-[0_0_30px_rgba(0,255,255,0.5)] cursor-pointer"
           >
-            {autoSpin ? (
-              <RotateCw className="w-3.5 h-3.5 text-[#00ffff] animate-spin" />
-            ) : (
-              <Pause className="w-3.5 h-3.5 text-zinc-400" />
-            )}
-            <span>Auto-Spin: {autoSpin ? 'ON' : 'OFF'}</span>
+            <span>Console</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
-      {/* Blank Fork Preview Mode Banner */}
-      <AnimatePresence>
-        {vaultMode === 'blank' && (
-          <motion.div
-            key="blank-mode-banner"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 12 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#09090b]/90 backdrop-blur-xl border border-amber-400/35 shadow-2xl text-xs font-mono"
-          >
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <span className="text-amber-200">
-              BLANK-SLATE FORK PREVIEW: <strong className="text-white">0 Personal Rules</strong> (Only the 7 Agent Gatekeepers + Empty Slots). You must assess yourself to grow your Cortex.
-            </span>
-            <button
-              type="button"
-              onClick={() => setIsShareOpen(true)}
-              className="px-2.5 py-1 rounded bg-amber-400/20 hover:bg-amber-400/30 text-amber-200 border border-amber-400/40 cursor-pointer whitespace-nowrap"
-            >
-              Take Self-Assessment →
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 4. Cinematic Hero Section */}
+      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center text-center px-6 pt-24 pb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          className="max-w-4xl mx-auto flex flex-col items-center"
+        >
+          {/* Subtitle Badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/25 text-cyan-400 text-xs font-mono tracking-wider uppercase mb-8 shadow-[0_0_15px_rgba(0,255,255,0.15)]">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Procedural Judgment Engine &amp; 7-Agent Gate Suite</span>
+          </div>
 
-      {/* 4. Dynamic Cursor-Following Dark Glass Tooltip (Shows ONLY Title) */}
-      <AnimatePresence>
-        {showHoverTooltip && (
-          <motion.div
-            key="cursor-tooltip"
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.94 }}
-            transition={{ duration: 0.1 }}
-            className="fixed z-50 pointer-events-none flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#09090b]/95 backdrop-blur-md border border-white/15 shadow-2xl"
-            style={{
-              left: `${Math.min(
-                mousePos.x + 18,
-                (typeof window !== 'undefined' ? window.innerWidth : 1200) - 260
-              )}px`,
-              top: `${Math.max(mousePos.y - 12, 16)}px`,
-            }}
+          {/* Main Headline */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white mb-6 leading-[1.08] drop-shadow-[0_0_50px_rgba(0,255,255,0.22)]">
+            Your Judgment, <br className="hidden sm:inline" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-500">
+              Encoded.
+            </span>
+          </h1>
+
+          {/* Sub-headline */}
+          <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed font-sans">
+            A 3D, AI-powered knowledge vault that doesn&apos;t just store your notes—it enforces your
+            engineering standards.
+          </p>
+
+          {/* Giant Glowing CTA Button */}
+          <button
+            type="button"
+            onClick={handleOpenMind}
+            disabled={isDiving}
+            className="group relative inline-flex items-center gap-3.5 bg-cyan-400 hover:bg-cyan-300 text-black font-extrabold text-lg md:text-xl px-10 py-5 rounded-full transition-all duration-300 shadow-[0_0_35px_rgba(34,211,238,0.5)] hover:shadow-[0_0_60px_rgba(34,211,238,0.85)] hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-75"
           >
-            <span
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                hoveredNode?.group === 1
-                  ? 'bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
-                  : 'bg-white shadow-[0_0_4px_#ffffff]'
+            <span>{isDiving ? 'Engaging Synapses...' : 'Open Your Mind'}</span>
+            <ArrowRight
+              className={`w-6 h-6 transition-transform ${
+                isDiving ? 'translate-x-3' : 'group-hover:translate-x-1.5'
               }`}
             />
-            <span className="text-xs font-mono font-medium text-white whitespace-nowrap">
-              {hoveredNode?.name}
+          </button>
+
+          {/* Telemetry Indicator */}
+          <div className="flex items-center gap-4 mt-12 text-xs font-mono text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
+              7 Autonomous Agents
             </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <span>•</span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              360 Synaptic Coordinates
+            </span>
+            <span>•</span>
+            <span className="text-emerald-400 flex items-center gap-1">
+              <Activity className="w-3.5 h-3.5" />
+              60 FPS WebGL
+            </span>
+          </div>
 
-      {/* 5. Right Sidebar Overhaul (Framer Motion Slide-In + Guaranteed Close on X & Escape) */}
-      <AnimatePresence>
-        {selectedNode && selectedNode.id !== 'hub' && (
-          <motion.aside
-            key="inspector-sidebar"
-            initial={{ x: '100%', opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: '100%', opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-            className="fixed top-0 right-0 bottom-0 z-40 w-[460px] max-w-full backdrop-blur-md bg-black/60 border-l border-white/10 p-5 flex flex-col justify-between shadow-2xl"
+          {/* Down Scroll Indicator */}
+          <a
+            href="#architecture"
+            className="inline-flex flex-col items-center gap-1.5 mt-16 text-zinc-400 hover:text-cyan-400 transition-colors text-xs font-mono"
           >
-            <div
-              className="flex flex-col h-full rounded-xl bg-[#09090b] border border-white/10 overflow-hidden shadow-2xl"
-              style={{
-                fontFamily:
-                  "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-              }}
-            >
-              {/* Editor Top Tab Bar with Explicit Working Exit Button */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-zinc-950">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <FileCode2 className="w-4 h-4 text-[#00ffff] shrink-0" />
-                  <span className="text-xs font-semibold text-zinc-100 truncate">
-                    {selectedIdClean}.md
+            <span>Explore Architecture</span>
+            <ChevronDown className="w-4 h-4 animate-bounce" />
+          </a>
+        </motion.div>
+      </section>
+
+      {/* 5. Scrollable Sections (Glassmorphic containers over fixed 3D canvas) */}
+      <div className="relative z-10 space-y-36 pb-32">
+        {/* SECTION 1: ARCHITECTURE (3 Pillars) */}
+        <section id="architecture" className="px-6 max-w-6xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <div className="text-xs font-mono text-cyan-400 uppercase tracking-widest">
+              // Three Foundational Pillars
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
+              Engineered for Invariant Governance
+            </h2>
+            <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-sans">
+              Unlike static wiki dumps or unstructured LLM chats, Cortex unites procedural 3D math,
+              runtime security invariants, and domain judgment.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1 */}
+            <div className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 p-8 space-y-4 hover:border-cyan-400/40 transition-all shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/25 flex items-center justify-center text-cyan-400">
+                  <Cpu className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white font-mono">
+                  The Synaptic Constellation
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-sans">
+                  A 360-node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
+                  boundary (<code className="text-cyan-300">breaks:</code>) is mathematically
+                  anchored in 3D orbit around the central cognitive hub.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-cyan-300">
+                  360 SYNAPTIC NODES • PROCEDURAL GL
+                </Badge>
+              </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 p-8 space-y-4 hover:border-cyan-400/40 transition-all shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-400/10 border border-cyan-400/25 flex items-center justify-center text-cyan-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white font-mono">
+                  The 7-Agent Execution Suite
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-sans">
+                  Seven autonomous gatekeepers (<code className="text-cyan-300">PM, UX, GR, SD, IR, DB, SEC</code>).
+                  They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
+                  <code className="text-red-300">GATE: FAIL</code> on violations.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-cyan-300">
+                  7 EXECUTION AGENTS • ZERO SLOP
+                </Badge>
+              </div>
+            </div>
+
+            {/* Card 3 */}
+            <div className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 p-8 space-y-4 hover:border-red-400/40 transition-all shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-white font-mono">
+                  The BN-00 Invariant Fail-Safe
+                </h3>
+                <p className="text-xs md:text-sm text-zinc-400 leading-relaxed font-sans">
+                  Pre-flight security invariant. If anyone forks the repository and deletes even one
+                  agent gatekeeper, the system halts with a sci-fi system crash overlay. It refuses to
+                  operate in headless mode.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-red-300">
+                  RULE BN-00 • FAIL-SAFE ENFORCED
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 2: HOW IT WORKS (Two Columns) */}
+        <section id="how-it-works" className="px-6 max-w-6xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <div className="text-xs font-mono text-cyan-400 uppercase tracking-widest">
+              // Operational Journey
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
+              How High-Agency Engineers Encode Judgment
+            </h2>
+            <p className="text-sm md:text-base text-zinc-400 max-w-2xl mx-auto font-sans">
+              Separate your human trade-offs from generative AI. You provide the judgment; AI
+              enforces the gates.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Column 1: For Practitioners & Users */}
+            <div className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 p-8 md:p-10 space-y-6 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 uppercase">
+                  User Protocol
+                </span>
+                <h3 className="text-xl font-bold text-white font-mono">For Builders &amp; Creators</h3>
+              </div>
+
+              <div className="space-y-6 text-xs md:text-sm font-sans text-zinc-300">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-400/15 text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
+                    01
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white font-mono text-sm mb-1">
+                      Assess Yourself (Excavation)
+                    </h4>
+                    <p className="text-zinc-400 leading-relaxed">
+                      Run <code className="text-cyan-300">THE-TEST.md</code> and the 3 Fast
+                      Excavation Micro-Triggers (Artifact Archaeology, Visceral Cringe Test, and 30s
+                      Trade-Off Triads) to discover what you truly care about.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-400/15 text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
+                    02
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white font-mono text-sm mb-1">
+                      Connect Any AI Agent
+                    </h4>
+                    <p className="text-zinc-400 leading-relaxed">
+                      Attach the vault to Claude Code, Cursor, or Antigravity via{' '}
+                      <code className="text-cyan-300">CLAUDE.md</code>. The AI loads Tier 0
+                      Operating Principles and gates every ticket before touching files.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-400/15 text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
+                    03
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white font-mono text-sm mb-1">
+                      Enforce Invariants &amp; Grow
+                    </h4>
+                    <p className="text-zinc-400 leading-relaxed">
+                      Promote tested rules (<code className="text-emerald-400">conf &ge; 3</code>)
+                      into domain files. Every verified rule lights up a new glowing node in your
+                      3D constellation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: For Engineers & Reviewers */}
+            <div className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 p-8 md:p-10 space-y-6 shadow-2xl flex flex-col justify-between">
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 uppercase">
+                    Reviewer Protocol
                   </span>
-                  <Badge variant={selectedNode.group === 1 ? 'default' : 'secondary'}>
-                    {selectedNode.group === 1 ? 'GROUP 1 • AGENT' : 'GROUP 2 • RULE'}
-                  </Badge>
+                  <h3 className="text-xl font-bold text-white font-mono">
+                    For Reviewers &amp; Architects
+                  </h3>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCloseSidebar();
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-red-500/20 border border-white/10 hover:border-red-400/40 text-zinc-300 hover:text-red-200 text-xs font-mono transition-colors cursor-pointer"
-                  title="Close Inspector (Esc)"
-                  aria-label="Close panel"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  <span>ESC</span>
-                </button>
-              </div>
-
-              {/* Node Title & Filter Search Bar */}
-              <div className="px-4 py-3 border-b border-white/10 bg-[#09090b] space-y-2.5">
-                <h2 className="text-sm font-semibold text-white tracking-tight">
-                  {selectedNode.name}
-                </h2>
-                <div className="relative flex items-center">
-                  <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={queryText}
-                    onChange={(e) => setQueryText(e.target.value)}
-                    placeholder="Filter rules in this file..."
-                    className="w-full pl-8 pr-8 py-1.5 rounded-md bg-zinc-900/90 border border-white/10 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#00ffff]/60"
-                  />
-                  {queryText && (
-                    <button
-                      type="button"
-                      onClick={() => setQueryText('')}
-                      className="absolute right-2.5 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                {/* Inspect The Code */}
+                <div className="p-4 rounded-xl bg-zinc-950/70 border border-white/10 space-y-3 font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                      <Terminal className="w-4 h-4 text-cyan-400" />
+                      Codebase &amp; Specs
+                    </span>
+                    <a
+                      href="https://github.com/dropoflife13/MyBrain"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-cyan-400 hover:underline flex items-center gap-1"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
+                      <span>GitHub</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
+                  <p className="text-xs text-zinc-400 font-sans">
+                    Explore the complete Next.js 16 App Router implementation, custom Three.js WebGL
+                    runtime, and the 7-Agent Gate Suite markdown files.
+                  </p>
+                </div>
+
+                {/* See The Crash */}
+                <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/30 space-y-3 font-mono">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-red-300 uppercase tracking-wider flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-red-400" />
+                      The Chaos Test (BN-00)
+                    </span>
+                    <Badge variant="outline" className="text-[10px] text-red-300">
+                      LIVE INVARIANT
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-zinc-300 font-sans">
+                    Want to see it halt? In your local clone, rename{' '}
+                    <code className="text-red-300">agents/securityagent.md</code> to{' '}
+                    <code className="text-red-300">.bak</code>. Watch the 3D console vanish and
+                    render a sci-fi system crash screen with scanlines and blinking cursor.
+                  </p>
                 </div>
               </div>
 
-              {/* Code Notepad Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs leading-relaxed text-zinc-300">
-                {formattedLines.map((line: string, index: number) => {
-                  const isHeading = line.trim().startsWith('#');
-                  const cleanLine = line.replace(/^-\s*/, '').trim();
-                  const ruleIdMatch = cleanLine.match(/^\*\*([A-Z]{1,4}-\d+)\*\*\s*(.+)$/);
-
-                  return (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 py-1.5 px-2 rounded hover:bg-white/[0.04] transition-colors"
-                    >
-                      <span className="text-[10px] text-zinc-600 select-none w-5 text-right shrink-0 pt-0.5">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-
-                      {isHeading ? (
-                        <span className="text-[#00ffff] font-semibold">
-                          {line.replace(/^#+\s*/, '# ')}
-                        </span>
-                      ) : ruleIdMatch ? (
-                        <div className="flex-1">
-                          <span className="inline-block px-1.5 py-0.5 mr-2 rounded bg-[#00ffff]/15 text-[#00ffff] font-semibold text-[11px]">
-                            {ruleIdMatch[1]}
-                          </span>
-                          <span className="text-zinc-200">
-                            {ruleIdMatch[2].replace(/\*\*/g, '')}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="flex-1 text-zinc-300">
-                          {cleanLine.replace(/\*\*/g, '')}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Editor Status Bar Footer */}
-              <div className="px-4 py-2.5 border-t border-white/10 bg-zinc-950 flex items-center justify-between text-[10px] text-zinc-500">
-                <span>UTF-8 • MARKDOWN VAULT</span>
+              <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs font-mono text-zinc-500">Ready to test?</span>
                 <button
                   type="button"
-                  onClick={handleCloseSidebar}
-                  className="text-[#00ffff] hover:underline cursor-pointer"
+                  onClick={handleOpenMind}
+                  className="inline-flex items-center gap-2 text-xs font-mono text-cyan-400 hover:text-cyan-300 font-bold"
                 >
-                  UNLOCK CAMERA [ESC]
+                  <span>Launch Live 3D Console</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
-          </motion.aside>
-        )}
-      </AnimatePresence>
+          </div>
+        </section>
 
-      {/* 6. Floating "Fork this Brain" Button (Bottom-Right Corner) */}
-      <div className="fixed bottom-6 right-6 z-30">
-        <Button
-          variant="outline"
-          onClick={() => setIsShareOpen(true)}
-          className="backdrop-blur-xl bg-[#09090b]/85 border-white/15 hover:border-[#00ffff]/50 shadow-2xl px-4 py-2.5 h-auto font-mono text-xs"
-        >
-          <GitFork className="w-3.5 h-3.5 text-[#00ffff]" />
-          <span>Fork this Brain</span>
-        </Button>
+        {/* SECTION 3: FAQ (Accordion Style) */}
+        <section id="faq" className="px-6 max-w-4xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <div className="text-xs font-mono text-cyan-400 uppercase tracking-widest">
+              // Frequently Asked Questions
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white">
+              Everything You Need to Know
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {FAQ_ITEMS.map((item, idx) => {
+              const isOpen = openFaqIndex === idx;
+              return (
+                <div
+                  key={idx}
+                  className="rounded-2xl bg-black/80 backdrop-blur-xl border border-white/10 overflow-hidden transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleFaq(idx)}
+                    className="w-full flex items-center justify-between p-6 text-left cursor-pointer hover:bg-white/[0.02]"
+                  >
+                    <span className="text-sm md:text-base font-bold text-white font-mono">
+                      {item.question}
+                    </span>
+                    <ChevronDown
+                      className={`w-5 h-5 text-cyan-400 transition-transform duration-200 shrink-0 ml-4 ${
+                        isOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="px-6 pb-6 pt-1 text-xs md:text-sm text-zinc-300 font-sans leading-relaxed border-t border-white/5 space-y-4"
+                      >
+                        <p>{item.answer}</p>
+                        {item.hasDownloadButton && (
+                          <div className="pt-2">
+                            <a
+                              href="/brain-template.zip"
+                              download="brain-vault-blank-template.zip"
+                              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-semibold text-xs shadow-[0_0_20px_rgba(34,211,238,0.35)] transition-all cursor-pointer"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Download Blank Starter Template (.zip)</span>
+                            </a>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* 6. Footer */}
+        <footer className="px-6 max-w-6xl mx-auto pt-16 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6 text-xs font-mono text-zinc-500">
+          <div className="flex items-center gap-3">
+            <img src="/cortex-logo-cyan.svg" alt="Cortex" className="w-5 h-5 object-contain" />
+            <span>CORTEX RUNTIME // NEIL MAR • BSIT SENIOR</span>
+          </div>
+
+          <div className="flex items-center gap-6 text-zinc-400">
+            <a
+              href="https://github.com/dropoflife13/MyBrain"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors flex items-center gap-1.5"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>GitHub</span>
+            </a>
+
+            <a
+              href="https://www.linkedin.com/in/neilmar/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-cyan-400 transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76c-.92 0-1.67-.75-1.67-1.67s.75-1.67 1.67-1.67 1.67.75 1.67 1.67-.75 1.67-1.67 1.67M5.07 18.5h2.78v-8.37H5.07v8.37Z" />
+              </svg>
+              <span>LinkedIn</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={handleOpenMind}
+              className="hover:text-cyan-400 transition-colors"
+            >
+              Console
+            </button>
+          </div>
+        </footer>
       </div>
 
-      {/* 7. Share / Export Modal ("Fork a Blank-Slate Brain — Assess Yourself") */}
+      {/* 7. Fork this Brain Modal */}
       <AnimatePresence>
         {isShareOpen && (
           <motion.div
@@ -684,23 +704,6 @@ export default function Home() {
                 </p>
               </div>
 
-              {/* Preview Blank Fork in 3D Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  handleToggleVaultMode(vaultMode === 'blank' ? 'assessed' : 'blank');
-                  setIsShareOpen(false);
-                }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-amber-400/35 bg-amber-400/10 hover:bg-amber-400/20 text-xs font-mono text-amber-200 transition-colors cursor-pointer"
-              >
-                <Eye className="w-3.5 h-3.5 text-amber-300" />
-                <span>
-                  {vaultMode === 'blank'
-                    ? "Switch Back to Neil's Assessed 3D Cortex (86 Rules)"
-                    : 'Preview Blank-Slate Fork in 3D (0 Personal Rules)'}
-                </span>
-              </button>
-
               <div className="flex flex-col sm:flex-row gap-3 pt-1">
                 <a
                   href="/brain-template.zip"
@@ -725,216 +728,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* 8. Sci-Fi System Crash Overlay (GATE: FAIL BN-00 Hard Stop if any of the 7 Agents are missing) */}
-      <AnimatePresence>
-        {!agentGate.passed && (
-          <motion.div
-            key="bn00-sci-fi-crash"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6 overflow-hidden select-none"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 50%, rgba(130, 10, 15, 0.45) 0%, rgba(20, 2, 5, 0.96) 60%, #030002 100%)',
-            }}
-          >
-            {/* CRT Scanline Texture Layer */}
-            <div
-              className="pointer-events-none absolute inset-0 z-0 opacity-45"
-              style={{
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.5) 0px, rgba(0, 0, 0, 0.5) 1px, transparent 1px, transparent 3px)',
-              }}
-            />
-
-            {/* Glowing Red Emergency Perimeter & Pulsing Vignette */}
-            <div className="pointer-events-none absolute inset-0 z-0 border-[3px] border-red-600/40 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)] animate-pulse" />
-
-            {/* Precision Neon Corner Brackets */}
-            <div className="pointer-events-none absolute top-6 left-6 z-10 w-8 h-8 border-t-2 border-l-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
-            <div className="pointer-events-none absolute top-6 right-6 z-10 w-8 h-8 border-t-2 border-r-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
-            <div className="pointer-events-none absolute bottom-6 left-6 z-10 w-8 h-8 border-b-2 border-l-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
-            <div className="pointer-events-none absolute bottom-6 right-6 z-10 w-8 h-8 border-b-2 border-r-2 border-red-500 shadow-[0_0_10px_#ef4444]" />
-
-            {/* Main Hardened Terminal Box */}
-            <motion.div
-              initial={{ scale: 0.95, y: 10 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 10 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10 w-full max-w-2xl rounded-2xl bg-[#090203]/95 border-2 border-red-500/70 shadow-[0_0_60px_rgba(239,68,68,0.35)] p-6 md:p-8 space-y-5 font-mono backdrop-blur-2xl"
-              style={{
-                fontFamily:
-                  "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-              }}
-            >
-              {/* Terminal Title Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-red-500/30 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-red-950/80 border border-red-500/60 shadow-[0_0_12px_rgba(239,68,68,0.5)]">
-                    <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-red-200 tracking-wider uppercase drop-shadow-[0_0_10px_rgba(239,68,68,0.8)]">
-                      GATE: FAIL BN-00 // CRITICAL SYSTEM CRASH
-                    </h2>
-                    <p className="text-[10px] text-red-400/80 mt-0.5 tracking-tight">
-                      CORTEX_PREFLIGHT_INVARIANT_VIOLATION [0xDEAD_AGENT_ORPHAN]
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shadow-[0_0_8px_#ef4444]" />
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-red-950 border border-red-500/60 text-red-300 font-bold tracking-wider">
-                    SYSTEM HALTED
-                  </span>
-                </div>
-              </div>
-
-              {/* Terminal Diagnostics Telemetry */}
-              <div className="text-[11px] leading-relaxed text-red-300/80 space-y-1">
-                <div>&gt;&gt;&gt; INITIATING PROCEDURAL KERNEL PRE-FLIGHT DIAGNOSTIC...</div>
-                <div>&gt;&gt;&gt; VERIFYING 7-AGENT EXECUTION GATE SUITE (/agents)...</div>
-                <div className="text-red-400 font-semibold">
-                  &gt;&gt;&gt; [FATAL] INVARIANT BREACH: RULE BN-00 FORBIDS HEADLESS OR UNGOVERNED OPERATION.
-                </div>
-              </div>
-
-              {/* Missing Agents Section (Formatted as [ERROR: AGENT_NOT_FOUND: filename]) */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-red-400">
-                  <span className="flex items-center gap-1.5">
-                    <Terminal className="w-3.5 h-3.5 text-red-400" />
-                    Missing Required Gatekeepers:
-                  </span>
-                  <span className="text-red-400/70">
-                    COUNT: {agentGate.missingAgents.length} / 7
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  {agentGate.missingAgents.map((file) => {
-                    const cleanName = file.replace(/^[^\w.-]+/, '').split(' ')[0];
-                    return (
-                      <div
-                        key={file}
-                        className="flex items-center gap-3 px-3.5 py-2 rounded-lg bg-red-950/70 border border-red-500/50 text-xs font-bold text-red-200 shadow-[0_0_12px_rgba(239,68,68,0.2)]"
-                      >
-                        <span className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444] animate-ping shrink-0" />
-                        <span className="tracking-wide text-red-100 drop-shadow-[0_0_6px_rgba(239,68,68,0.6)]">
-                          [ERROR: AGENT_NOT_FOUND: {cleanName}]
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Architectural Explanation */}
-              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 text-[11px] text-zinc-300 space-y-1 leading-relaxed">
-                <div className="text-red-400 font-bold uppercase text-[10px]">
-                  // Architectural Invariant Explained:
-                </div>
-                <p>
-                  A <strong className="text-white">Procedural Brain</strong> (<code className="text-[#00ffff]">/brain</code>) stores tacit human judgment and trade-offs. The <strong className="text-white">7-Agent Suite</strong> (<code className="text-[#00ffff]">/agents</code>) enforces those rules as hard engineering gates (<code className="text-white">PM, UX, GR, SD, IR, DB, SEC</code>).
-                </p>
-                <p className="text-zinc-400">
-                  If an agent is deleted or unmapped, all rule promotion, 3D synaptic matrix rendering, and AI queries are hard-locked to prevent unverified actions.
-                </p>
-              </div>
-
-              {/* Blinking Terminal Cursor */}
-              <div className="pt-2 border-t border-red-500/25 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-red-400">
-                  <span className="text-red-500/80 font-bold">root@cortex-daemon:~#</span>
-                  <span className="text-zinc-400 text-[11px]">waiting for filesystem restoration event</span>
-                  <span className="inline-block w-2.5 h-4 bg-red-500 shadow-[0_0_10px_#ef4444] animate-pulse" />
-                </div>
-                <span className="hidden sm:inline text-[10px] text-zinc-500">
-                  REVERT .bak TO UNLOCK
-                </span>
-              </div>
-
-              {/* Remediation Action Controls */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={handleRecheckGate}
-                  disabled={isCheckingGate}
-                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 hover:bg-red-500 px-4 py-2.5 text-xs font-bold text-white shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`w-3.5 h-3.5 ${isCheckingGate ? 'animate-spin' : ''}`}
-                  />
-                  <span>
-                    {isCheckingGate
-                      ? 'Re-Verifying Filesystem...'
-                      : 'Re-Verify Gate (Check Files)'}
-                  </span>
-                </button>
-
-                <a
-                  href="/brain-template.zip"
-                  download="brain-vault-blank-template.zip"
-                  className="w-full sm:flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-zinc-900/90 hover:bg-zinc-800 px-4 py-2.5 text-xs text-red-200 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5 text-red-400" />
-                  <span>Download Recovery Bundle</span>
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 9. Custom Initial Boot Loader Overlay */}
-      <AnimatePresence>
-        {isBooting && (
-          <motion.div
-            key="cortex-boot-loader"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0, scale: 1.02 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#050505]"
-            style={{
-              backgroundImage:
-                'radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.08) 0%, transparent 60%)',
-            }}
-          >
-            {/* Orbital Spinner + Cortex Logo */}
-            <div className="relative flex items-center justify-center w-28 h-28 mb-6">
-              <div className="absolute inset-0 rounded-full border border-cyan-400/20 animate-ping" />
-              <div className="absolute inset-1 rounded-full border-2 border-t-[#00ffff] border-r-transparent border-b-blue-600/50 border-l-transparent animate-spin" />
-              <img
-                src="/cortex-logo-cyan.svg"
-                alt="Cortex Boot"
-                className="w-12 h-12 object-contain drop-shadow-[0_0_16px_rgba(0,255,255,0.6)]"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-mono tracking-[0.2em] text-white uppercase mb-2">
-              <Cpu className="w-3.5 h-3.5 text-[#00ffff]" />
-              <span>SYNTHESIZING CORTEX MATRIX</span>
-            </div>
-
-            <p className="text-[11px] font-mono text-zinc-500 mb-5">
-              HYDRATING 7-AGENT GATE SUITE &amp; 360 SYNAPTIC NODES...
-            </p>
-
-            {/* Progress Bar */}
-            <div className="w-64 h-1 rounded-full bg-zinc-900 overflow-hidden border border-white/10">
-              <div
-                className="h-full bg-gradient-to-r from-blue-600 to-[#00ffff] transition-all duration-100"
-                style={{ width: `${bootProgress}%` }}
-              />
-            </div>
-            <span className="mt-2 text-[10px] font-mono text-[#00ffff]">{bootProgress}%</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </main>
+    </div>
   );
 }
