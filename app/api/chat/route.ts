@@ -393,7 +393,7 @@ async function classifyTaskComplexity(
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const classifier = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.1-flash-lite',
       generationConfig: {
         responseMimeType: 'application/json',
         responseSchema: {
@@ -479,11 +479,8 @@ export async function POST(req: Request) {
       }
     }
 
-    // 1. Define Fallback Chain: ['gemini-3.8-flash', 'gemini-2.5-flash']
-    const baseChain =
-      complexity === 'pro'
-        ? ['gemini-2.5-pro', 'gemini-3.8-flash', 'gemini-2.5-flash']
-        : ['gemini-3.8-flash', 'gemini-2.5-flash'];
+    // 1. Define Fallback Chain: ['gemini-3.5-flash', 'gemini-3.1-flash-lite']
+    const baseChain = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
     const modelChain = process.env.AI_MODEL
       ? Array.from(new Set([process.env.AI_MODEL, ...baseChain]))
       : baseChain;
