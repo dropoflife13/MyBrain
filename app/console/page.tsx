@@ -669,8 +669,18 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right: Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
+        {/* Right: Profile + Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          <Tooltip content="Operator Cognitive Profile & Knowledge Radar" side="bottom">
+            <Link
+              href="/profile"
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
+            >
+              <Cpu className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
+          </Tooltip>
+
           <Tooltip content="Brain ↔ 7 Agent matrix & resolved contradictions" side="bottom">
             <button
               type="button"
