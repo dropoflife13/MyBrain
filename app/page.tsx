@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowRight,
   BookOpen,
+  Brain,
   Check,
   ChevronDown,
   Copy,
@@ -21,6 +22,7 @@ import {
   Sparkles,
   Terminal,
   Users,
+  Workflow,
   X,
 } from 'lucide-react';
 import Brain3D from '../components/Brain3D';
@@ -191,6 +193,9 @@ export default function LandingPage() {
             </a>
             <a href="#how-it-works" className="hidden xl:inline-block hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               How It Works
+            </a>
+            <a href="#why-cortex" className="hidden xl:inline-block hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
+              Philosophy
             </a>
             <Link
               href="/agents"
@@ -549,6 +554,84 @@ export default function LandingPage() {
                   <span>Launch Live 3D Console</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION: WHY CORTEX? */}
+        <section id="why-cortex" className="px-6 max-w-6xl mx-auto space-y-12">
+          <div className="text-center space-y-3">
+            <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
+              // The Core Philosophy
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-950 dark:text-white">
+              The Second Brain That Doesn&apos;t Forget.
+            </h2>
+            <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
+              A lifelong repository for your judgment: (1) assess yourself, (2) extract hidden knowledge,
+              (3) permanently store it, and (4) apply it to all future projects so you never lose your edge.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Card 1: Extract Hidden Knowledge */}
+            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                  Extract Hidden Knowledge
+                </h3>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+                  The built-in diagnostic assessments force you to articulate the rules you already follow but never wrote down. Discover your own tacit expertise.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
+                  DIAGNOSTIC EXCAVATION
+                </Badge>
+              </div>
+            </div>
+
+            {/* Card 2: Govern Future Projects */}
+            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                  <Workflow className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                  Govern Future Projects
+                </h3>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 7 Agents will immediately enforce your PM, Security, and Database rules on day one.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
+                  CROSS-CODEBASE ENFORCEMENT
+                </Badge>
+              </div>
+            </div>
+
+            {/* Card 3: Permanent Memory */}
+            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
+                  <Brain className="w-6 h-6" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
+                  Permanent Memory
+                </h3>
+                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+                  Memory fades; Markdown doesn&apos;t. Every rule you learn is permanently stored in your vault, ready to be queried via AI when you inevitably forget the details.
+                </p>
+              </div>
+              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
+                  LOCAL-FIRST PERSISTENCE
+                </Badge>
               </div>
             </div>
           </div>

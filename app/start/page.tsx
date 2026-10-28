@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Brain,
   Check,
   Compass,
   Copy,
@@ -123,12 +124,12 @@ export default function StartPage() {
 
           <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto leading-relaxed">
             You don&apos;t need to be a software engineer or understand complex Git commands to run
-            your own 3D judgment vault. Follow these 6 simple steps to get your Cortex running
-            locally and build with AI agents.
+            your own 3D judgment vault. Follow these 7 simple steps to get your Cortex running
+            locally, encode your judgment, and build with AI agents.
           </p>
         </div>
 
-        {/* 5-Step Vertical Timeline */}
+        {/* 7-Step Vertical Timeline */}
         <div className="relative border-l-2 border-cyan-500/30 dark:border-cyan-400/25 ml-4 sm:ml-8 pl-6 sm:pl-10 space-y-16">
           {/* STEP 1: Download the Vault */}
           <motion.div
@@ -411,7 +412,7 @@ export default function StartPage() {
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code> or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code>. Define your hard engineering gates using the standard <code className="font-mono text-xs text-cyan-500">WHEN... DO...</code> trigger format. Every saved rule automatically materializes as a synaptic coordinate in your 3D brain.
+                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code> or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code>. Define your hard engineering gates using the standard <code className="font-mono text-xs text-cyan-500 font-bold">WHEN... DO...</code> trigger format. Every saved rule automatically materializes as a synaptic coordinate in your 3D brain. Think of this as writing to your permanent memory. The AI will use this rule to govern your future projects, even years from now.
               </p>
 
               {/* Code Snippet Box */}
@@ -539,6 +540,61 @@ export default function StartPage() {
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/review</span>
                     <p className="text-[11px] text-zinc-400">STRIDE & BN-00 audit (SEC+SD)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* STEP 7: The Long-Term Game */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5 }}
+            className="relative space-y-4"
+          >
+            {/* Timeline Number Node */}
+            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+              07
+            </div>
+
+            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
+                  <span>7. A Brain for the Rest of Your Career</span>
+                </h2>
+                <Badge variant="outline" className="w-fit text-[10px] font-mono text-cyan-600 dark:text-cyan-300">
+                  THE LONG-TERM GAME
+                </Badge>
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
+                You just built a permanent external memory. Whenever you learn a new architectural trade-off, add it to <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">brain/</code>. Whenever you start a new project, run the <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/to-spec</code> pipeline. Even if you forget a rule in 5 years, the Cortex will remember it for you. This isn&apos;t just a 3D graph—it&apos;s your evolving engineering judgment.
+              </p>
+
+              <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/25 space-y-2">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-700 dark:text-cyan-300 uppercase tracking-wider">
+                  <Sparkles className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />
+                  <span>The Lifelong Judgment Protocol</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs font-mono text-slate-700 dark:text-zinc-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">01.</span>
+                    <span>Assess your tacit engineering instincts</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">02.</span>
+                    <span>Extract hidden non-negotiable rules</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">03.</span>
+                    <span>Permanently store them in your vault</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-600 dark:text-cyan-400 font-bold">04.</span>
+                    <span>Apply gates to all future codebases</span>
                   </div>
                 </div>
               </div>
