@@ -253,10 +253,61 @@ function isHighDemandError(err: any): boolean {
   );
 }
 
+async function queryNvidiaNim(
+  prompt: string,
+  apiKey: string,
+  modelName?: string
+): Promise<string> {
+  const model = modelName || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
+  const baseUrl = (process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1').replace(/\/+$/, '');
+  const url = `${baseUrl}/chat/completions`;
+
+  console.log(`[Cortex Chat API] Querying NVIDIA NIM: ${model} via ${url}...`);
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.7,
+      top_p: 0.95,
+      max_tokens: 8192,
+      chat_template_kwargs: { enable_thinking: true },
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => '');
+    throw new Error(`NVIDIA NIM API error [${res.status} ${res.statusText}]: ${errorText}`);
+  }
+
+  const data = await res.json();
+  const choice = data?.choices?.[0]?.message;
+  const content = choice?.content || '';
+  if (choice?.reasoning_content) {
+    console.log(`[Cortex Chat API] NVIDIA NIM reasoning tokens received (${choice.reasoning_content.length} chars).`);
+  }
+  return content.trim();
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { query, contextNode, workflowCommand } = body;
+    const { query, contextNode, workflowCommand, provider } = body;
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
@@ -265,16 +316,26 @@ export async function POST(req: Request) {
       );
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const nvidiaApiKey =
+      process.env.NVIDIA_API_KEY ||
+      process.env['NVIDIABuild-Autogen-44'] ||
+      process.env.NVIDIA_KEY;
+
+    if (!geminiApiKey && !nvidiaApiKey) {
       return NextResponse.json(
         {
-          error: 'GEMINI_API_KEY is not configured in the environment.',
-          text: 'Error: GEMINI_API_KEY is not configured in .env.local. Please provide a valid Gemini API key.',
+          error: 'No AI API key is configured in the environment.',
+          text: 'Error: Neither GEMINI_API_KEY nor NVIDIA_API_KEY is configured in .env.local. Please provide a valid API key.',
         },
         { status: 500, headers: CORS_HEADERS }
       );
     }
+
+    const forcedNvidia =
+      provider === 'nvidia' ||
+      process.env.AI_PROVIDER === 'nvidia' ||
+      (!geminiApiKey && Boolean(nvidiaApiKey));
 
     // 1. Define Fallback Chain: ['gemini-3.8-flash', 'gemini-2.5-flash']
     const FALLBACK_CHAIN = ['gemini-3.8-flash', 'gemini-2.5-flash'];
@@ -282,7 +343,7 @@ export async function POST(req: Request) {
       ? Array.from(new Set([process.env.AI_MODEL, ...FALLBACK_CHAIN]))
       : FALLBACK_CHAIN;
 
-    console.log(`[Cortex Chat API] Initialized Model Fallback Chain: ${modelChain.join(' -> ')}`);
+    console.log(`[Cortex Chat API] Routing mode: ${forcedNvidia ? 'NVIDIA NIM' : 'Gemini + NVIDIA Fallback'}`);
 
     let prompt: string;
     const workflow = detectWorkflowCommand(query, workflowCommand);
@@ -315,53 +376,86 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
       prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
     let generatedText = '';
     let lastError: any = null;
 
-    // 2 & 3. Iterate through fallback chain with Exponential Backoff + Jitter
-    modelLoop: for (let mIndex = 0; mIndex < modelChain.length; mIndex++) {
-      const currentModelName = modelChain[mIndex];
-      const maxRetries = 2; // Up to 2 retries (3 attempts total) per model
+    // Direct NVIDIA NIM execution if explicitly targeted or if Gemini key is absent
+    if (forcedNvidia && nvidiaApiKey) {
+      try {
+        console.log('[Cortex Chat API] Executing direct NVIDIA NIM request...');
+        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey);
+        return NextResponse.json({ text: generatedText }, { headers: CORS_HEADERS });
+      } catch (err: any) {
+        lastError = err;
+        console.warn('[Cortex Chat API] Direct NVIDIA NIM request failed:', err?.message);
+        // If Gemini is available, allow fallback to Gemini
+        if (!geminiApiKey) {
+          throw err;
+        }
+      }
+    }
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          console.log(
-            `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1})`
-          );
-          const model = genAI.getGenerativeModel({ model: currentModelName });
-          const result = await model.generateContent(prompt);
-          generatedText = result.response.text();
+    // Try Gemini model chain with Exponential Backoff + Jitter
+    if (geminiApiKey && !generatedText) {
+      const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-          console.log(`[Cortex Chat API] Model ${currentModelName} succeeded on attempt ${attempt + 1}.`);
-          break modelLoop; // Success: exit chain
-        } catch (err: any) {
-          lastError = err;
-          const status = err?.status || err?.statusCode || (isHighDemandError(err) ? 503 : 500);
-          console.warn(
-            `[Cortex Chat API] Model ${currentModelName} attempt ${attempt + 1} failed [status: ${status}]: ${err?.message}`
-          );
+      modelLoop: for (let mIndex = 0; mIndex < modelChain.length; mIndex++) {
+        const currentModelName = modelChain[mIndex];
+        const maxRetries = 2; // Up to 2 retries (3 attempts total) per model
 
-          if (attempt < maxRetries && isHighDemandError(err)) {
-            // Exponential backoff with jitter: (500ms * 2^attempt) + random(0-500ms)
-            const backoff = 500 * Math.pow(2, attempt) + Math.random() * 500;
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          try {
             console.log(
-              `[Cortex Chat API] High demand / rate limit (503/429) detected. Waiting ${Math.round(backoff)}ms before retry ${attempt + 2}...`
+              `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1})`
             );
-            await delay(backoff);
-          } else {
+            const model = genAI.getGenerativeModel({ model: currentModelName });
+            const result = await model.generateContent(prompt);
+            generatedText = result.response.text();
+
+            console.log(`[Cortex Chat API] Model ${currentModelName} succeeded on attempt ${attempt + 1}.`);
+            break modelLoop; // Success: exit chain
+          } catch (err: any) {
+            lastError = err;
+            const status = err?.status || err?.statusCode || (isHighDemandError(err) ? 503 : 500);
             console.warn(
-              `[Cortex Chat API] Model ${currentModelName} exhausted retries or encountered unrecoverable status. Falling back to next model...`
+              `[Cortex Chat API] Model ${currentModelName} attempt ${attempt + 1} failed [status: ${status}]: ${err?.message}`
             );
-            break; // Break retry loop to try next model in fallback chain
+
+            if (attempt < maxRetries && isHighDemandError(err)) {
+              // Exponential backoff with jitter: (500ms * 2^attempt) + random(0-500ms)
+              const backoff = 500 * Math.pow(2, attempt) + Math.random() * 500;
+              console.log(
+                `[Cortex Chat API] High demand / rate limit (503/429) detected. Waiting ${Math.round(backoff)}ms before retry ${attempt + 2}...`
+              );
+              await delay(backoff);
+            } else {
+              console.warn(
+                `[Cortex Chat API] Model ${currentModelName} exhausted retries or encountered unrecoverable status. Falling back to next model...`
+              );
+              break; // Break retry loop to try next model in fallback chain
+            }
           }
         }
       }
     }
 
-    // If all models in the fallback chain fail, return clean message
+    // Multi-Provider Failover: If Gemini failed / exhausted retries, try NVIDIA NIM
+    if (!generatedText && nvidiaApiKey) {
+      console.log(
+        `[Cortex Chat API] Gemini chain exhausted. Activating secondary multi-provider failover: NVIDIA NIM (${process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b'})...`
+      );
+      try {
+        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey);
+        console.log('[Cortex Chat API] NVIDIA NIM failover succeeded!');
+      } catch (nimErr: any) {
+        lastError = nimErr;
+        console.warn('[Cortex Chat API] NVIDIA NIM failover failed:', nimErr?.message);
+      }
+    }
+
+    // If all providers and fallback models in the chain fail, return clean message
     if (!generatedText) {
-      console.error('[Cortex Chat API] All fallback models failed. Last error:', lastError);
+      console.error('[Cortex Chat API] All fallback models and providers failed. Last error:', lastError);
       return NextResponse.json(
         {
           error: 'The AI is currently experiencing high demand. Please try again in a few moments.',
