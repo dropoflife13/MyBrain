@@ -533,38 +533,48 @@ export default function Home() {
       {isReady && (
         <>
           {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
-      <div
-        className={`pointer-events-none fixed inset-y-0 right-0 z-10 opacity-0 dark:opacity-100 transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
-        }`}
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
-            radial-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '100% 100%, 32px 32px',
-        }}
-      />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="pointer-events-none"
+          >
+            <div
+              className={`fixed inset-y-0 right-0 z-10 opacity-0 dark:opacity-100 transition-all duration-300 ease-in-out ${
+                isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+              }`}
+              style={{
+                backgroundImage: `
+                  radial-gradient(circle at 50% 50%, transparent 42%, rgba(2, 4, 10, 0.82) 100%),
+                  radial-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px)
+                `,
+                backgroundSize: '100% 100%, 32px 32px',
+              }}
+            />
 
-      {/* Precision Corner Telemetry Reticles */}
-      <div
-        className={`pointer-events-none fixed top-20 z-10 w-3 h-3 border-t border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
-          isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
-        }`}
-      />
-      <div className="pointer-events-none fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-600/40 dark:border-cyan-400/30" />
-      <div
-        className={`pointer-events-none fixed bottom-6 z-10 w-3 h-3 border-b border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
-          isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
-        }`}
-      />
+            {/* Precision Corner Telemetry Reticles */}
+            <div
+              className={`fixed top-20 z-10 w-3 h-3 border-t border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
+                isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
+              }`}
+            />
+            <div className="fixed top-20 right-6 z-10 w-3 h-3 border-t border-r border-cyan-600/40 dark:border-cyan-400/30" />
+            <div
+              className={`fixed bottom-6 z-10 w-3 h-3 border-b border-l border-cyan-600/40 dark:border-cyan-400/30 transition-all duration-300 ${
+                isSidebarOpen ? 'left-6 md:left-[17.5rem]' : 'left-6'
+              }`}
+            />
+          </motion.div>
 
-      {/* 3. Top Command Bar (fixed top-0 right-0 z-40, dynamically offsets based on sidebar state) */}
-      <header
-        className={`fixed top-0 right-0 z-40 h-16 flex items-center justify-between px-3 sm:px-6 pointer-events-none transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
-        }`}
-      >
+          {/* 3. Top Command Bar (fixed top-0 right-0 z-40, dynamically offsets based on sidebar state) */}
+          <motion.header
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className={`fixed top-0 right-0 z-40 h-16 flex items-center justify-between px-3 sm:px-6 pointer-events-none transition-all duration-300 ease-in-out ${
+              isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+            }`}
+          >
         {/* Left: Sidebar Toggle (☰) + Overview Link + Cortex Brand Pill */}
         <div className="flex items-center justify-start gap-2 pointer-events-auto shrink-0">
           <Tooltip content={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'} side="bottom">
@@ -685,11 +695,14 @@ export default function Home() {
             </button>
           </Tooltip>
         </div>
-      </header>
+      </motion.header>
 
       {/* Left Sidebar: Gates Directory (Collapsible w-64 vs w-0) */}
-      <aside
+      <motion.aside
         aria-label="Gates directory"
+        initial={{ opacity: 0, x: -16 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
         className={`fixed left-0 top-0 z-40 h-screen flex flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white transition-all duration-300 ease-in-out ${
           isSidebarOpen
             ? 'w-64 opacity-100 pointer-events-auto'
@@ -759,7 +772,7 @@ export default function Home() {
             {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 159} rules • {fps} FPS
           </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Blank Fork Preview Mode Banner */}
       <AnimatePresence>
@@ -942,7 +955,12 @@ export default function Home() {
       </AnimatePresence>
 
       {/* 6. Floating Action Buttons (Bottom-Right Corner) */}
-      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2.5">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2.5"
+      >
         {/* Floating AI Chat Trigger (Ask Cortex AI) */}
         <Tooltip content="Ask Cortex AI (General 7-Agent Hub)" side="left">
           <Button
@@ -966,7 +984,7 @@ export default function Home() {
             <span>Fork this Brain</span>
           </Button>
         </Tooltip>
-      </div>
+      </motion.div>
       </>
       )}
 

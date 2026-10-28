@@ -237,49 +237,76 @@ export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
             ))}
 
             {/* Central Glowing Cognitive Hub */}
-            {/* Ambient Expanding Pulse Waves */}
+            {/* Subtle, Delicate Synaptic Ripple 1 (Hairline Non-Scaling Wave) */}
             <motion.circle
               cx={cx}
               cy={cy}
-              r={12}
+              r={8}
               fill="none"
               stroke="#00ffff"
-              strokeWidth="1.5"
-              initial={{ scale: 0.8, opacity: 0.8 }}
+              strokeWidth="0.75"
+              vectorEffect="non-scaling-stroke"
+              initial={{ r: 8, opacity: 0.35 }}
               animate={{
-                scale: [0.8, 2.4, 3.2],
-                opacity: [0.9, 0.4, 0],
+                r: [8, 22, 36],
+                opacity: [0.35, 0.12, 0],
               }}
               transition={{
-                duration: 1.5,
+                duration: 2.2,
                 repeat: Infinity,
                 ease: 'easeOut',
               }}
-              style={{ transformOrigin: `${cx}px ${cy}px` }}
             />
 
-            {/* Center Core Outer Glow */}
+            {/* Subtle, Delicate Synaptic Ripple 2 (Staggered Continuous Flow) */}
             <motion.circle
               cx={cx}
               cy={cy}
-              r={18}
-              fill="url(#loader-center-grad)"
-              fillOpacity="0.32"
-              filter="url(#loader-core-glow)"
-              initial={{ scale: 0 }}
-              animate={{ scale: [0, 1.3, 1] }}
-              transition={{ duration: 0.45, ease: 'easeOut' }}
-              style={{ transformOrigin: `${cx}px ${cy}px` }}
+              r={8}
+              fill="none"
+              stroke="#00ffff"
+              strokeWidth="0.75"
+              vectorEffect="non-scaling-stroke"
+              initial={{ r: 8, opacity: 0 }}
+              animate={{
+                r: [8, 22, 36],
+                opacity: [0.35, 0.12, 0],
+              }}
+              transition={{
+                duration: 2.2,
+                delay: 1.1,
+                repeat: Infinity,
+                ease: 'easeOut',
+              }}
             />
 
-            {/* Center Core Solid Dot */}
+            {/* Central Hub Outer Halo */}
             <motion.circle
               cx={cx}
               cy={cy}
-              r={9}
-              fill="url(#loader-center-grad)"
-              stroke="#ffffff"
-              strokeWidth="1.5"
+              r={14}
+              fill="#00ffff"
+              fillOpacity="0.12"
+              stroke="#00ffff"
+              strokeWidth="0.75"
+              filter="url(#loader-neural-glow)"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: [0.5, 0.8, 0.5] }}
+              transition={{
+                scale: { duration: 0.45, ease: 'easeOut' },
+                opacity: { duration: 2.6, repeat: Infinity, ease: 'easeInOut' },
+              }}
+              style={{ transformOrigin: `${cx}px ${cy}px` }}
+            />
+
+            {/* Central Hub Core Node */}
+            <motion.circle
+              cx={cx}
+              cy={cy}
+              r={6}
+              fill="#050505"
+              stroke="#00ffff"
+              strokeWidth="1.2"
               filter="url(#loader-neural-glow)"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -287,14 +314,15 @@ export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
               style={{ transformOrigin: `${cx}px ${cy}px` }}
             />
 
+            {/* Central Hub White Core Pip */}
             <motion.circle
               cx={cx}
               cy={cy}
-              r={3.5}
+              r={2.5}
               fill="#ffffff"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
             />
           </svg>
         </div>
