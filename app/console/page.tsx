@@ -132,6 +132,8 @@ export default function Home() {
       role: 'user' | 'assistant';
       text: string;
       imageUrl?: string;
+      model?: string;
+      provider?: string;
       timestamp: string;
     }>
   >([]);
@@ -465,6 +467,8 @@ export default function Home() {
           id: `ai-${Date.now()}`,
           role: 'assistant' as const,
           text: aiText,
+          model: data?.model,
+          provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -524,6 +528,8 @@ export default function Home() {
           id: `ai-${Date.now()}`,
           role: 'assistant' as const,
           text: aiText,
+          model: data?.model,
+          provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -962,6 +968,13 @@ export default function Home() {
                         className="w-full h-auto max-h-48 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => window.open(msg.imageUrl, '_blank')}
                       />
+                    </div>
+                  )}
+                  {msg.role === 'assistant' && (msg.model || msg.provider) && (
+                    <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
+                      <span>
+                        via {msg.provider ? msg.provider.toUpperCase() : 'AI'} • {msg.model || 'default'}
+                      </span>
                     </div>
                   )}
                 </div>

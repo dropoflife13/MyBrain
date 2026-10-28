@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { getBrainData } from '../../../lib/brain-parser';
 
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless environments
@@ -258,7 +258,7 @@ async function queryNvidiaNim(
   apiKey: string,
   modelName?: string,
   imageUrl?: string
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const isVision = Boolean(imageUrl);
   const defaultModel = isVision
     ? 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning'
@@ -320,7 +320,110 @@ async function queryNvidiaNim(
   if (choice?.reasoning_content) {
     console.log(`[Cortex Chat API] NVIDIA NIM reasoning tokens received (${choice.reasoning_content.length} chars).`);
   }
-  return content.trim();
+  return { text: content.trim(), model };
+}
+
+async function queryOpenRouter(
+  prompt: string,
+  apiKey: string,
+  modelName?: string,
+  imageUrl?: string
+): Promise<{ text: string; model: string }> {
+  const isVision = Boolean(imageUrl);
+  const defaultModel = isVision
+    ? 'google/gemini-2.5-flash'
+    : (process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct');
+  const model = modelName || defaultModel;
+  const url = 'https://openrouter.ai/api/v1/chat/completions';
+
+  console.log(`[Cortex Chat API] Querying OpenRouter (${isVision ? 'Vision' : 'Text'}): ${model}...`);
+
+  const userContent: any = isVision
+    ? [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: imageUrl } },
+      ]
+    : prompt;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      'HTTP-Referer': 'https://cortex.internal',
+      'X-Title': 'Cortex AI Engine',
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
+        },
+        {
+          role: 'user',
+          content: userContent,
+        },
+      ],
+      temperature: 0.6,
+      max_tokens: 8192,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => '');
+    throw new Error(`OpenRouter API error [${res.status} ${res.statusText}]: ${errorText}`);
+  }
+
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || '';
+  return { text: content.trim(), model };
+}
+
+const CLASSIFIER_SYSTEM_PROMPT = `You are a specialized Task Routing AI for the Cortex Architecture.
+Your sole function is to analyze the user's request and classify its complexity. Choose between 'flash' (SIMPLE) or 'pro' (COMPLEX):
+1. 'flash': Fast, efficient model for simple, well-defined tasks (1-3 steps, rule lookups, single definition).
+2. 'pro': Powerful model for complex, open-ended tasks (4+ steps, strategic design, ambiguity, deep root-cause debugging).`;
+
+async function classifyTaskComplexity(
+  query: string,
+  apiKey: string
+): Promise<{ modelChoice: 'flash' | 'pro'; reasoning: string } | null> {
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const classifier = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            reasoning: {
+              type: SchemaType.STRING,
+              description: 'A brief, step-by-step explanation for the model choice, referencing the rubric.',
+            },
+            modelChoice: {
+              type: SchemaType.STRING,
+              format: 'enum',
+              enum: ['flash', 'pro'],
+            },
+          },
+          required: ['reasoning', 'modelChoice'],
+        },
+        temperature: 0.1,
+      },
+      systemInstruction: CLASSIFIER_SYSTEM_PROMPT,
+    });
+
+    const res = await classifier.generateContent(query);
+    const parsed = JSON.parse(res.response.text());
+    console.log(`[Cortex Chat API] Task Classifier Decision: ${parsed.modelChoice} - ${parsed.reasoning}`);
+    return parsed;
+  } catch (err: any) {
+    console.warn('[Cortex Chat API] Task Classifier skipped or failed:', err?.message);
+    return null;
+  }
 }
 
 export async function POST(req: Request) {
@@ -340,12 +443,13 @@ export async function POST(req: Request) {
       process.env.NVIDIA_API_KEY ||
       process.env['NVIDIABuild-Autogen-44'] ||
       process.env.NVIDIA_KEY;
+    const openrouterApiKey = process.env.OPENROUTER_API_KEY;
 
-    if (!geminiApiKey && !nvidiaApiKey) {
+    if (!geminiApiKey && !nvidiaApiKey && !openrouterApiKey) {
       return NextResponse.json(
         {
           error: 'No AI API key is configured in the environment.',
-          text: 'Error: Neither GEMINI_API_KEY nor NVIDIA_API_KEY is configured in .env.local. Please provide a valid API key.',
+          text: 'Error: Neither GEMINI_API_KEY, NVIDIA_API_KEY, nor OPENROUTER_API_KEY is configured in .env.local.',
         },
         { status: 500, headers: CORS_HEADERS }
       );
@@ -358,17 +462,39 @@ export async function POST(req: Request) {
       process.env.AI_PROVIDER === 'nvidia' ||
       (!geminiApiKey && Boolean(nvidiaApiKey));
 
-    // 1. Define Fallback Chain: ['gemini-3.8-flash', 'gemini-2.5-flash']
-    const FALLBACK_CHAIN = ['gemini-3.8-flash', 'gemini-2.5-flash'];
-    const modelChain = process.env.AI_MODEL
-      ? Array.from(new Set([process.env.AI_MODEL, ...FALLBACK_CHAIN]))
-      : FALLBACK_CHAIN;
+    const forcedOpenRouter =
+      provider === 'openrouter' ||
+      process.env.AI_PROVIDER === 'openrouter' ||
+      (!geminiApiKey && !nvidiaApiKey && Boolean(openrouterApiKey));
 
-    console.log(`[Cortex Chat API] Routing mode: ${forcedNvidia ? 'NVIDIA NIM' : 'Gemini + NVIDIA Fallback'}`);
+    // Dynamic Task Routing & Classification
+    const workflow = detectWorkflowCommand(query, workflowCommand);
+    let complexity: 'flash' | 'pro' = 'flash';
+    if (workflow || hasImage) {
+      complexity = 'pro';
+    } else if (geminiApiKey) {
+      const classification = await classifyTaskComplexity(query, geminiApiKey);
+      if (classification?.modelChoice) {
+        complexity = classification.modelChoice;
+      }
+    }
+
+    // 1. Define Fallback Chain: ['gemini-3.8-flash', 'gemini-2.5-flash']
+    const baseChain =
+      complexity === 'pro'
+        ? ['gemini-2.5-pro', 'gemini-3.8-flash', 'gemini-2.5-flash']
+        : ['gemini-3.8-flash', 'gemini-2.5-flash'];
+    const modelChain = process.env.AI_MODEL
+      ? Array.from(new Set([process.env.AI_MODEL, ...baseChain]))
+      : baseChain;
+
+    console.log(
+      `[Cortex Chat API] Routing mode: ${
+        forcedNvidia ? 'NVIDIA NIM' : forcedOpenRouter ? 'OpenRouter' : 'Gemini Chain + Failover'
+      } [Complexity: ${complexity.toUpperCase()}]`
+    );
 
     let prompt: string;
-    const workflow = detectWorkflowCommand(query, workflowCommand);
-
     if (workflow) {
       const workflowDoc = readAgentOrDoc('brain/08-workflows/SIX-COMMANDS.md', 'SIX-COMMANDS');
       const agentDocs = workflow.agents.map((p) => {
@@ -397,27 +523,49 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
       prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
     }
 
-    let generatedText = '';
+    let succeededText = '';
+    let succeededModel = '';
+    let succeededProvider = '';
     let lastError: any = null;
 
     // Direct NVIDIA NIM execution if explicitly targeted, image attached, or if Gemini key is absent
     if (forcedNvidia && nvidiaApiKey) {
       try {
         console.log(`[Cortex Chat API] Executing direct NVIDIA NIM request ${hasImage ? '(Multimodal Vision)' : ''}...`);
-        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
-        return NextResponse.json({ text: generatedText }, { headers: CORS_HEADERS });
+        const nimRes = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
+        return NextResponse.json(
+          { text: nimRes.text, model: nimRes.model, provider: 'nvidia' },
+          { headers: CORS_HEADERS }
+        );
       } catch (err: any) {
         lastError = err;
         console.warn('[Cortex Chat API] Direct NVIDIA NIM request failed:', err?.message);
-        // If Gemini is available, allow fallback to Gemini
-        if (!geminiApiKey) {
+        if (!geminiApiKey && !openrouterApiKey) {
+          throw err;
+        }
+      }
+    }
+
+    // Direct OpenRouter execution if explicitly targeted
+    if (forcedOpenRouter && openrouterApiKey) {
+      try {
+        console.log(`[Cortex Chat API] Executing direct OpenRouter request ${hasImage ? '(Multimodal Vision)' : ''}...`);
+        const orRes = await queryOpenRouter(prompt, openrouterApiKey, undefined, imageUrl);
+        return NextResponse.json(
+          { text: orRes.text, model: orRes.model, provider: 'openrouter' },
+          { headers: CORS_HEADERS }
+        );
+      } catch (err: any) {
+        lastError = err;
+        console.warn('[Cortex Chat API] Direct OpenRouter request failed:', err?.message);
+        if (!geminiApiKey && !nvidiaApiKey) {
           throw err;
         }
       }
     }
 
     // Try Gemini model chain with Exponential Backoff + Jitter
-    if (geminiApiKey && !generatedText) {
+    if (geminiApiKey && !succeededText) {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
 
       modelLoop: for (let mIndex = 0; mIndex < modelChain.length; mIndex++) {
@@ -448,7 +596,9 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
             }
 
             const result = await model.generateContent(geminiContent);
-            generatedText = result.response.text();
+            succeededText = result.response.text();
+            succeededModel = currentModelName;
+            succeededProvider = 'google';
 
             console.log(`[Cortex Chat API] Model ${currentModelName} succeeded on attempt ${attempt + 1}.`);
             break modelLoop; // Success: exit chain
@@ -477,13 +627,16 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
       }
     }
 
-    // Multi-Provider Failover: If Gemini failed / exhausted retries, try NVIDIA NIM
-    if (!generatedText && nvidiaApiKey) {
+    // Secondary Failover: If Gemini failed / exhausted retries, try NVIDIA NIM
+    if (!succeededText && nvidiaApiKey) {
       console.log(
         `[Cortex Chat API] Gemini chain exhausted. Activating secondary multi-provider failover: NVIDIA NIM (${process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b'})...`
       );
       try {
-        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
+        const nimRes = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
+        succeededText = nimRes.text;
+        succeededModel = nimRes.model;
+        succeededProvider = 'nvidia';
         console.log('[Cortex Chat API] NVIDIA NIM failover succeeded!');
       } catch (nimErr: any) {
         lastError = nimErr;
@@ -491,8 +644,25 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
       }
     }
 
+    // Tertiary Failover: If Gemini & NVIDIA failed / exhausted retries, try OpenRouter
+    if (!succeededText && openrouterApiKey) {
+      console.log(
+        `[Cortex Chat API] Gemini and NVIDIA exhausted. Activating tertiary multi-provider failover: OpenRouter (${process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct'})...`
+      );
+      try {
+        const orRes = await queryOpenRouter(prompt, openrouterApiKey, undefined, imageUrl);
+        succeededText = orRes.text;
+        succeededModel = orRes.model;
+        succeededProvider = 'openrouter';
+        console.log('[Cortex Chat API] OpenRouter failover succeeded!');
+      } catch (orErr: any) {
+        lastError = orErr;
+        console.warn('[Cortex Chat API] OpenRouter failover failed:', orErr?.message);
+      }
+    }
+
     // If all providers and fallback models in the chain fail, return clean message
-    if (!generatedText) {
+    if (!succeededText) {
       console.error('[Cortex Chat API] All fallback models and providers failed. Last error:', lastError);
       return NextResponse.json(
         {
@@ -503,7 +673,14 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
       );
     }
 
-    return NextResponse.json({ text: generatedText }, { headers: CORS_HEADERS });
+    return NextResponse.json(
+      {
+        text: succeededText,
+        model: succeededModel,
+        provider: succeededProvider,
+      },
+      { headers: CORS_HEADERS }
+    );
   } catch (error: any) {
     console.error('[Cortex Chat API Unhandled Error]:', error);
     const errorMessage =
