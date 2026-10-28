@@ -1,6 +1,12 @@
 import type { BrainDocNode } from './brain-parser';
 
-export const TARGET_RULES_PER_AGENT = 20;
+/**
+ * Mastery Target per Agent in the Weighted Scoring Engine (v2).
+ * Each rule contributes its confidence weight (conf 1..5, default 1 if untagged).
+ * 60 weighted points = 100% Mastery for a single Agent (e.g., 12 proven conf:5 rules or 15 conf:4 rules).
+ */
+export const TARGET_WEIGHTED_SCORE_PER_AGENT = 60;
+export const TARGET_RULES_PER_AGENT = TARGET_WEIGHTED_SCORE_PER_AGENT;
 
 export interface AgentStatConfig {
   id: string;
@@ -95,7 +101,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     label: 'Security',
     prefixes: ['SEC', 'CS'],
     agentCodes: ['SEC'],
-    agentCount: 1, // 1 * 20 = 20
+    agentCount: 1, // 1 * 60 = 60 pts
     description: 'STRIDE threat modeling, RLS default-deny, privileged secret isolation, tamper-proof audit trails.',
   },
   {
@@ -104,7 +110,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     label: 'Systems',
     prefixes: ['SD', 'SO', 'DB'],
     agentCodes: ['SD', 'DB'],
-    agentCount: 2, // 2 * 20 = 40
+    agentCount: 2, // 2 * 60 = 120 pts
     description: 'Append-only schema architecture, distributed queues, failure modes, data contracts.',
   },
   {
@@ -113,7 +119,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     label: 'Empathy',
     prefixes: ['PM', 'BA', 'OP', 'EP', 'UX', 'UI', 'TA'],
     agentCodes: ['PM', 'UX'],
-    agentCount: 2, // 2 * 20 = 40
+    agentCount: 2, // 2 * 60 = 120 pts
     description: 'Problem edge-case interrogation, UI state hygiene, persona empathy, cognitive friction reduction.',
   },
   {
@@ -122,7 +128,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     label: 'Execution',
     prefixes: ['IR', 'RF', 'H', 'P', 'GR'],
     agentCodes: ['IR', 'GR'],
-    agentCount: 2, // 2 * 20 = 40
+    agentCount: 2, // 2 * 60 = 120 pts
     description: 'Webhook verification, atomic ticket delivery, telemetry loops, viral growth mechanics.',
   },
   {
@@ -131,8 +137,8 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     label: 'Capacity',
     prefixes: ['ALL'],
     agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR'],
-    agentCount: 7, // 7 * 20 = 140
-    description: 'Total externalized procedural heuristics and gatekeeper invariants in the vault.',
+    agentCount: 7, // 7 * 60 = 420 pts
+    description: 'Total confidence-weighted procedural heuristics and gatekeeper invariants in the vault.',
   },
 ];
 
@@ -145,21 +151,29 @@ export interface StatMetric {
   subject?: string;
   file?: string;
   prefixes: string[];
-  count: number;
-  displayCount: number;
-  target: number;
-  percentage: number;
-  rawPercentage: number;
-  isOverclocked: boolean;
-  percentageText: string;
-  fractionText: string;
-  rawFractionText: string;
+  count: number; // Raw rule count
+  weightedScore: number; // Sum of rule confidence weights (1..5 per rule)
+  displayScore: number; // Math.min(weightedScore, target)
+  displayCount: number; // Alias for displayScore for UI fraction compatibility
+  target: number; // Target weighted points (60 per agent)
+  percentage: number; // Capped 0-100: Math.min(100, Math.round((weightedScore / target) * 100))
+  rawPercentage: number; // Uncapped percentage
+  avgConfidence: number; // Average confidence (weightedScore / count)
+  isHighConfidence: boolean; // weightedScore > target
+  isOverclocked: boolean; // Alias for isHighConfidence
+  isUnverified: boolean; // High rule count (>= 10 rules) with low average confidence (< 2.0)
+  percentageText: string; // '100%+' when isHighConfidence, else `${percentage}%`
+  fractionText: string; // `${displayScore} / ${target} pts`
+  rawFractionText: string; // `${weightedScore} / ${target} pts`
   description: string;
 }
 
 export interface BlindSpotMetric {
+  type?: 'low_mastery' | 'unverified';
   stat: string;
   percentage: number;
+  avgConfidence?: number;
+  ruleCount?: number;
   label: string;
   advice: string;
   file: string;
@@ -171,14 +185,25 @@ export interface CortexStatsResult {
     title: string;
     subtitle: string;
     totalRules: number;
+    totalWeightedScore: number;
+    avgConfidence: number;
   };
   targetRulesPerAgent: number;
+  targetWeightedScorePerAgent: number;
   agents: Record<string, StatMetric>;
   agentList: StatMetric[];
   dimensions: StatMetric[];
   blindSpots: BlindSpotMetric[];
   prefixCounts: Record<string, number>;
+  prefixWeights: Record<string, number>;
   totalUniqueRules: number;
+  totalWeightedScore: number;
+}
+
+export interface RuleWeightRecord {
+  id: string;
+  prefix: string;
+  weight: number;
 }
 
 export type StatsCalculationInput =
@@ -186,134 +211,225 @@ export type StatsCalculationInput =
   | {
       nodes?: BrainDocNode[];
       prefixCounts?: Record<string, number>;
+      prefixWeights?: Record<string, number>;
+      ruleWeights?: Map<string, number> | Record<string, number> | RuleWeightRecord[];
       uniqueRules?: Set<string> | string[];
       totalRules?: number;
+      markdownContents?: string[];
     }
   | string[];
 
 /**
- * Deterministic helper to extract unique rules and prefix occurrences
- * from BrainDocNode array or raw string rules.
+ * Extracts `conf: X` (1..5) from a rule line.
+ * Defaults to 1 if `conf: 1` or if no `conf:` tag is present.
  */
-function extractRulesAndPrefixes(input: StatsCalculationInput): {
-  uniqueRules: Set<string>;
-  prefixCounts: Record<string, number>;
-} {
-  const uniqueRules = new Set<string>();
-  const prefixCounts: Record<string, number> = {};
+export function parseConfidenceWeight(line: string): number {
+  const confMatch = line.match(/\bconf:\s*([1-5])\b/i);
+  if (!confMatch) return 1;
+  const parsed = parseInt(confMatch[1], 10);
+  if (Number.isNaN(parsed)) return 1;
+  return Math.max(1, Math.min(5, parsed));
+}
 
-  const recordRule = (prefix: string, id: string) => {
+/**
+ * Deterministic helper to extract unique rules, their confidence weights (1..5),
+ * and per-prefix counts/weights from BrainDocNode[], markdown strings, or pre-parsed maps.
+ */
+function extractRulesAndWeights(input: StatsCalculationInput): {
+  ruleMap: Map<string, { prefix: string; weight: number }>;
+  prefixCounts: Record<string, number>;
+  prefixWeights: Record<string, number>;
+} {
+  const ruleMap = new Map<string, { prefix: string; weight: number }>();
+
+  const recordRule = (prefix: string, id: string, weight: number = 1) => {
     const cleanPrefix = prefix.toUpperCase();
     const cleanId = id.toUpperCase();
-    uniqueRules.add(cleanId);
-    prefixCounts[cleanPrefix] = (prefixCounts[cleanPrefix] || 0) + 1;
+    const cleanWeight = Math.max(1, Math.min(5, weight));
+    const existing = ruleMap.get(cleanId);
+    if (!existing || cleanWeight > existing.weight) {
+      ruleMap.set(cleanId, { prefix: cleanPrefix, weight: cleanWeight });
+    }
+  };
+
+  const scanMarkdownText = (text: string) => {
+    const lines = text.split(/\r?\n/);
+    for (const rawLine of lines) {
+      const m = rawLine.match(/^\s*-\s*\*\*([A-Z]{1,4})-(\d+)\*\*/);
+      if (m) {
+        const prefix = m[1].toUpperCase();
+        const ruleId = `${prefix}-${m[2]}`;
+        const weight = parseConfidenceWeight(rawLine);
+        recordRule(prefix, ruleId, weight);
+      }
+    }
   };
 
   if (Array.isArray(input)) {
     for (const item of input) {
       if (typeof item === 'string') {
-        const m = item.match(/\b([A-Z]{1,4})-(\d+)\b/);
-        if (m) {
-          recordRule(m[1], `${m[1]}-${m[2]}`);
+        if (item.includes('\n') || item.trim().startsWith('- **')) {
+          scanMarkdownText(item);
+        } else {
+          const m = item.match(/\b([A-Z]{1,4})-(\d+)\b/);
+          if (m) {
+            recordRule(m[1], `${m[1]}-${m[2]}`, parseConfidenceWeight(item));
+          }
         }
       } else if (item && typeof item === 'object') {
-        // BrainDocNode item
         const node = item as BrainDocNode;
         const cleanId = String(node.id).split('::')[0];
         const idMatch = cleanId.match(/^([A-Z]{1,4})-(\d+)/);
         if (idMatch) {
-          recordRule(idMatch[1], `${idMatch[1]}-${idMatch[2]}`);
+          recordRule(
+            idMatch[1],
+            `${idMatch[1]}-${idMatch[2]}`,
+            node.description ? parseConfidenceWeight(node.description) : 1
+          );
         }
 
         if (Array.isArray(node.rules)) {
           for (const r of node.rules) {
             const rm = r.match(/\b([A-Z]{1,4})-(\d+)\b/);
             if (rm) {
-              recordRule(rm[1], `${rm[1]}-${rm[2]}`);
+              recordRule(rm[1], `${rm[1]}-${rm[2]}`, parseConfidenceWeight(r));
             }
           }
         }
 
         if (typeof node.content === 'string') {
-          const rulePattern = /(?:^|\n)\s*-\s*\*\*([A-Z]{1,4})-(\d+)/g;
-          let cm: RegExpExecArray | null;
-          while ((cm = rulePattern.exec(node.content)) !== null) {
-            recordRule(cm[1], `${cm[1]}-${cm[2]}`);
-          }
+          scanMarkdownText(node.content);
         }
       }
     }
   } else if (input && typeof input === 'object') {
-    if (input.prefixCounts) {
-      Object.assign(prefixCounts, input.prefixCounts);
+    if (Array.isArray(input.markdownContents)) {
+      for (const md of input.markdownContents) {
+        scanMarkdownText(md);
+      }
     }
+
+    if (input.nodes && Array.isArray(input.nodes)) {
+      const nested = extractRulesAndWeights(input.nodes);
+      nested.ruleMap.forEach((val, key) => {
+        recordRule(val.prefix, key, val.weight);
+      });
+    }
+
     if (input.uniqueRules) {
       for (const r of input.uniqueRules) {
-        uniqueRules.add(r.toUpperCase());
-        const prefix = r.split('-')[0].toUpperCase();
-        if (prefix && !prefixCounts[prefix]) {
-          prefixCounts[prefix] = 1;
+        const clean = r.toUpperCase();
+        const prefix = clean.split('-')[0];
+        if (prefix) {
+          recordRule(prefix, clean, 1);
         }
       }
     }
-    if (input.nodes && Array.isArray(input.nodes)) {
-      const nested = extractRulesAndPrefixes(input.nodes);
-      nested.uniqueRules.forEach((r) => uniqueRules.add(r));
-      for (const [p, c] of Object.entries(nested.prefixCounts)) {
-        prefixCounts[p] = Math.max(prefixCounts[p] || 0, c);
+
+    if (input.ruleWeights) {
+      if (input.ruleWeights instanceof Map) {
+        input.ruleWeights.forEach((w, id) => {
+          const clean = id.toUpperCase();
+          const prefix = clean.split('-')[0];
+          if (prefix) recordRule(prefix, clean, w);
+        });
+      } else if (Array.isArray(input.ruleWeights)) {
+        for (const item of input.ruleWeights) {
+          recordRule(item.prefix, item.id, item.weight);
+        }
+      } else {
+        for (const [id, w] of Object.entries(input.ruleWeights)) {
+          const clean = id.toUpperCase();
+          const prefix = clean.split('-')[0];
+          if (prefix) recordRule(prefix, clean, Number(w) || 1);
+        }
       }
     }
   }
 
-  return { uniqueRules, prefixCounts };
+  const prefixCounts: Record<string, number> = {};
+  const prefixWeights: Record<string, number> = {};
+
+  ruleMap.forEach(({ prefix, weight }) => {
+    prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
+    prefixWeights[prefix] = (prefixWeights[prefix] || 0) + weight;
+  });
+
+  if (input && typeof input === 'object' && !Array.isArray(input)) {
+    if (input.prefixCounts && ruleMap.size === 0) {
+      Object.assign(prefixCounts, input.prefixCounts);
+    }
+    if (input.prefixWeights && ruleMap.size === 0) {
+      Object.assign(prefixWeights, input.prefixWeights);
+    }
+  }
+
+  return { ruleMap, prefixCounts, prefixWeights };
 }
 
 /**
- * Centralized Cortex Stats Calculator.
+ * Centralized Cortex Weighted Stats Calculator (v2 — Quality > Quantity).
  *
  * Enforces:
- * - TARGET_RULES_PER_AGENT = 20
- * - Dimension targets: 20 per agent involved (e.g. 2 agents = 40, Capacity = 140)
- * - Percentage formula: Math.min(100, Math.round((count / target) * 100))
- * - Capped display count: Math.min(count, target) to completely prevent impossible fractions like 22/20
- * - Overclocked status: count > target, showing 100%+ and triggering purple mastery glow
+ * - Confidence weights: conf: 1 (or untagged) = 1, conf: 2 = 2, conf: 3 = 3, conf: 4 = 4, conf: 5 = 5
+ * - TARGET_WEIGHTED_SCORE_PER_AGENT = 60 weighted points per Agent
+ * - Grouped dimension targets: 60 * agentCount (60 for 1 agent, 120 for 2 agents, 420 for Capacity)
+ * - Percentage formula: Math.min(100, Math.round((weightedScore / target) * 100))
+ * - High Confidence state: weightedScore > target (displays 100%+ and glowing purple styling)
+ * - Unverified state: count >= 10 && avgConfidence < 2.0 (flags rules lacking real-world evidence)
  */
 export function calculateCortexStats(input: StatsCalculationInput): CortexStatsResult {
-  const { uniqueRules, prefixCounts } = extractRulesAndPrefixes(input);
+  const { ruleMap, prefixCounts, prefixWeights } = extractRulesAndWeights(input);
 
-  const totalUniqueRules =
-    (typeof input === 'object' && !Array.isArray(input) && input.totalRules) ||
-    uniqueRules.size ||
-    159;
+  let totalUniqueRules = ruleMap.size;
+  let totalWeightedScore = 0;
+  ruleMap.forEach((v) => {
+    totalWeightedScore += v.weight;
+  });
+
+  if (totalUniqueRules === 0 && typeof input === 'object' && !Array.isArray(input)) {
+    totalUniqueRules =
+      input.totalRules ||
+      Object.values(prefixCounts).reduce((a, b) => a + b, 0) ||
+      159;
+    totalWeightedScore =
+      Object.values(prefixWeights).reduce((a, b) => a + b, 0) ||
+      totalUniqueRules;
+  }
+
+  const overallAvgConfidence =
+    totalUniqueRules > 0 ? Number((totalWeightedScore / totalUniqueRules).toFixed(2)) : 0;
 
   // 1. Calculate stats for the 7 Individual Agents
   const agents: Record<string, StatMetric> = {};
   const agentList: StatMetric[] = [];
 
   for (const cfg of AGENT_STAT_CONFIGS) {
-    // Count unique rules matching this agent's prefixes
     let count = 0;
-    const matchedRules = new Set<string>();
+    let weightedScore = 0;
 
-    for (const r of uniqueRules) {
-      const p = r.split('-')[0].toUpperCase();
-      if (cfg.prefixes.includes(p) || p === cfg.code) {
-        matchedRules.add(r);
-      }
-    }
-
-    if (matchedRules.size > 0) {
-      count = matchedRules.size;
+    if (ruleMap.size > 0) {
+      ruleMap.forEach((val) => {
+        if (cfg.prefixes.includes(val.prefix) || val.prefix === cfg.code) {
+          count += 1;
+          weightedScore += val.weight;
+        }
+      });
     } else {
-      // Fallback to prefixCounts sum
       count = cfg.prefixes.reduce((sum, p) => sum + (prefixCounts[p] || 0), 0);
+      weightedScore = cfg.prefixes.reduce(
+        (sum, p) => sum + (prefixWeights[p] ?? prefixCounts[p] ?? 0),
+        0
+      );
     }
 
-    const target = TARGET_RULES_PER_AGENT;
-    const percentage = Math.min(100, Math.round((count / target) * 100));
-    const rawPercentage = Math.round((count / target) * 100);
-    const isOverclocked = count > target;
-    const displayCount = Math.min(count, target);
+    const target = TARGET_WEIGHTED_SCORE_PER_AGENT;
+    const percentage = Math.min(100, Math.round((weightedScore / target) * 100));
+    const rawPercentage = Math.round((weightedScore / target) * 100);
+    const avgConfidence = count > 0 ? Number((weightedScore / count).toFixed(2)) : 0;
+    const isHighConfidence = weightedScore > target;
+    const isUnverified = count >= 10 && avgConfidence < 2.0;
+    const displayScore = Math.min(weightedScore, target);
 
     const metric: StatMetric = {
       key: cfg.code.toLowerCase(),
@@ -324,14 +440,19 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       file: cfg.file,
       prefixes: cfg.prefixes,
       count,
-      displayCount,
+      weightedScore,
+      displayScore,
+      displayCount: displayScore,
       target,
       percentage,
       rawPercentage,
-      isOverclocked,
-      percentageText: isOverclocked ? '100%+' : `${percentage}%`,
-      fractionText: `${displayCount} / ${target}`,
-      rawFractionText: `${count} / ${target}`,
+      avgConfidence,
+      isHighConfidence,
+      isOverclocked: isHighConfidence,
+      isUnverified,
+      percentageText: isHighConfidence ? '100%+' : `${percentage}%`,
+      fractionText: `${displayScore} / ${target} pts`,
+      rawFractionText: `${weightedScore} / ${target} pts`,
       description: cfg.description,
     };
 
@@ -344,30 +465,33 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
 
   for (const dim of DIMENSION_CONFIGS) {
     let count = 0;
-    const target = dim.agentCount * TARGET_RULES_PER_AGENT;
+    let weightedScore = 0;
+    const target = dim.agentCount * TARGET_WEIGHTED_SCORE_PER_AGENT;
 
     if (dim.key === 'capacity') {
       count = totalUniqueRules;
-    } else {
-      const matched = new Set<string>();
-      for (const r of uniqueRules) {
-        const p = r.split('-')[0].toUpperCase();
-        if (dim.prefixes.includes(p)) {
-          matched.add(r);
+      weightedScore = totalWeightedScore;
+    } else if (ruleMap.size > 0) {
+      ruleMap.forEach((val) => {
+        if (dim.prefixes.includes(val.prefix)) {
+          count += 1;
+          weightedScore += val.weight;
         }
-      }
-
-      if (matched.size > 0) {
-        count = matched.size;
-      } else {
-        count = dim.prefixes.reduce((sum, p) => sum + (prefixCounts[p] || 0), 0);
-      }
+      });
+    } else {
+      count = dim.prefixes.reduce((sum, p) => sum + (prefixCounts[p] || 0), 0);
+      weightedScore = dim.prefixes.reduce(
+        (sum, p) => sum + (prefixWeights[p] ?? prefixCounts[p] ?? 0),
+        0
+      );
     }
 
-    const percentage = Math.min(100, Math.round((count / target) * 100));
-    const rawPercentage = Math.round((count / target) * 100);
-    const isOverclocked = count > target;
-    const displayCount = Math.min(count, target);
+    const percentage = Math.min(100, Math.round((weightedScore / target) * 100));
+    const rawPercentage = Math.round((weightedScore / target) * 100);
+    const avgConfidence = count > 0 ? Number((weightedScore / count).toFixed(2)) : 0;
+    const isHighConfidence = weightedScore > target;
+    const isUnverified = count >= 10 && avgConfidence < 2.0;
+    const displayScore = Math.min(weightedScore, target);
 
     dimensions.push({
       key: dim.key,
@@ -375,44 +499,66 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       label: dim.label,
       prefixes: dim.prefixes,
       count,
-      displayCount,
+      weightedScore,
+      displayScore,
+      displayCount: displayScore,
       target,
       percentage,
       rawPercentage,
-      isOverclocked,
-      percentageText: isOverclocked ? '100%+' : `${percentage}%`,
-      fractionText: `${displayCount} / ${target}`,
-      rawFractionText: `${count} / ${target}`,
+      avgConfidence,
+      isHighConfidence,
+      isOverclocked: isHighConfidence,
+      isUnverified,
+      percentageText: isHighConfidence ? '100%+' : `${percentage}%`,
+      fractionText: `${displayScore} / ${target} pts`,
+      rawFractionText: `${weightedScore} / ${target} pts`,
       description: dim.description,
     });
   }
 
-  // 3. Operator Level & Title calculation
+  // 3. Operator Level & Title calculation (Weighted Quality Grade)
   let levelNumber = 1;
   let levelTitle = 'Level 1 Initiate';
   let levelSubtitle = 'Novice External Memory';
 
-  if (totalUniqueRules >= 120) {
+  if (totalWeightedScore >= 360) {
     levelNumber = 5;
     levelTitle = 'Level 5 Autonomous Mastermind';
-    levelSubtitle = 'Comprehensive Invariant Singularity';
-  } else if (totalUniqueRules >= 85) {
+    levelSubtitle = 'Comprehensive Proven Invariant Singularity';
+  } else if (totalWeightedScore >= 240) {
     levelNumber = 4;
     levelTitle = 'Level 4 Principal Gatekeeper';
-    levelSubtitle = 'Deep Institutional Memory & Strict SDLC Governance';
-  } else if (totalUniqueRules >= 50) {
+    levelSubtitle = 'High-Confidence Institutional Memory & Strict SDLC Governance';
+  } else if (totalWeightedScore >= 120) {
     levelNumber = 3;
     levelTitle = 'Level 3 Systems Architect';
-    levelSubtitle = 'Multi-Agent Production Governance';
-  } else if (totalUniqueRules >= 20) {
+    levelSubtitle = 'Multi-Agent Evidence-Backed Governance';
+  } else if (totalWeightedScore >= 60) {
     levelNumber = 2;
     levelTitle = 'Level 2 Associate Architect';
     levelSubtitle = 'Emerging Behavioral Invariants';
   }
 
-  // 4. Gap Analysis (Blind Spots with percentage < 30%)
+  // 4. Gap Analysis: Low Mastery (< 30%) & Unverified Knowledge (count >= 10 && avgConfidence < 2.0)
   const blindSpots: BlindSpotMetric[] = [];
 
+  // 4a. Unverified Knowledge Diagnostics per Agent
+  for (const agent of agentList) {
+    if (agent.isUnverified) {
+      blindSpots.push({
+        type: 'unverified',
+        stat: agent.fullName || agent.label,
+        percentage: agent.percentage,
+        avgConfidence: agent.avgConfidence,
+        ruleCount: agent.count,
+        label: `Unverified Knowledge: ${agent.fullName || agent.label}`,
+        advice: `You have many rules for ${agent.fullName || agent.label} (${agent.count} rules, avg conf ${agent.avgConfidence.toFixed(1)}), but they lack evidence. Link them to sessions or projects to prove them.`,
+        file: agent.file || 'agents/',
+      });
+    }
+  }
+
+  // 4b. Low Mastery Diagnostics (< 30% of 60pt target)
   const dimMap = new Map(dimensions.map((d) => [d.key, d]));
   const secDim = dimMap.get('security');
   const sysDim = dimMap.get('systems');
@@ -422,35 +568,47 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
 
   if (secDim && secDim.percentage < 30) {
     blindSpots.push({
+      type: 'low_mastery',
       stat: 'Security',
       percentage: secDim.percentage,
+      avgConfidence: secDim.avgConfidence,
+      ruleCount: secDim.count,
       label: 'Low Security Invariants',
-      advice: 'Add defensive rules, STRIDE threat boundaries, or RLS bypass rules to securityagent.md and cybersec.md.',
+      advice: 'Add defensive rules, STRIDE threat boundaries, or proven RLS bypass evidence (conf: 3–5) to securityagent.md and cybersec.md.',
       file: 'agents/securityagent.md',
     });
   }
   if (sysDim && sysDim.percentage < 30) {
     blindSpots.push({
+      type: 'low_mastery',
       stat: 'Systems',
       percentage: sysDim.percentage,
+      avgConfidence: sysDim.avgConfidence,
+      ruleCount: sysDim.count,
       label: 'Low Systems Design',
-      advice: 'Add architecture schemas, failure recovery modes, or database constraints to systemsdesignagent.md and dbaagent.md.',
+      advice: 'Add architecture schemas, failure recovery modes, or database constraints with project evidence to systemsdesignagent.md and dbaagent.md.',
       file: 'agents/systemsdesignagent.md',
     });
   }
   if (empDim && empDim.percentage < 30) {
     blindSpots.push({
+      type: 'low_mastery',
       stat: 'Empathy',
       percentage: empDim.percentage,
+      avgConfidence: empDim.avgConfidence,
+      ruleCount: empDim.count,
       label: 'Low User Empathy',
-      advice: 'Add user constraints, cognitive friction limits, or interrogation criteria to uiuxagent.md and productmanageragent.md.',
+      advice: 'Add user constraints, cognitive friction limits, or interrogation criteria with session evidence to uiuxagent.md and productmanageragent.md.',
       file: 'agents/uiuxagent.md',
     });
   }
   if (execDim && execDim.percentage < 30) {
     blindSpots.push({
+      type: 'low_mastery',
       stat: 'Execution',
       percentage: execDim.percentage,
+      avgConfidence: execDim.avgConfidence,
+      ruleCount: execDim.count,
       label: 'Low Execution & Delivery',
       advice: 'Add webhook verification, retry semantics, or delivery specifications to integrationagent.md and growthagent.md.',
       file: 'agents/integrationagent.md',
@@ -458,12 +616,31 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
   }
   if (capDim && capDim.percentage < 30) {
     blindSpots.push({
+      type: 'low_mastery',
       stat: 'Capacity',
       percentage: capDim.percentage,
-      label: 'Low Rule Capacity',
-      advice: 'Your external memory vault is still nascent. Extract tacit heuristics using /assess or document your first-move rules.',
+      avgConfidence: capDim.avgConfidence,
+      ruleCount: capDim.count,
+      label: 'Low Weighted Rule Capacity',
+      advice: 'Your external memory vault needs higher-confidence rules. Extract tacit heuristics using /assess and link real project evidence (ev:).',
       file: 'brain/03-heuristics/HEURISTICS.md',
     });
+  }
+
+  // Also check individual agents below 30% that weren't already flagged as unverified
+  for (const agent of agentList) {
+    if (agent.percentage < 30 && !agent.isUnverified) {
+      blindSpots.push({
+        type: 'low_mastery',
+        stat: agent.fullName || agent.label,
+        percentage: agent.percentage,
+        avgConfidence: agent.avgConfidence,
+        ruleCount: agent.count,
+        label: `Low Mastery: ${agent.fullName || agent.label}`,
+        advice: `${agent.fullName || agent.label} is at ${agent.weightedScore} / ${agent.target} weighted pts (${agent.count} rules). Add proven rules (conf: 3–5) to reach the 60-point mastery benchmark.`,
+        file: agent.file || 'agents/',
+      });
+    }
   }
 
   return {
@@ -472,14 +649,18 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       title: levelTitle,
       subtitle: levelSubtitle,
       totalRules: totalUniqueRules,
+      totalWeightedScore,
+      avgConfidence: overallAvgConfidence,
     },
-    targetRulesPerAgent: TARGET_RULES_PER_AGENT,
+    targetRulesPerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,
+    targetWeightedScorePerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,
     agents,
     agentList,
     dimensions,
     blindSpots,
     prefixCounts,
+    prefixWeights,
     totalUniqueRules,
+    totalWeightedScore,
   };
 }
-

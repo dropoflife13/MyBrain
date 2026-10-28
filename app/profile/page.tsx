@@ -48,11 +48,16 @@ interface CognitiveStat {
   key: string;
   value: number;
   count: number;
+  weightedScore?: number;
+  displayScore?: number;
   displayCount?: number;
   target: number;
+  avgConfidence?: number;
   prefixes: string[];
   description: string;
+  isHighConfidence?: boolean;
   isOverclocked?: boolean;
+  isUnverified?: boolean;
   percentageText?: string;
   fractionText?: string;
 }
@@ -62,18 +67,26 @@ interface AgentMastery {
   code: string;
   file: string;
   count: number;
+  weightedScore?: number;
+  displayScore?: number;
   displayCount?: number;
   target: number;
   percentage: number;
+  avgConfidence?: number;
   description: string;
+  isHighConfidence?: boolean;
   isOverclocked?: boolean;
+  isUnverified?: boolean;
   percentageText?: string;
   fractionText?: string;
 }
 
 interface BlindSpot {
+  type?: 'low_mastery' | 'unverified';
   stat: string;
   percentage: number;
+  avgConfidence?: number;
+  ruleCount?: number;
   label: string;
   advice: string;
   file: string;
@@ -85,6 +98,8 @@ interface StatsPayload {
     title: string;
     subtitle: string;
     totalRules: number;
+    totalWeightedScore?: number;
+    avgConfidence?: number;
   };
   cognitiveStats: CognitiveStat[];
   agentMastery: AgentMastery[];
@@ -130,17 +145,25 @@ export default function ProfilePage() {
     }
   };
 
-  const radarData = stats?.cognitiveStats.map((item) => ({
-    subject: item.subject,
-    value: item.value,
-    count: item.count,
-    displayCount: item.displayCount ?? Math.min(item.count, item.target),
-    target: item.target,
-    isOverclocked: item.isOverclocked || item.count > item.target,
-    percentageText: item.percentageText || (item.count > item.target ? '100%+' : `${item.value}%`),
-    fractionText: item.fractionText || `${item.displayCount ?? Math.min(item.count, item.target)} / ${item.target}`,
-    fullMark: 100,
-  })) || [];
+  const radarData = stats?.cognitiveStats.map((item) => {
+    const weightedScore = item.weightedScore ?? item.count;
+    const displayScore = item.displayScore ?? item.displayCount ?? Math.min(weightedScore, item.target);
+    const isHighConfidence = item.isHighConfidence ?? item.isOverclocked ?? weightedScore > item.target;
+    return {
+      subject: item.subject,
+      value: item.value,
+      count: item.count,
+      weightedScore,
+      displayScore,
+      target: item.target,
+      avgConfidence: item.avgConfidence ?? 1,
+      isHighConfidence,
+      isUnverified: item.isUnverified ?? false,
+      percentageText: item.percentageText || (isHighConfidence ? '100%+' : `${item.value}%`),
+      fractionText: item.fractionText || `${displayScore} / ${item.target} pts`,
+      fullMark: 100,
+    };
+  }) || [];
 
   return (
     <div
@@ -349,16 +372,24 @@ export default function ProfilePage() {
                               <div className="bg-[#09090b]/95 border border-cyan-500/40 p-2.5 rounded-lg shadow-xl font-mono text-xs text-white">
                                 <div className="flex items-center justify-between gap-3 mb-1">
                                   <span className="text-cyan-400 font-bold">{data.subject}</span>
-                                  {data.isOverclocked && (
+                                  {data.isHighConfidence && (
                                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
-                                      OVERCLOCKED
+                                      HIGH CONFIDENCE
+                                    </span>
+                                  )}
+                                  {data.isUnverified && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                                      ⚠️ UNVERIFIED
                                     </span>
                                   )}
                                 </div>
                                 <div>Mastery: {data.percentageText || `${data.value}%`}</div>
                                 <div className="text-zinc-400 text-[10px]">
-                                  Rules: {data.displayCount} / {data.target}
-                                  {data.count > data.target ? ` (${data.count} in vault)` : ''}
+                                  Weighted Score: {data.displayScore} / {data.target} pts
+                                  {data.weightedScore > data.target ? ` (${data.weightedScore} total pts)` : ''}
+                                </div>
+                                <div className="text-zinc-500 text-[10px]">
+                                  {data.count} rules • Avg Conf: {Number(data.avgConfidence ?? 1).toFixed(1)}
                                 </div>
                               </div>
                             );
@@ -377,8 +408,8 @@ export default function ProfilePage() {
             </div>
 
             <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
-              <span>Standard: 20 Rules/Agent</span>
-              <span className="text-cyan-600 dark:text-[#00ffff] font-semibold">Overclocked Enabled</span>
+              <span>Target: 60 Weighted Pts/Agent</span>
+              <span className="text-purple-600 dark:text-purple-400 font-semibold">High Confidence Enabled</span>
             </div>
           </div>
 
@@ -389,44 +420,57 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-2">
                   <Activity className="w-4 h-4 text-cyan-600 dark:text-[#00ffff]" />
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Cognitive Dimension Breakdown
+                    Cognitive Dimension Breakdown (Weighted by Confidence)
                   </h2>
                 </div>
                 <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                  5 Dimensions Evaluated
+                  conf 1–5 Scoring
                 </span>
               </div>
 
               <div className="space-y-4 pt-1">
                 {stats?.cognitiveStats.map((stat) => {
-                  const isOverclocked = stat.isOverclocked || stat.count > stat.target;
-                  const displayCount = stat.displayCount ?? Math.min(stat.count, stat.target);
-                  const percentageText = stat.percentageText || (isOverclocked ? '100%+' : `${stat.value}%`);
+                  const weightedScore = stat.weightedScore ?? stat.count;
+                  const isHighConfidence =
+                    stat.isHighConfidence ?? stat.isOverclocked ?? weightedScore > stat.target;
+                  const isUnverified =
+                    stat.isUnverified ?? (stat.count >= 10 && (stat.avgConfidence ?? 1) < 2.0);
+                  const displayScore =
+                    stat.displayScore ?? stat.displayCount ?? Math.min(weightedScore, stat.target);
+                  const percentageText =
+                    stat.percentageText || (isHighConfidence ? '100%+' : `${stat.value}%`);
 
                   return (
                     <div key={stat.key} className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-slate-900 dark:text-white">
                             {stat.subject}
                           </span>
                           <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
                             ({stat.prefixes.join(' + ')})
                           </span>
-                          {isOverclocked && (
+                          {isHighConfidence && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
-                              Overclocked
+                              High Confidence
+                            </span>
+                          )}
+                          {isUnverified && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
+                              ⚠️ Unverified
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 font-mono">
                           <span className="text-slate-500 dark:text-zinc-400 text-[11px]">
-                            {displayCount} / {stat.target} rules
+                            {displayScore} / {stat.target} pts
                           </span>
                           <span
                             className={`font-bold text-xs ${
-                              isOverclocked
+                              isHighConfidence
                                 ? 'text-purple-600 dark:text-purple-400'
+                                : isUnverified
+                                ? 'text-amber-600 dark:text-amber-400'
                                 : stat.value >= 70
                                 ? 'text-cyan-600 dark:text-[#00ffff]'
                                 : stat.value >= 30
@@ -439,15 +483,17 @@ export default function ProfilePage() {
                         </div>
                       </div>
 
-                      {/* Progress Bar with Cyan/Emerald or Purple Overclocked glow */}
+                      {/* Progress Bar with Cyan/Emerald or Purple High Confidence glow */}
                       <div className="w-full h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5">
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${stat.value}%` }}
                           transition={{ duration: 0.8, ease: 'easeOut' }}
                           className={`h-full rounded-full transition-all ${
-                            isOverclocked
+                            isHighConfidence
                               ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.7)]'
+                              : isUnverified
+                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
                               : stat.value >= 80
                               ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_10px_rgba(0,255,255,0.7)]'
                               : stat.value >= 50
@@ -458,26 +504,29 @@ export default function ProfilePage() {
                           }`}
                         />
                       </div>
-                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
-                        {stat.description}
-                      </p>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
+                        <span>{stat.description}</span>
+                        <span className="font-mono text-[10px] shrink-0 ml-2">
+                          {stat.count} rules • avg conf {Number(stat.avgConfidence ?? 1).toFixed(1)}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Gap Analysis: Blind Spots Section */}
+            {/* Gap Analysis: Blind Spots & Unverified Knowledge Section */}
             <div className="p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl space-y-3">
               <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-500" />
                   <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Gap Analysis & Blind Spots
+                    Gap Analysis: Blind Spots & Unverified Knowledge
                   </h2>
                 </div>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-semibold">
-                  Threshold: &lt; 30%
+                  &lt; 30% Mastery or Avg Conf &lt; 2.0
                 </span>
               </div>
 
@@ -486,12 +535,34 @@ export default function ProfilePage() {
                   {stats.blindSpots.map((spot, idx) => (
                     <div
                       key={idx}
-                      className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-start gap-3 text-xs"
+                      className={`p-3.5 rounded-xl border flex items-start gap-3 text-xs ${
+                        spot.type === 'unverified'
+                          ? 'bg-amber-500/10 border-amber-500/35'
+                          : 'bg-rose-500/10 border-rose-500/25'
+                      }`}
                     >
-                      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <AlertTriangle
+                        className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          spot.type === 'unverified'
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-rose-600 dark:text-rose-400'
+                        }`}
+                      />
                       <div className="space-y-1">
-                        <div className="font-bold text-amber-700 dark:text-amber-300">
-                          ⚠️ {spot.label} ({spot.percentage}%)
+                        <div
+                          className={`font-bold flex items-center gap-2 flex-wrap ${
+                            spot.type === 'unverified'
+                              ? 'text-amber-700 dark:text-amber-300'
+                              : 'text-rose-700 dark:text-rose-300'
+                          }`}
+                        >
+                          <span>⚠️ {spot.label}</span>
+                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">
+                            {spot.percentage}% Mastery
+                            {spot.avgConfidence !== undefined
+                              ? ` • Avg Conf ${spot.avgConfidence.toFixed(1)}`
+                              : ''}
+                          </span>
                         </div>
                         <div className="text-slate-700 dark:text-zinc-300">{spot.advice}</div>
                         <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
@@ -506,11 +577,10 @@ export default function ProfilePage() {
                   <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div className="space-y-1">
                     <div className="font-bold text-emerald-700 dark:text-emerald-300">
-                      Zero Critical Blind Spots Detected
+                      Zero Critical Blind Spots or Unverified Clusters Detected
                     </div>
                     <div className="text-slate-600 dark:text-zinc-300">
-                      All 5 cognitive dimensions exceed the minimum 30% threshold. Your vault has
-                      solid coverage across Security, Systems, Empathy, Execution, and Rule Capacity.
+                      All cognitive dimensions exceed the 30% weighted threshold and maintain verified confidence levels.
                     </div>
                   </div>
                 </div>
@@ -528,7 +598,7 @@ export default function ProfilePage() {
                 <span>The 7 Agent Gatekeepers Mastery Breakdown</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Rule saturation and invariant density across the 7 core procedural gatekeepers:
+                Weighted confidence scoring (Target: 60 weighted points per Agent; conf 1–5):
               </p>
             </div>
             <span className="text-xs font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
@@ -538,42 +608,57 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stats?.agentMastery.map((agent) => {
-              const isOverclocked = agent.isOverclocked || agent.count > agent.target;
-              const displayCount = agent.displayCount ?? Math.min(agent.count, agent.target);
-              const percentageText = agent.percentageText || (isOverclocked ? '100%+' : `${agent.percentage}%`);
+              const weightedScore = agent.weightedScore ?? agent.count;
+              const isHighConfidence =
+                agent.isHighConfidence ?? agent.isOverclocked ?? weightedScore > agent.target;
+              const isUnverified =
+                agent.isUnverified ?? (agent.count >= 10 && (agent.avgConfidence ?? 1) < 2.0);
+              const displayScore =
+                agent.displayScore ?? agent.displayCount ?? Math.min(weightedScore, agent.target);
+              const percentageText =
+                agent.percentageText || (isHighConfidence ? '100%+' : `${agent.percentage}%`);
 
               return (
                 <div
                   key={agent.code}
                   className={`p-5 rounded-xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-xl border transition-all shadow-md space-y-3 ${
-                    isOverclocked
-                      ? 'border-purple-500/30 hover:border-purple-500/60 shadow-[0_0_12px_rgba(168,85,247,0.1)]'
+                    isHighConfidence
+                      ? 'border-purple-500/35 hover:border-purple-500/65 shadow-[0_0_12px_rgba(168,85,247,0.12)]'
+                      : isUnverified
+                      ? 'border-amber-500/40 hover:border-amber-500/70 shadow-[0_0_12px_rgba(245,158,11,0.1)]'
                       : 'border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
                         {AGENT_ICONS[agent.code] || <Shield className="w-4 h-4 text-cyan-500" />}
                       </div>
-                      <div>
-                        <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <div className="min-w-0">
+                        <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
                           <span>{agent.agent}</span>
-                          {isOverclocked && (
+                          {isHighConfidence && (
                             <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
-                              Overclocked
+                              High Confidence
+                            </span>
+                          )}
+                          {isUnverified && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
+                              ⚠️ Unverified
                             </span>
                           )}
                         </h3>
-                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">
                           {agent.code} • {agent.file}
                         </div>
                       </div>
                     </div>
                     <span
-                      className={`text-xs font-mono font-bold ${
-                        isOverclocked
+                      className={`text-xs font-mono font-bold shrink-0 ${
+                        isHighConfidence
                           ? 'text-purple-600 dark:text-purple-400'
+                          : isUnverified
+                          ? 'text-amber-600 dark:text-amber-400'
                           : 'text-cyan-600 dark:text-[#00ffff]'
                       }`}
                     >
@@ -585,8 +670,10 @@ export default function ProfilePage() {
                     <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isOverclocked
+                          isHighConfidence
                             ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                            : isUnverified
+                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
                             : 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_8px_rgba(0,255,255,0.6)]'
                         }`}
                         style={{ width: `${agent.percentage}%` }}
@@ -594,9 +681,9 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
                       <span>
-                        {displayCount} / {agent.target} rules mastered
+                        {displayScore} / {agent.target} pts ({agent.count} rules)
                       </span>
-                      <span>Target: {agent.target}</span>
+                      <span>Avg Conf: {Number(agent.avgConfidence ?? 1).toFixed(1)}</span>
                     </div>
                   </div>
 

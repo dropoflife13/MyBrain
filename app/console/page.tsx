@@ -836,13 +836,23 @@ export default function Home() {
               const isActive = activeGate === agent.code;
               const stat = cortexStats.agents[agent.code] || {
                 count: 0,
+                weightedScore: 0,
+                displayScore: 0,
                 displayCount: 0,
-                target: 20,
+                target: 60,
                 percentage: 0,
+                avgConfidence: 0,
+                isHighConfidence: false,
                 isOverclocked: false,
+                isUnverified: false,
                 percentageText: '0%',
               };
-              const tooltipContent = `${agent.fullName} • ${stat.displayCount} / ${stat.target} rules mastered (${stat.percentageText}${stat.isOverclocked ? ' • Overclocked' : ''})`;
+              const statusSuffix = stat.isHighConfidence
+                ? ' • High Confidence'
+                : stat.isUnverified
+                ? ' • ⚠️ Unverified'
+                : '';
+              const tooltipContent = `${agent.fullName} • ${stat.displayScore} / ${stat.target} pts (${stat.count} rules, avg conf ${stat.avgConfidence.toFixed(1)} • ${stat.percentageText}${statusSuffix})`;
 
               return (
                 <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
@@ -852,7 +862,7 @@ export default function Home() {
                     aria-pressed={isActive}
                     className={`w-full px-3 py-2 rounded-lg flex flex-col gap-1.5 text-xs transition-all cursor-pointer border group ${
                       isActive
-                        ? stat.isOverclocked
+                        ? stat.isHighConfidence
                           ? 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/50 text-purple-700 dark:text-purple-300 font-semibold shadow-[0_0_14px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/30'
                           : 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
                         : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
@@ -863,10 +873,12 @@ export default function Home() {
                       <div className="flex items-center gap-2 min-w-0">
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            stat.isOverclocked
+                            stat.isHighConfidence
                               ? isActive
                                 ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
                                 : 'bg-purple-400 group-hover:bg-purple-300'
+                              : stat.isUnverified
+                              ? 'bg-amber-400 group-hover:bg-amber-300'
                               : isActive
                               ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
                               : 'bg-cyan-500/70 group-hover:bg-cyan-400'
@@ -879,12 +891,14 @@ export default function Home() {
                       </div>
                       <span
                         className={`text-[10px] font-mono font-semibold transition-colors shrink-0 ${
-                          stat.isOverclocked
+                          stat.isHighConfidence
                             ? 'text-purple-600 dark:text-purple-400 group-hover:text-purple-500 dark:group-hover:text-purple-300 font-bold'
+                            : stat.isUnverified
+                            ? 'text-amber-600 dark:text-amber-400 font-bold'
                             : 'text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
                         }`}
                       >
-                        {stat.percentageText}
+                        {stat.isUnverified ? `⚠️ ${stat.percentageText}` : stat.percentageText}
                       </span>
                     </div>
 
@@ -892,8 +906,10 @@ export default function Home() {
                     <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          stat.isOverclocked
+                          stat.isHighConfidence
                             ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
+                            : stat.isUnverified
+                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]'
                             : isActive
                             ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]'
                             : 'bg-cyan-500/80 dark:bg-[#00ffff]/70 group-hover:bg-cyan-400 group-hover:shadow-[0_0_8px_rgba(0,255,255,0.8)]'

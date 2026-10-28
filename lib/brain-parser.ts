@@ -321,7 +321,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **UX-12** Sync surfaces: persistent connectivity indicator with pending/synced/flagged/rejected state badges.
 - **UX-13** Performance & motion discipline: WCAG 2.2 AA baseline; auto-downgrade heavy WebGL when FPS < 30 or prefers-reduced-motion is active.
 - **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual.
-- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes.`,
+- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes.
+- **UX-16** Gamified Knowledge Visuals: WHEN displaying stats or progress → DO use visual progress bars and "High Confidence" indicators (e.g., glowing purple when a user exceeds the target) rather than raw text. The UI must make growth feel rewarding.`,
   },
   {
     id: 'productmanageragent',
@@ -342,7 +343,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **PM-12** Waivers: any Gate waiver is recorded in docs/WAIVERS.md (rule ID, rationale, approver, expiry); no agent may self-waive.
 - **PM-13** Open questions are resolved or logged as assumptions (owner, date) before a doc reaches approved.
 - **PM-14** The Empathy Map Gate: WHEN defining a new feature or system → DO NOT write technical requirements yet. First, generate an Empathy Map (Says, Thinks, Does, Feels) for the primary user.
-- **PM-15** Target Audience Definition: WHEN writing a PRD → DO explicitly define the Target User and Secondary Users with device/literacy constraints; every feature must trace back to a specific user pain point.`,
+- **PM-15** Target Audience Definition: WHEN writing a PRD → DO explicitly define the Target User and Secondary Users with device/literacy constraints; every feature must trace back to a specific user pain point.
+- **PM-16** Cognitive Tracking & Gap Analysis: WHEN building a personal knowledge system or dashboard → DO implement automated metric tracking calculated directly from the user's data and explicitly highlight Blind Spots and Unverified rules.`,
   },
   {
     id: 'systemsdesignagent',
@@ -461,80 +463,80 @@ const VAULT_MARKDOWN_SOURCES: Array<{
     category: 'identity',
     anchor: [-14, 24, -12],
     markdown: `# Operating Principles — Tier 0 Governance
-- **OP-01** I lock down role boundaries, module ownership, and who is forbidden from doing what before touching UI or code.
-- **OP-02** I design every schema column, state transition, and business rule so I can defend its exact invariant under panel or audit interrogation.
-- **OP-03** I connect technical architecture directly to real operational ground truth and a believable adoption model.
-- **OP-04** Client inputs, browser storage (IndexedDB), role claims from the client, and mobile device clocks are untrusted until verified server-side.
-- **OP-05** On shared codebases or team sprints, strict module sandboxing, data contracts, and branch gates are mandatory.
-- **OP-06** Current state (stock, prices, OJT hours) is a derived view of immutable historical events, never a single mutable number overwritten in-place.
-- **OP-07** Never expose service_role or signing secrets in NEXT_PUBLIC_* or client bundles, even for a two-hour demo emergency.
-- **OP-08** Never allow self-approval (submitter = approver) or silent auto-approval on trust-critical workflow transitions.
-- **OP-09** Never fake a successful save, fabricate audit/trust records, or hide security behind a hidden UI button.
-- **OP-10** A feature is done only when its spec exists, server/DB permissions enforce its boundaries, states are honest, WCAG AA holds without FOUC, and the build passes cleanly.
-- **OP-11** I refuse to silently expand MVP scope mid-sprint without an approved spec; unapproved ideas go to LATER.md.
-- **OP-12** I explore candidate rules across real project contexts first and only promote them once I know the exact breaks: boundary condition.
-- **OP-13** AI provides the necessary help to optimize my workflow, point out my inconsistencies, and fix what is needed, but must never overlap on or override my human judgment and data.
-- **OP-14** Use deterministic math and statistical baselines first (z-score/MAD, regex, Zod) before reaching for an LLM API.
-- **OP-15** After shipping any major build milestone, I run a post-build excavation session to feed lessons learned back into the vault and verify zero mechanical or ownership overlaps.`,
+- **OP-01** I lock down role boundaries, module ownership, and who is forbidden from doing what before touching UI or code | conf: 5
+- **OP-02** I design every schema column, state transition, and business rule so I can defend its exact invariant under panel or audit interrogation | conf: 5
+- **OP-03** I connect technical architecture directly to real operational ground truth and a believable adoption model | conf: 5
+- **OP-04** Client inputs, browser storage (IndexedDB), role claims from the client, and mobile device clocks are untrusted until verified server-side | conf: 5
+- **OP-05** On shared codebases or team sprints, strict module sandboxing, data contracts, and branch gates are mandatory | conf: 5
+- **OP-06** Current state (stock, prices, OJT hours) is a derived view of immutable historical events, never a single mutable number overwritten in-place | conf: 5
+- **OP-07** Never expose service_role or signing secrets in NEXT_PUBLIC_* or client bundles, even for a two-hour demo emergency | conf: 5
+- **OP-08** Never allow self-approval (submitter = approver) or silent auto-approval on trust-critical workflow transitions | conf: 5
+- **OP-09** Never fake a successful save, fabricate audit/trust records, or hide security behind a hidden UI button | conf: 5
+- **OP-10** A feature is done only when its spec exists, server/DB permissions enforce its boundaries, states are honest, WCAG AA holds without FOUC, and the build passes cleanly | conf: 5
+- **OP-11** I refuse to silently expand MVP scope mid-sprint without an approved spec; unapproved ideas go to LATER.md | conf: 5
+- **OP-12** I explore candidate rules across real project contexts first and only promote them once I know the exact breaks: boundary condition | conf: 5
+- **OP-13** AI provides the necessary help to optimize my workflow, point out my inconsistencies, and fix what is needed, but must never overlap on or override my human judgment and data | conf: 5
+- **OP-14** Use deterministic math and statistical baselines first (z-score/MAD, regex, Zod) before reaching for an LLM API | conf: 5
+- **OP-15** After shipping any major build milestone, I run a post-build excavation session to feed lessons learned back into the vault and verify zero mechanical or ownership overlaps | conf: 5`,
   },
   {
     id: 'TASTE',
     category: 'identity',
     anchor: [14, 24, -12],
     markdown: `# Taste — What I Call Good Work
-- **TA-01** Calm, high-trust data density with Linear-level clarity and Stripe-level consistency: solid surface hierarchy and restrained hover darkening.
-- **TA-02** Studio-grade spatial and video experiences engineered for zero jank: procedural Three.js geometry and DOM-persistent preloaded media.
-- **TA-03** Strict typographic rhythm: defined scale (32/24/18/15/12px) with JetBrains Mono for IDs, timers, and numeric telemetry.
-- **TA-04** Flash-free dual theming: synchronous inline <head> script sets dark/light state before first paint with WCAG AA contrast.
-- **TA-05** Reject generic AI dashboard slop: purple/neon gradients, bouncy scale-105 hover, and oversized decorative cards.
-- **TA-06** Reject broken contrast and color-only states: raw #2563EB blue text on dark backgrounds or status pills without labels.
-- **TA-07** Reject arbitrary font sizes, all-caps sentences, misaligned table numerics, and layout shift (CLS).
-- **TA-08** Reject dead controls, decorative filters, fake sorting, or optimistic fake saves.
-- **TA-09** Composable, dumb prop-driven UI primitives (shadcn/ui foundation) cleanly separated from data-fetching containers.
-- **TA-10** Specs use numbered sections, explicit role-ownership tables, Mermaid diagrams, and stable rule IDs (DB-01, UX-01).
-- **TA-11** Admire Linear & Stripe interfaces for calm density, keyboard-first ergonomics, and disciplined token hierarchy.
-- **TA-12** Admire Premiere Pro / studio telemetry HUDs and tactical game UIs for frame-accurate feedback and corner reticles.
-- **TA-13** Video-editor pacing and storyboarding: enforce the 10-second hook rule and structure flows as Problem -> Friction -> 'Aha' Action -> Verified Outcome.
-- **TA-14** Dual-mode spatial HUD precision: pair Obsidian Sci-Fi Dark Mode (#050505 / #00FFFF, 6px HUD scrollbar) with Architectural Blueprint Light Mode (#f0f4f8 / #1e3a8a) and strict grid-cols-[1fr_auto_1fr] alignment.`,
+- **TA-01** Calm, high-trust data density with Linear-level clarity and Stripe-level consistency: solid surface hierarchy and restrained hover darkening | conf: 5
+- **TA-02** Studio-grade spatial and video experiences engineered for zero jank: procedural Three.js geometry and DOM-persistent preloaded media | conf: 5
+- **TA-03** Strict typographic rhythm: defined scale (32/24/18/15/12px) with JetBrains Mono for IDs, timers, and numeric telemetry | conf: 5
+- **TA-04** Flash-free dual theming: synchronous inline <head> script sets dark/light state before first paint with WCAG AA contrast | conf: 5
+- **TA-05** Reject generic AI dashboard slop: purple/neon gradients, bouncy scale-105 hover, and oversized decorative cards | conf: 5
+- **TA-06** Reject broken contrast and color-only states: raw #2563EB blue text on dark backgrounds or status pills without labels | conf: 5
+- **TA-07** Reject arbitrary font sizes, all-caps sentences, misaligned table numerics, and layout shift (CLS) | conf: 5
+- **TA-08** Reject dead controls, decorative filters, fake sorting, or optimistic fake saves | conf: 5
+- **TA-09** Composable, dumb prop-driven UI primitives (shadcn/ui foundation) cleanly separated from data-fetching containers | conf: 5
+- **TA-10** Specs use numbered sections, explicit role-ownership tables, Mermaid diagrams, and stable rule IDs (DB-01, UX-01) | conf: 5
+- **TA-11** Admire Linear & Stripe interfaces for calm density, keyboard-first ergonomics, and disciplined token hierarchy | conf: 5
+- **TA-12** Admire Premiere Pro / studio telemetry HUDs and tactical game UIs for frame-accurate feedback and corner reticles | conf: 5
+- **TA-13** Video-editor pacing and storyboarding: enforce the 10-second hook rule and structure flows as Problem -> Friction -> 'Aha' Action -> Verified Outcome | conf: 5
+- **TA-14** Dual-mode spatial HUD precision: pair Obsidian Sci-Fi Dark Mode (#050505 / #00FFFF, 6px HUD scrollbar) with Architectural Blueprint Light Mode (#f0f4f8 / #1e3a8a) and strict grid-cols-[1fr_auto_1fr] alignment | conf: 5`,
   },
   {
     id: 'HEURISTICS',
     category: 'heuristic',
     anchor: [-20, -4, -30],
     markdown: `# Heuristics — Cross-Domain Judgment
-- **H-01** WHEN integrating AI or automated analytics → DO run deterministic math and statistical baselines first (z-score/MAD, regex, Zod) and keep AI strictly as an assistive copilot.
-- **H-02** WHEN a teammate's backend endpoint breaks right before a live defense and they are unreachable → DO isolate a minimal fix on your own branch and disclose it in the handoff log, never faking the save in UI.
-- **H-03** WHEN dividing responsibility across agents or docs → DO give every rule a single canonical owner and cite its stable ID (DB-01, SEC-05) instead of duplicating text.
-- **H-04** WHEN designing a reviewing agent → DO separate blocking Gate Mode (hard invariants) from non-blocking Insight Mode (advisory optimizations).
-- **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before a third attempt.
-- **H-06** WHEN evolving a live markdown knowledge vault alongside a TypeScript app → DO derive runtime graph state directly from live .md files, sync the fallback snapshot, and run check-vault to guarantee zero overlap or drift.`,
+- **H-01** WHEN integrating AI or automated analytics → DO run deterministic math and statistical baselines first (z-score/MAD, regex, Zod) and keep AI strictly as an assistive copilot | conf: 5
+- **H-02** WHEN a teammate's backend endpoint breaks right before a live defense and they are unreachable → DO isolate a minimal fix on your own branch and disclose it in the handoff log, never faking the save in UI | conf: 5
+- **H-03** WHEN dividing responsibility across agents or docs → DO give every rule a single canonical owner and cite its stable ID (DB-01, SEC-05) instead of duplicating text | conf: 5
+- **H-04** WHEN designing a reviewing agent → DO separate blocking Gate Mode (hard invariants) from non-blocking Insight Mode (advisory optimizations) | conf: 4
+- **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before a third attempt | conf: 4
+- **H-06** WHEN evolving a live markdown knowledge vault alongside a TypeScript app → DO derive runtime graph state directly from live .md files, sync the fallback snapshot, and run check-vault to guarantee zero overlap or drift | conf: 5`,
   },
   {
     id: 'PATTERNS',
     category: 'heuristic',
     anchor: [20, -4, -30],
     markdown: `# Patterns — Recurring Situations
-- **P-01** SITUATION A two-party approval rule (submitter != approver) blocks a Day-1 solo pilot org (active_staff_count == 1) → PLAY Permit self-approval stamped with approval_mode: solo_operator_waiver until a 2nd staff seat joins.
-- **P-02** SITUATION High-craft 3D WebGL or hover video loaded on constrained mobile hardware → PLAY Use procedural math (<50KB), DOM-persistent video rows (0fr -> 1fr), and auto-downgrade WebGL when FPS < 30.
-- **P-03** SITUATION Pitching an MVP to judges or busy institutional users → PLAY Storyboard as Problem -> Friction -> 'Aha' Action -> Verified Outcome, cut media at <=10s, and pre-empt the #1 panel objection.
-- **P-04** SITUATION Multi-project developer using AI across repos → PLAY Keep Brainweb in one central repo and attach via VS Code Multi-Root Workspace (.code-workspace) + CLAUDE.md bridge.
-- **P-05** SITUATION Other developers want to fork your personal AI Brain Vault → PLAY Ship the 3D engine and all 7 Agent Gatekeepers intact (BN-00), but reset personal rules to blank-slate empty (0 rules) so adopters earn their own nodes via THE-TEST.md.`,
+- **P-01** SITUATION A two-party approval rule (submitter != approver) blocks a Day-1 solo pilot org (active_staff_count == 1) → PLAY Permit self-approval stamped with approval_mode: solo_operator_waiver until a 2nd staff seat joins | conf: 4
+- **P-02** SITUATION High-craft 3D WebGL or hover video loaded on constrained mobile hardware → PLAY Use procedural math (<50KB), DOM-persistent video rows (0fr -> 1fr), and auto-downgrade WebGL when FPS < 30 | conf: 4
+- **P-03** SITUATION Pitching an MVP to judges or busy institutional users → PLAY Storyboard as Problem -> Friction -> 'Aha' Action -> Verified Outcome, cut media at <=10s, and pre-empt the #1 panel objection | conf: 5
+- **P-04** SITUATION Multi-project developer using AI across repos → PLAY Keep Brainweb in one central repo and attach via VS Code Multi-Root Workspace (.code-workspace) + CLAUDE.md bridge | conf: 5
+- **P-05** SITUATION Other developers want to fork your personal AI Brain Vault → PLAY Ship the 3D engine and all 7 Agent Gatekeepers intact (BN-00), but reset personal rules to blank-slate empty (0 rules) so adopters earn their own nodes via THE-TEST.md | conf: 5`,
   },
   {
     id: 'RED-FLAGS',
     category: 'heuristic',
     anchor: [12, -10, 26],
     markdown: `# Red Flags — Visceral Blockers
-- **RF-01** SIGNAL NEXT_PUBLIC_* containing SERVICE_ROLE or secret keys inside client code → MEANS Complete RLS bypass in browser bundle → DEFAULT Hard-block PR (GATE: FAIL CS-01) and rotate secret.
-- **RF-02** SIGNAL Shared UI component inside src/components/ui/ importing createClient or fetch → MEANS Presentation coupled to backend → DEFAULT Strip to dumb props (UI-01).
-- **RF-03** SIGNAL UPDATE or DELETE called directly on audit logs, stock balances, or attendance histories → MEANS Historical lineage overwritten → DEFAULT Enforce append-only with supersedes_id (CS-03, SO-01).
-- **RF-04** SIGNAL Approval action lacks submitter_id !== current_user_id check or uses ad-hoc status strings → MEANS Self-approval fraud and broken state machine → DEFAULT Enforce counter-party check (CS-02) and canonical finite state machine (SO-02).
-- **RF-05** SIGNAL alert("Saved!") or success toast fired before await completes → MEANS UI is lying about persistence → DEFAULT Await server confirmation and report missing backends plainly (UI-03).
-- **RF-06** SIGNAL Theme state initialized inside React useEffect → MEANS White flash (FOUC) on dark-mode reload → DEFAULT Move theme class initialization to synchronous inline <head> script (UI-02).
-- **RF-07** SIGNAL Neon purple-pink gradients, scale-110 bounce, or scattered raw hex codes → MEANS Generic AI dashboard slop → DEFAULT Replace with semantic tokens and solid-color hover darkening (UI-04).
-- **RF-08** SIGNAL Raw #2563EB blue text on dark #0B1220 background or destructive button labeled "OK" → MEANS WCAG AA contrast failure and accidental destructive clicks → DEFAULT Use #A5C7FF on dark and explicit verb+object AlertDialog (UI-02, UI-04).
-- **RF-09** SIGNAL camera.position.lerp() running inside requestAnimationFrame while OrbitControls.autoRotate = true is active → MEANS Competing camera writers causing spherical snap-back jitter → DEFAULT Let OrbitControls.autoRotate own continuous rotation (UI-07).
-- **RF-10** SIGNAL A setTimeout loader on a landing page before router.push('/console') followed by a second loader on destination → MEANS Jarring double-loader UX and blank void → DEFAULT Navigate immediately and bind loader + canvas to a single isReady boolean (UI-08).`,
+- **RF-01** SIGNAL NEXT_PUBLIC_* containing SERVICE_ROLE or secret keys inside client code → MEANS Complete RLS bypass in browser bundle → DEFAULT Hard-block PR (GATE: FAIL CS-01) and rotate secret | conf: 5
+- **RF-02** SIGNAL Shared UI component inside src/components/ui/ importing createClient or fetch → MEANS Presentation coupled to backend → DEFAULT Strip to dumb props (UI-01) | conf: 5
+- **RF-03** SIGNAL UPDATE or DELETE called directly on audit logs, stock balances, or attendance histories → MEANS Historical lineage overwritten → DEFAULT Enforce append-only with supersedes_id (CS-03, SO-01) | conf: 5
+- **RF-04** SIGNAL Approval action lacks submitter_id !== current_user_id check or uses ad-hoc status strings → MEANS Self-approval fraud and broken state machine → DEFAULT Enforce counter-party check (CS-02) and canonical finite state machine (SO-02) | conf: 5
+- **RF-05** SIGNAL alert("Saved!") or success toast fired before await completes → MEANS UI is lying about persistence → DEFAULT Await server confirmation and report missing backends plainly (UI-03) | conf: 5
+- **RF-06** SIGNAL Theme state initialized inside React useEffect → MEANS White flash (FOUC) on dark-mode reload → DEFAULT Move theme class initialization to synchronous inline <head> script (UI-02) | conf: 5
+- **RF-07** SIGNAL Neon purple-pink gradients, scale-110 bounce, or scattered raw hex codes → MEANS Generic AI dashboard slop → DEFAULT Replace with semantic tokens and solid-color hover darkening (UI-04) | conf: 5
+- **RF-08** SIGNAL Raw #2563EB blue text on dark #0B1220 background or destructive button labeled "OK" → MEANS WCAG AA contrast failure and accidental destructive clicks → DEFAULT Use #A5C7FF on dark and explicit verb+object AlertDialog (UI-02, UI-04) | conf: 5
+- **RF-09** SIGNAL camera.position.lerp() running inside requestAnimationFrame while OrbitControls.autoRotate = true is active → MEANS Competing camera writers causing spherical snap-back jitter → DEFAULT Let OrbitControls.autoRotate own continuous rotation (UI-07) | conf: 5
+- **RF-10** SIGNAL A setTimeout loader on a landing page before router.push('/console') followed by a second loader on destination → MEANS Jarring double-loader UX and blank void → DEFAULT Navigate immediately and bind loader + canvas to a single isReady boolean (UI-08) | conf: 5`,
   },
   {
     id: 'DIGEST',

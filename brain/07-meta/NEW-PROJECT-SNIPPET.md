@@ -18,3 +18,4 @@ Before writing any code, read the following files from the absolute path: `C:/Us
 - If you write an API route, check `securityagent.md` for rate limits and RLS.
 
 If the Brain Vault path is not found, halt immediately and tell me: "GATE: FAIL BN-00 — Central Brain disconnected."
+

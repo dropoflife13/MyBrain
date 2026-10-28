@@ -77,30 +77,18 @@ export async function GET() {
     const agentsFiles = agentsDir ? collectMarkdownFiles(agentsDir) : [];
     const allFiles = Array.from(new Set([...brainFiles, ...agentsFiles]));
 
-    const prefixCounts: Record<string, number> = {};
-    const uniqueRules = new Set<string>();
-    const rulePattern = /(?:^|\n)\s*-\s*\*\*([A-Z]{1,4})-(\d+)/g;
+    const markdownContents: string[] = [];
 
     for (const filePath of allFiles) {
       try {
         const content = fs.readFileSync(filePath, 'utf8');
-        let match: RegExpExecArray | null;
-        while ((match = rulePattern.exec(content)) !== null) {
-          const prefix = match[1].toUpperCase();
-          const ruleId = `${prefix}-${match[2]}`;
-          uniqueRules.add(ruleId);
-          prefixCounts[prefix] = (prefixCounts[prefix] || 0) + 1;
-        }
+        markdownContents.push(content);
       } catch {}
     }
 
-    const totalUniqueRules = uniqueRules.size || 159;
-
-    // Standardized Cortex Stats using centralized lib/stats.ts
+    // Standardized Weighted Cortex Stats using centralized lib/stats.ts
     const cortexStats = calculateCortexStats({
-      prefixCounts,
-      uniqueRules,
-      totalRules: totalUniqueRules,
+      markdownContents,
     });
 
     const cognitiveStats = cortexStats.dimensions.map((d) => ({
@@ -108,9 +96,14 @@ export async function GET() {
       key: d.key,
       value: d.percentage,
       count: d.count,
+      weightedScore: d.weightedScore,
+      displayScore: d.displayScore,
       displayCount: d.displayCount,
       target: d.target,
+      avgConfidence: d.avgConfidence,
+      isHighConfidence: d.isHighConfidence,
       isOverclocked: d.isOverclocked,
+      isUnverified: d.isUnverified,
       percentageText: d.percentageText,
       fractionText: d.fractionText,
       rawFractionText: d.rawFractionText,
@@ -123,10 +116,15 @@ export async function GET() {
       code: a.code || '',
       file: a.file || '',
       count: a.count,
+      weightedScore: a.weightedScore,
+      displayScore: a.displayScore,
       displayCount: a.displayCount,
       target: a.target,
       percentage: a.percentage,
+      avgConfidence: a.avgConfidence,
+      isHighConfidence: a.isHighConfidence,
       isOverclocked: a.isOverclocked,
+      isUnverified: a.isUnverified,
       percentageText: a.percentageText,
       fractionText: a.fractionText,
       rawFractionText: a.rawFractionText,
@@ -137,10 +135,12 @@ export async function GET() {
       {
         level: cortexStats.level,
         targetRulesPerAgent: cortexStats.targetRulesPerAgent,
+        targetWeightedScorePerAgent: cortexStats.targetWeightedScorePerAgent,
         cognitiveStats,
         agentMastery,
         blindSpots: cortexStats.blindSpots,
-        prefixCounts,
+        prefixCounts: cortexStats.prefixCounts,
+        prefixWeights: cortexStats.prefixWeights,
         scannedFilesCount: allFiles.length,
         timestamp: new Date().toISOString(),
       },
