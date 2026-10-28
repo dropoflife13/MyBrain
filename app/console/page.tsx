@@ -14,6 +14,7 @@ import {
   Eye,
   FileCode2,
   GitFork,
+  Image as ImageIcon,
   Layers,
   Loader2,
   Menu,
@@ -130,12 +131,28 @@ export default function Home() {
       id: string;
       role: 'user' | 'assistant';
       text: string;
+      imageUrl?: string;
       timestamp: string;
     }>
   >([]);
   const [chatInput, setChatInput] = useState<string>('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const chatBottomRef = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setAttachedImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
 
   // 3D Graph Ready State for Seamless Neural Transition
   const [isGraphReady, setIsGraphReady] = useState<boolean>(false);
@@ -361,15 +378,17 @@ export default function Home() {
           id: 'welcome',
           role: 'assistant',
           text: isHub
-            ? 'Neural connection established with Cortex Master Hub. Ask any question about the 7-Agent Suite (PM, UX, GR, SD, IR, DB, SEC) or procedural engineering invariants:'
-            : `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule or agent specification:`,
+            ? 'Neural connection established with Cortex Master Hub. Ask any question about the 7-Agent Suite (PM, UX, GR, SD, IR, DB, SEC) or attach an architecture diagram/wireframe for multimodal verification:'
+            : `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule, agent specification, or attach an image to evaluate:`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
       setChatInput('');
+      setAttachedImage(null);
     } else {
       setChatMessages([]);
       setChatInput('');
+      setAttachedImage(null);
     }
   }, [selectedNode]);
 
@@ -405,18 +424,25 @@ export default function Home() {
 
   const handleSendChat = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const query = chatInput.trim();
+    const query =
+      chatInput.trim() ||
+      (attachedImage
+        ? 'Please evaluate and audit this attached architecture diagram / wireframe / schema against our 7 Agent Gatekeepers and procedural invariants.'
+        : '');
     if (!query || isChatLoading || !selectedNode) return;
 
+    const imageToSend = attachedImage;
     const userMsg = {
       id: `user-${Date.now()}`,
       role: 'user' as const,
       text: query,
+      imageUrl: imageToSend || undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
     setChatInput('');
+    setAttachedImage(null);
     setIsChatLoading(true);
 
     try {
@@ -425,6 +451,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
+          imageUrl: imageToSend || undefined,
           contextNode: selectedNode.id === 'hub' ? 'hub' : selectedNode,
         }),
       });
@@ -462,15 +489,18 @@ export default function Home() {
       ? `${pill.cmd}: ${chatInput.trim()}`
       : pill.prompt;
 
+    const imageToSend = attachedImage;
     const userMsg = {
       id: `user-${Date.now()}`,
       role: 'user' as const,
       text: userPrompt,
+      imageUrl: imageToSend || undefined,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setChatMessages((prev) => [...prev, userMsg]);
     setChatInput('');
+    setAttachedImage(null);
     setIsChatLoading(true);
 
     try {
@@ -479,6 +509,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: userPrompt,
+          imageUrl: imageToSend || undefined,
           contextNode: 'SIX-COMMANDS',
           workflowCommand: pill.cmd,
         }),
@@ -913,6 +944,16 @@ export default function Home() {
                     <span>{msg.timestamp}</span>
                   </div>
                   <div>{msg.text}</div>
+                  {msg.imageUrl && (
+                    <div className="mt-2.5 overflow-hidden rounded-lg border border-black/10 dark:border-white/15 max-w-[260px] bg-black/10">
+                      <img
+                        src={msg.imageUrl}
+                        alt="Attached diagram"
+                        className="w-full h-auto max-h-48 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(msg.imageUrl, '_blank')}
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -953,22 +994,69 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Input: Monospace input and Send button */}
+            {/* Attached Image Preview Chip */}
+            {attachedImage && (
+              <div className="px-3 py-2 bg-slate-100/90 dark:bg-zinc-900/90 border-t border-black/10 dark:border-white/10 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="relative w-9 h-9 rounded-md overflow-hidden border border-cyan-500/40 shrink-0">
+                    <img src={attachedImage} alt="Attachment" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="min-w-0 text-[11px] font-mono leading-tight">
+                    <div className="font-semibold text-cyan-600 dark:text-[#00ffff] truncate">
+                      Diagram Attached
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 truncate">
+                      Nemotron Omni Vision Active
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAttachedImage(null)}
+                  className="p-1 rounded-md text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Input: Monospace input, Image attachment button and Send button */}
             <form
               onSubmit={handleSendChat}
               className="p-3 border-t border-black/10 dark:border-white/10 bg-slate-50/80 dark:bg-black/30 flex items-center gap-2"
             >
               <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isChatLoading}
+                title="Attach Architecture Diagram, Wireframe, or Schema"
+                className={`p-2 rounded-lg border transition-all cursor-pointer shrink-0 ${
+                  attachedImage
+                    ? 'bg-cyan-500/20 border-cyan-500 text-cyan-600 dark:text-[#00ffff]'
+                    : 'bg-white dark:bg-white/5 border-black/10 dark:border-white/15 text-slate-600 dark:text-zinc-400 hover:text-cyan-600 dark:hover:text-[#00ffff]'
+                }`}
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
+              <input
                 type="text"
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask about this rule or agent..."
+                placeholder={attachedImage ? 'Ask about this diagram or audit it...' : 'Ask about this rule or agent...'}
                 disabled={isChatLoading}
                 className="flex-1 px-3 py-2 text-sm font-mono rounded-lg bg-white dark:bg-zinc-900/90 border border-black/10 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-cyan-500 dark:focus:border-[#00ffff]"
               />
               <button
                 type="submit"
-                disabled={isChatLoading || !chatInput.trim()}
+                disabled={isChatLoading || (!chatInput.trim() && !attachedImage)}
                 className="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 dark:bg-[#00ffff] dark:hover:bg-cyan-300 text-white dark:text-black font-mono text-sm font-bold disabled:opacity-40 transition-all cursor-pointer shadow-[0_0_12px_rgba(0,255,255,0.3)] shrink-0 flex items-center gap-1.5"
               >
                 <span>Send</span>

@@ -256,13 +256,49 @@ function isHighDemandError(err: any): boolean {
 async function queryNvidiaNim(
   prompt: string,
   apiKey: string,
-  modelName?: string
+  modelName?: string,
+  imageUrl?: string
 ): Promise<string> {
-  const model = modelName || process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b';
+  const isVision = Boolean(imageUrl);
+  const defaultModel = isVision
+    ? 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning'
+    : (process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b');
+  const model = modelName || defaultModel;
   const baseUrl = (process.env.NVIDIA_BASE_URL || 'https://integrate.api.nvidia.com/v1').replace(/\/+$/, '');
   const url = `${baseUrl}/chat/completions`;
 
-  console.log(`[Cortex Chat API] Querying NVIDIA NIM: ${model} via ${url}...`);
+  console.log(`[Cortex Chat API] Querying NVIDIA NIM (${isVision ? 'Vision' : 'Text'}): ${model} via ${url}...`);
+
+  const userContent: any = isVision
+    ? [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: imageUrl } },
+      ]
+    : prompt;
+
+  const requestBody: any = {
+    model,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown. When inspecting diagrams, mockups, or schemas, audit them against our 7 gatekeepers (DB, SEC, UX, PM, SD, IR, GR).',
+      },
+      {
+        role: 'user',
+        content: userContent,
+      },
+    ],
+    temperature: 0.6,
+    top_p: 0.95,
+    max_tokens: isVision ? 16384 : 8192,
+  };
+
+  if (isVision) {
+    requestBody.reasoning_budget = 4096;
+  } else {
+    requestBody.chat_template_kwargs = { enable_thinking: true };
+  }
 
   const res = await fetch(url, {
     method: 'POST',
@@ -270,24 +306,7 @@ async function queryNvidiaNim(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      top_p: 0.95,
-      max_tokens: 8192,
-      chat_template_kwargs: { enable_thinking: true },
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!res.ok) {
@@ -307,7 +326,7 @@ async function queryNvidiaNim(
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { query, contextNode, workflowCommand, provider } = body;
+    const { query, contextNode, workflowCommand, provider, imageUrl } = body;
 
     if (!query || typeof query !== 'string') {
       return NextResponse.json(
@@ -332,7 +351,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const hasImage = Boolean(imageUrl);
     const forcedNvidia =
+      hasImage || // Prioritize Nemotron Omni Vision for multimodal attachments
       provider === 'nvidia' ||
       process.env.AI_PROVIDER === 'nvidia' ||
       (!geminiApiKey && Boolean(nvidiaApiKey));
@@ -379,11 +400,11 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
     let generatedText = '';
     let lastError: any = null;
 
-    // Direct NVIDIA NIM execution if explicitly targeted or if Gemini key is absent
+    // Direct NVIDIA NIM execution if explicitly targeted, image attached, or if Gemini key is absent
     if (forcedNvidia && nvidiaApiKey) {
       try {
-        console.log('[Cortex Chat API] Executing direct NVIDIA NIM request...');
-        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey);
+        console.log(`[Cortex Chat API] Executing direct NVIDIA NIM request ${hasImage ? '(Multimodal Vision)' : ''}...`);
+        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
         return NextResponse.json({ text: generatedText }, { headers: CORS_HEADERS });
       } catch (err: any) {
         lastError = err;
@@ -409,7 +430,24 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
               `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1})`
             );
             const model = genAI.getGenerativeModel({ model: currentModelName });
-            const result = await model.generateContent(prompt);
+
+            let geminiContent: any = prompt;
+            if (imageUrl && imageUrl.startsWith('data:')) {
+              const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
+              if (match) {
+                geminiContent = [
+                  prompt,
+                  {
+                    inlineData: {
+                      mimeType: match[1],
+                      data: match[2],
+                    },
+                  },
+                ];
+              }
+            }
+
+            const result = await model.generateContent(geminiContent);
             generatedText = result.response.text();
 
             console.log(`[Cortex Chat API] Model ${currentModelName} succeeded on attempt ${attempt + 1}.`);
@@ -445,7 +483,7 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
         `[Cortex Chat API] Gemini chain exhausted. Activating secondary multi-provider failover: NVIDIA NIM (${process.env.NVIDIA_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b'})...`
       );
       try {
-        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey);
+        generatedText = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
         console.log('[Cortex Chat API] NVIDIA NIM failover succeeded!');
       } catch (nimErr: any) {
         lastError = nimErr;
