@@ -54,12 +54,12 @@ const AGENT_DOCK: Array<{
   prefixes: string[];
 }> = [
   { id: 'dbaagent', code: 'DB', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
-  { id: 'securityagent', code: 'SEC', label: 'Security', fullName: 'Security Agent', prefixes: ['CS'] },
-  { id: 'uiuxagent', code: 'UX', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UI', 'TA'] },
-  { id: 'productmanageragent', code: 'PM', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['BA', 'OP'] },
-  { id: 'systemsdesignagent', code: 'SD', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SO'] },
-  { id: 'integrationagent', code: 'IR', label: 'Integration', fullName: 'Integration Agent', prefixes: ['RF', 'H', 'P'] },
-  { id: 'growthagent', code: 'GR', label: 'Growth', fullName: 'Growth Agent', prefixes: [] },
+  { id: 'securityagent', code: 'SEC', label: 'Security', fullName: 'Security Agent', prefixes: ['SEC', 'CS'] },
+  { id: 'uiuxagent', code: 'UX', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UX', 'UI', 'TA'] },
+  { id: 'productmanageragent', code: 'PM', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP'] },
+  { id: 'systemsdesignagent', code: 'SD', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SD', 'SO'] },
+  { id: 'integrationagent', code: 'IR', label: 'Integration', fullName: 'Integration Agent', prefixes: ['IR', 'RF', 'H', 'P'] },
+  { id: 'growthagent', code: 'GR', label: 'Growth', fullName: 'Growth Agent', prefixes: ['GR'] },
 ];
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
@@ -207,6 +207,42 @@ export default function Home() {
     ids.delete('hub');
     return ids;
   }, [activeGate, graphData]);
+
+  // Dynamic Knowledge Mastery stats per agent (capped at 25 rules = 100%)
+  const agentRuleStats = useMemo(() => {
+    const stats: Record<string, { count: number; percentage: number }> = {};
+    const MASTERY_CAP = 25;
+
+    AGENT_DOCK.forEach((agent) => {
+      const ruleIds = new Set<string>();
+      const allPrefixes = [agent.code, ...agent.prefixes];
+
+      graphData.nodes.forEach((n) => {
+        const cid = String(n.id).split('::')[0];
+        const m = cid.match(/^([A-Z]{1,4}-\d+)/);
+        if (m && allPrefixes.includes(m[1].split('-')[0])) {
+          ruleIds.add(m[1]);
+        }
+        if (n.rules && Array.isArray(n.rules)) {
+          n.rules.forEach((r) => {
+            const rm = r.match(/^([A-Z]{1,4}-\d+)/);
+            if (rm && allPrefixes.includes(rm[1].split('-')[0])) {
+              ruleIds.add(rm[1]);
+            }
+          });
+        }
+        if (n.agentCode === agent.code && m) {
+          ruleIds.add(m[1]);
+        }
+      });
+
+      const count = ruleIds.size;
+      const percentage = Math.min(100, Math.round((count / MASTERY_CAP) * 100));
+      stats[agent.code] = { count, percentage };
+    });
+
+    return stats;
+  }, [graphData]);
 
   // Master Hub Node representation for general 7-Agent AI queries
   const hubNode = useMemo<BrainDocNode>(() => {
@@ -675,18 +711,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Right: Profile + Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
+        {/* Right: Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          <Tooltip content="Operator Cognitive Profile & Knowledge Radar" side="bottom">
-            <Link
-              href="/profile"
-              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-white backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
-            >
-              <Cpu className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-              <span className="hidden sm:inline">Profile</span>
-            </Link>
-          </Tooltip>
-
           <Tooltip content="Brain ↔ 7 Agent matrix & resolved contradictions" side="bottom">
             <button
               type="button"
@@ -796,7 +822,29 @@ export default function Home() {
             </p>
           </div>
 
-          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-1">
+          <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+            {/* 1. Sleek Full-Width Primary Action: Cortex Profile */}
+            <Link
+              href="/profile"
+              className="w-full px-3 py-2.5 rounded-lg flex items-center justify-between text-xs font-mono transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/35 text-slate-800 dark:text-zinc-200 hover:text-cyan-700 dark:hover:text-[#00ffff] shadow-sm group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1 rounded-md bg-cyan-500/10 text-cyan-600 dark:text-[#00ffff] group-hover:scale-105 transition-transform shrink-0">
+                  <Cpu className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex flex-col text-left leading-tight min-w-0">
+                  <span className="font-bold truncate">Cortex Profile</span>
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                    Cognitive Radar
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-700 dark:text-[#00ffff] font-semibold border border-cyan-500/20 shrink-0">
+                View →
+              </span>
+            </Link>
+
+            {/* Show All Filter Button */}
             <button
               type="button"
               onClick={() => setActiveGate(null)}
@@ -811,29 +859,57 @@ export default function Home() {
               <span className="text-[10px] text-slate-500 dark:text-zinc-500">{AGENT_DOCK.length} gates</span>
             </button>
 
-            <div className="my-2 border-t border-slate-200 dark:border-white/5" />
+            <div className="my-1 border-t border-slate-200 dark:border-white/5" />
 
+            {/* 7 Core Agents with Dynamic Knowledge Bars */}
             {AGENT_DOCK.map((agent) => {
               const isActive = activeGate === agent.code;
+              const stat = agentRuleStats[agent.code] || { count: 0, percentage: 0 };
+              const tooltipContent = `${agent.fullName} • ${stat.count} / 25 rules mastered (${stat.percentage}%)`;
+
               return (
-                <Tooltip key={agent.id} content={agent.fullName} side="right" className="w-full">
+                <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
                   <button
                     type="button"
                     onClick={() => setActiveGate(isActive ? null : agent.code)}
                     aria-pressed={isActive}
-                    className={`w-full h-10 px-3 rounded-lg flex items-center gap-3 text-xs transition-all cursor-pointer border ${
+                    className={`w-full px-3 py-2 rounded-lg flex flex-col gap-1.5 text-xs transition-all cursor-pointer border group ${
                       isActive
-                        ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)]'
+                        ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
                         : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
                     }`}
                   >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        isActive ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]' : 'bg-cyan-500/70'
-                      }`}
-                    />
-                    <span className="font-bold tracking-wider w-8 text-left">{agent.code}</span>
-                    <span className="text-[11px] text-slate-500 dark:text-zinc-500 truncate">{agent.label}</span>
+                    {/* Top Row: Indicator dot + Code + Label + Percentage Text */}
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            isActive
+                              ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
+                              : 'bg-cyan-500/70 group-hover:bg-cyan-400'
+                          }`}
+                        />
+                        <span className="font-bold tracking-wider text-left">{agent.code}</span>
+                        <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                          {agent.label}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff] transition-colors shrink-0">
+                        {stat.percentage}%
+                      </span>
+                    </div>
+
+                    {/* Knowledge Bar (Mastery Progress) */}
+                    <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isActive
+                            ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]'
+                            : 'bg-cyan-500/80 dark:bg-[#00ffff]/70 group-hover:bg-cyan-400 group-hover:shadow-[0_0_8px_rgba(0,255,255,0.8)]'
+                        }`}
+                        style={{ width: `${stat.percentage}%` }}
+                      />
+                    </div>
                   </button>
                 </Tooltip>
               );
