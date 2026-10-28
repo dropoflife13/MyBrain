@@ -74,7 +74,7 @@ export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
 const RESERVED_AGENT_PREFIXES = new Set(['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC']);
 
 /**
- * Deterministic anti-overlap & mechanical consistency check (H-03, H-06, BN-11).
+ * Deterministic anti-overlap & mechanical consistency check (H-03, H-06, BN-12).
  * Ensures zero duplicate rule IDs and zero prefix collisions between the 7 Agents and Domain files.
  */
 export function auditVaultConsistency(

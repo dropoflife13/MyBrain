@@ -32,3 +32,4 @@ How we calculate the user's "Cortex Level" and Agent Mastery.
 ## Cross-Agent Governance Rules
 - Enforced by Product Manager: `PM-16` (`agents/productmanageragent.md`)
 - Enforced by UI/UX: `UX-16` (`agents/uiuxagent.md`)
+
