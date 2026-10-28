@@ -17,6 +17,7 @@ import {
   Layers,
   Loader2,
   Menu,
+  MessageSquare,
   Pause,
   RefreshCw,
   RotateCw,
@@ -142,6 +143,24 @@ export default function Home() {
     ids.delete('hub');
     return ids;
   }, [activeGate, graphData]);
+
+  // Master Hub Node representation for general 7-Agent AI queries
+  const hubNode = useMemo<BrainDocNode>(() => {
+    return (
+      graphData.nodes.find((n) => n.id === 'hub') || {
+        id: 'hub',
+        name: 'Cortex Master Hub',
+        description: 'Central procedural judgment engine & 7-Agent execution gatekeeper.',
+        group: 2,
+        category: 'hub',
+      }
+    );
+  }, [graphData.nodes]);
+
+  const handleOpenGeneralChat = () => {
+    setSelectedNode(hubNode);
+    setQueryText('');
+  };
 
   const handleRecheckGate = () => {
     setIsCheckingGate(true);
@@ -287,15 +306,18 @@ export default function Home() {
     }
   };
 
-  // Connect neural chat session whenever a node is selected in Brain3D
+  // Connect neural chat session whenever a node is selected in Brain3D or via the general Chat button
   useEffect(() => {
-    if (selectedNode && selectedNode.id !== 'hub') {
+    if (selectedNode) {
       const cleanId = String(selectedNode.id).split('::')[0];
+      const isHub = cleanId === 'hub' || cleanId.toLowerCase() === 'hub';
       setChatMessages([
         {
           id: 'welcome',
           role: 'assistant',
-          text: `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule or agent specification:`,
+          text: isHub
+            ? 'Neural connection established with Cortex Master Hub. Ask any question about the 7-Agent Suite (PM, UX, GR, SD, IR, DB, SEC) or procedural engineering invariants:'
+            : `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule or agent specification:`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -333,7 +355,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query,
-          contextNode: selectedNode,
+          contextNode: selectedNode.id === 'hub' ? 'hub' : selectedNode,
         }),
       });
 
@@ -374,11 +396,15 @@ export default function Home() {
   return (
     <main
       onMouseMove={handleMouseMove}
-      className="relative w-screen h-screen overflow-hidden bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-white select-none transition-colors duration-300"
+      className={`relative w-screen h-screen overflow-hidden ${
+        isReady ? 'bg-slate-50 dark:bg-[#050505]' : 'bg-[#050505]'
+      } text-slate-900 dark:text-white select-none transition-colors duration-300`}
     >
       {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
       <motion.div
-        className={`absolute inset-y-0 right-0 h-screen z-0 bg-slate-50 dark:bg-[#050505] transition-all duration-300 ease-in-out ${
+        className={`absolute inset-y-0 right-0 h-screen z-0 ${
+          isReady ? 'bg-slate-50 dark:bg-[#050505]' : 'bg-[#050505]'
+        } transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
         }`}
         initial={{ opacity: 0 }}
@@ -391,6 +417,7 @@ export default function Home() {
           autoSpin={autoSpin}
           onNodeHover={setHoveredNode}
           onNodeClick={(node) => {
+            console.log("Node clicked:", node);
             if (node) {
               setSelectedNode(node);
               setQueryText('');
@@ -402,7 +429,10 @@ export default function Home() {
         />
       </motion.div>
 
-      {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
+      {/* Main Interactive Dashboard (Revealed only when 3D graph and 2.5s timer are ready) */}
+      {isReady && (
+        <>
+          {/* 2. Layered Atmospheric Background Overlays (Blueprint Grid + Radial Vignette + Corner Reticles) */}
       <div
         className={`pointer-events-none fixed inset-y-0 right-0 z-10 opacity-0 dark:opacity-100 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
@@ -689,7 +719,7 @@ export default function Home() {
 
       {/* 5. Sliding AI Neural Chat Panel (Framer Motion Slide-In + Close on X & Esc) */}
       <AnimatePresence>
-        {selectedNode && selectedNode.id !== 'hub' && (
+        {selectedNode && (
           <motion.aside
             key="node-chat-panel"
             initial={{ x: '100%', opacity: 0 }}
@@ -712,10 +742,10 @@ export default function Home() {
                   </span>
                 </div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {selectedNode.name}
+                  {selectedNode.id === 'hub' ? 'Cortex Master Hub (7-Agent Suite)' : selectedNode.name}
                 </h2>
                 <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
-                  NODE ID: <span className="font-semibold text-cyan-600 dark:text-[#00ffff]">{selectedIdClean}</span>
+                  NODE ID: <span className="font-semibold text-cyan-600 dark:text-[#00ffff]">{selectedNode.id === 'hub' ? 'HUB • GLOBAL' : selectedIdClean}</span>
                 </div>
               </div>
 
@@ -783,17 +813,34 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 6. Floating "Fork this Brain" Button (Bottom-Right Corner) */}
-      <div className="fixed bottom-6 right-6 z-30">
-        <Button
-          variant="outline"
-          onClick={() => setIsShareOpen(true)}
-          className="backdrop-blur-xl bg-white/90 dark:bg-[#09090b]/85 border-slate-300 dark:border-white/15 hover:border-cyan-500 dark:hover:border-[#00ffff]/50 text-slate-800 dark:text-white shadow-2xl px-4 py-2.5 h-auto font-mono text-xs"
-        >
-          <GitFork className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
-          <span>Fork this Brain</span>
-        </Button>
+      {/* 6. Floating Action Buttons (Bottom-Right Corner) */}
+      <div className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2.5">
+        {/* Floating AI Chat Trigger (Ask Cortex AI) */}
+        <Tooltip content="Ask Cortex AI (General 7-Agent Hub)" side="left">
+          <Button
+            type="button"
+            onClick={handleOpenGeneralChat}
+            className="backdrop-blur-xl bg-white/90 dark:bg-[#09090b]/85 border border-slate-300 dark:border-white/15 hover:border-cyan-500 dark:hover:border-[#00ffff]/60 text-slate-800 dark:text-white shadow-2xl px-4 py-2.5 h-auto font-mono text-xs flex items-center gap-2 transition-all hover:scale-[1.02] cursor-pointer"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+            <span>Ask Cortex AI</span>
+          </Button>
+        </Tooltip>
+
+        {/* Floating "Fork this Brain" Button */}
+        <Tooltip content="Export or fork blank-slate vault" side="left">
+          <Button
+            variant="outline"
+            onClick={() => setIsShareOpen(true)}
+            className="backdrop-blur-xl bg-white/90 dark:bg-[#09090b]/85 border border-slate-300 dark:border-white/15 hover:border-cyan-500 dark:hover:border-[#00ffff]/50 text-slate-800 dark:text-white shadow-2xl px-4 py-2.5 h-auto font-mono text-xs flex items-center gap-2 transition-all hover:scale-[1.02] cursor-pointer"
+          >
+            <GitFork className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00ffff]" />
+            <span>Fork this Brain</span>
+          </Button>
+        </Tooltip>
       </div>
+      </>
+      )}
 
       {/* 7. Share / Export Modal ("Fork a Blank-Slate Brain — Assess Yourself") */}
       <AnimatePresence>

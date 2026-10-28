@@ -6,6 +6,7 @@ import {
   parseMarkdownNode,
   BrainDocNode,
   REQUIRED_SEVEN_AGENTS,
+  verifySevenAgentsGate,
 } from '../../../lib/brain-parser';
 
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless lambda environments
@@ -15,9 +16,13 @@ function resolveFilePath(relPath: string): string | null {
   const candidates = [
     path.join(rootDir, relPath),
     path.join(rootDir, 'agents', filename),
+    path.join(rootDir, 'public', 'agents', filename),
+    path.join(rootDir, 'public', relPath),
     path.join(rootDir, 'brain', '04-agents', filename),
+    path.join(rootDir, 'public', 'brain', '04-agents', filename),
     path.join(rootDir, 'brain-web', relPath),
     path.join(rootDir, 'brain-web', 'agents', filename),
+    path.join(rootDir, 'brain-web', 'public', 'agents', filename),
     path.join(rootDir, 'brain-web', 'brain', '04-agents', filename),
     path.resolve(__dirname, '../../../', relPath),
     path.resolve(__dirname, '../../../../', relPath),
@@ -36,8 +41,10 @@ export async function GET() {
     // Check if the agents directory exists in any candidate location
     const hasAgentsDirectory = [
       path.join(rootDir, 'agents'),
+      path.join(rootDir, 'public', 'agents'),
       path.join(rootDir, 'brain', '04-agents'),
       path.join(rootDir, 'brain-web', 'agents'),
+      path.join(rootDir, 'brain-web', 'public', 'agents'),
       path.join(rootDir, 'brain-web', 'brain', '04-agents'),
       path.resolve(__dirname, '../../../agents'),
       path.resolve(__dirname, '../../../../agents'),
@@ -54,7 +61,17 @@ export async function GET() {
       }
     }
 
-    // Strict Architectural Halt (CS-07): If any of the 7 Agents are missing, vanish 3D nodes and return failure
+    // In serverless / edge environments where external static markdown files might not be on the lambda container disk:
+    // If all 7 files fail to resolve on disk, verify against the compiled in-memory VAULT_MARKDOWN_SOURCES
+    if (missingAgents.length === REQUIRED_SEVEN_AGENTS.length) {
+      const inMemoryGate = verifySevenAgentsGate(getBrainData({ nodeCount: 1 }).nodes);
+      if (inMemoryGate.passed) {
+        // Vault is intact with all 7 agents in bundle — clear false-positive
+        missingAgents.length = 0;
+      }
+    }
+
+    // Strict Architectural Halt (CS-07): If any of the 7 Agents are genuinely missing, vanish 3D nodes and return failure
     if (missingAgents.length > 0) {
       return NextResponse.json({
         nodes: [],
@@ -128,8 +145,10 @@ export async function POST() {
   const rootDir = process.cwd();
   const hasAgentsDirectory = [
     path.join(rootDir, 'agents'),
+    path.join(rootDir, 'public', 'agents'),
     path.join(rootDir, 'brain', '04-agents'),
     path.join(rootDir, 'brain-web', 'agents'),
+    path.join(rootDir, 'brain-web', 'public', 'agents'),
     path.join(rootDir, 'brain-web', 'brain', '04-agents'),
     path.resolve(__dirname, '../../../agents'),
     path.resolve(__dirname, '../../../../agents'),
@@ -142,6 +161,14 @@ export async function POST() {
       if (!fullAgentPath) {
         missingAgents.push(agent.filename);
       }
+    }
+  }
+
+  // Serverless fallback
+  if (missingAgents.length === REQUIRED_SEVEN_AGENTS.length) {
+    const inMemoryGate = verifySevenAgentsGate(getBrainData({ nodeCount: 1 }).nodes);
+    if (inMemoryGate.passed) {
+      missingAgents.length = 0;
     }
   }
 

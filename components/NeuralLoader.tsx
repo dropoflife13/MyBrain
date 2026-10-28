@@ -35,10 +35,9 @@ export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.55, ease: 'easeInOut' } }}
-      transition={{ duration: 0.25 }}
       className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505] text-white select-none overflow-hidden font-mono ${className}`}
     >
       {/* Ambient background glow & tactical scanlines */}
