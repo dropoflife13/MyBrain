@@ -8,7 +8,7 @@ status: active
 You are connected to Neil's Central Brain Vault.
 Before writing any code, read the following files from the absolute path: `C:/Users/neil/brain-web/brain/` (or your local vault repository path)
 
-1. Read `07-meta/DIGEST.md` (Tier 0 Principles)
+1. Read `07-meta/DIGEST.md` and `07-meta/ARCHITECTURE.md` (Tier 0 Core Philosophy & Principles)
 2. Read `02-domains/cybersec.md` (Security Rules)
 3. Read `02-domains/solutions.md` (Architecture Rules)
 

@@ -1,16 +1,16 @@
 ---
 type: index
-version: 5
+version: 6
 status: active
 ---
 # Brain — Index
 
-A procedural vault: it stores *how I decide*, not only what I know. Rules are single lines with IDs; AI loads by tier.
+A procedural vault: it stores *how I decide*, not only what I know. Rules are single lines with IDs; AI loads by tier. Start here: [[ARCHITECTURE]] (`07-meta/ARCHITECTURE.md`) defines the 4-layer system philosophy (Architect, Vault, Agents, Model).
 
 ## Loading Tiers (for AI)
 | Tier | When | Files |
 |---|---|---|
-| 0 | always | `07-meta/DIGEST.md` (fallback `01-identity/OPERATING-PRINCIPLES.md`) |
+| 0 | always | `07-meta/DIGEST.md`, `07-meta/ARCHITECTURE.md` (fallback `01-identity/OPERATING-PRINCIPLES.md`) |
 | 1 | by task domain | `02-domains/<domain>.md` |
 | 2 | on judgment calls | `03-heuristics/*`, `04-models/*`, `01-identity/TASTE.md` |
 | 3 | only when asked | `05-elicitation/sessions/`, `06-raw/` |
@@ -44,4 +44,4 @@ Counts are refreshed by GAP-FINDER. Add a domain: see [[EXTENDING]].
 ## Folders
 - `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`)
 - `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01`, `M-02`)
-- `05-elicitation/` fast micro-triggers, artifact archaeology, session logs (`S-01`, `S-02`, `S-03`) · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest
+- `05-elicitation/` fast micro-triggers, artifact archaeology, session logs (`S-01`, `S-02`, `S-03`) · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest, architecture (`ARCHITECTURE.md`)
