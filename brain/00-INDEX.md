@@ -43,5 +43,5 @@ Counts are refreshed by GAP-FINDER. Add a domain: see [[EXTENDING]].
 
 ## Folders
 - `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`)
-- `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models
+- `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01`, `M-02`)
 - `05-elicitation/` fast micro-triggers, artifact archaeology, session logs (`S-01`, `S-02`, `S-03`) · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest

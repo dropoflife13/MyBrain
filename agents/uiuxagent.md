@@ -26,8 +26,10 @@
 - **UX-13** Baseline: WCAG 2.2 AA, complete keyboard path, `lang` attribute, no color-only meaning, usable at 320 px on low-end Android.
 - **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual. *breaks: expert tools where users are trained regularly (e.g., aviation software).*
 - **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes. *breaks: developer-facing APIs where technical codes are expected.*
+- **UX-16** Gamified Knowledge Visuals: WHEN displaying stats or progress → DO use visual progress bars and "Overclocked" indicators (e.g., glowing purple when a user exceeds the target) rather than raw text. The UI must make growth feel rewarding. *breaks: for strictly functional, non-gamified enterprise dashboards.*
 
 ## 4. Required Checks (Checklist)
+- [ ] Visual progress bars with overclocked states used for gamified knowledge stats (UX-16)
 - [ ] Primary action obvious within first 5 seconds (UX-14)
 - [ ] Error messages explain what, why, and next steps in plain human language (UX-15)
 - [ ] Theme: no flash on load, tokens only, contrast verified in both themes (UX-01)
