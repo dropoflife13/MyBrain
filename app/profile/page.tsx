@@ -48,9 +48,13 @@ interface CognitiveStat {
   key: string;
   value: number;
   count: number;
+  displayCount?: number;
   target: number;
   prefixes: string[];
   description: string;
+  isOverclocked?: boolean;
+  percentageText?: string;
+  fractionText?: string;
 }
 
 interface AgentMastery {
@@ -58,9 +62,13 @@ interface AgentMastery {
   code: string;
   file: string;
   count: number;
+  displayCount?: number;
   target: number;
   percentage: number;
   description: string;
+  isOverclocked?: boolean;
+  percentageText?: string;
+  fractionText?: string;
 }
 
 interface BlindSpot {
@@ -126,7 +134,11 @@ export default function ProfilePage() {
     subject: item.subject,
     value: item.value,
     count: item.count,
+    displayCount: item.displayCount ?? Math.min(item.count, item.target),
     target: item.target,
+    isOverclocked: item.isOverclocked || item.count > item.target,
+    percentageText: item.percentageText || (item.count > item.target ? '100%+' : `${item.value}%`),
+    fractionText: item.fractionText || `${item.displayCount ?? Math.min(item.count, item.target)} / ${item.target}`,
     fullMark: 100,
   })) || [];
 
@@ -335,10 +347,18 @@ export default function ProfilePage() {
                             const data = payload[0].payload;
                             return (
                               <div className="bg-[#09090b]/95 border border-cyan-500/40 p-2.5 rounded-lg shadow-xl font-mono text-xs text-white">
-                                <div className="text-cyan-400 font-bold mb-1">{data.subject}</div>
-                                <div>Mastery: {data.value}%</div>
+                                <div className="flex items-center justify-between gap-3 mb-1">
+                                  <span className="text-cyan-400 font-bold">{data.subject}</span>
+                                  {data.isOverclocked && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
+                                      OVERCLOCKED
+                                    </span>
+                                  )}
+                                </div>
+                                <div>Mastery: {data.percentageText || `${data.value}%`}</div>
                                 <div className="text-zinc-400 text-[10px]">
-                                  Count: {data.count} / {data.target} rules
+                                  Rules: {data.displayCount} / {data.target}
+                                  {data.count > data.target ? ` (${data.count} in vault)` : ''}
                                 </div>
                               </div>
                             );
@@ -357,8 +377,8 @@ export default function ProfilePage() {
             </div>
 
             <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
-              <span>Benchmark: 20 Rules = 100%</span>
-              <span className="text-cyan-600 dark:text-[#00ffff] font-semibold">Max Cap: 100%</span>
+              <span>Standard: 20 Rules/Agent</span>
+              <span className="text-cyan-600 dark:text-[#00ffff] font-semibold">Overclocked Enabled</span>
             </div>
           </div>
 
@@ -378,57 +398,72 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-4 pt-1">
-                {stats?.cognitiveStats.map((stat) => (
-                  <div key={stat.key} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-white">
-                          {stat.subject}
-                        </span>
-                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                          ({stat.prefixes.join(' + ')})
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="text-slate-500 dark:text-zinc-400 text-[11px]">
-                          {stat.count} / {stat.target} rules
-                        </span>
-                        <span
-                          className={`font-bold text-xs ${
-                            stat.value >= 70
-                              ? 'text-cyan-600 dark:text-[#00ffff]'
-                              : stat.value >= 30
-                              ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-rose-600 dark:text-rose-400'
-                          }`}
-                        >
-                          {stat.value}%
-                        </span>
-                      </div>
-                    </div>
+                {stats?.cognitiveStats.map((stat) => {
+                  const isOverclocked = stat.isOverclocked || stat.count > stat.target;
+                  const displayCount = stat.displayCount ?? Math.min(stat.count, stat.target);
+                  const percentageText = stat.percentageText || (isOverclocked ? '100%+' : `${stat.value}%`);
 
-                    {/* Progress Bar with Cyan/Emerald glow */}
-                    <div className="w-full h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${stat.value}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full rounded-full transition-all ${
-                          stat.value >= 80
-                            ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_10px_rgba(0,255,255,0.7)]'
-                            : stat.value >= 50
-                            ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
-                            : stat.value >= 30
-                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
-                            : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
-                        }`}
-                      />
+                  return (
+                    <div key={stat.key} className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {stat.subject}
+                          </span>
+                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                            ({stat.prefixes.join(' + ')})
+                          </span>
+                          {isOverclocked && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
+                              Overclocked
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 font-mono">
+                          <span className="text-slate-500 dark:text-zinc-400 text-[11px]">
+                            {displayCount} / {stat.target} rules
+                          </span>
+                          <span
+                            className={`font-bold text-xs ${
+                              isOverclocked
+                                ? 'text-purple-600 dark:text-purple-400'
+                                : stat.value >= 70
+                                ? 'text-cyan-600 dark:text-[#00ffff]'
+                                : stat.value >= 30
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {percentageText}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar with Cyan/Emerald or Purple Overclocked glow */}
+                      <div className="w-full h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${stat.value}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className={`h-full rounded-full transition-all ${
+                            isOverclocked
+                              ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.7)]'
+                              : stat.value >= 80
+                              ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_10px_rgba(0,255,255,0.7)]'
+                              : stat.value >= 50
+                              ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                              : stat.value >= 30
+                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                              : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                          }`}
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
+                        {stat.description}
+                      </p>
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
-                      {stat.description}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -502,50 +537,75 @@ export default function ProfilePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stats?.agentMastery.map((agent) => (
-              <div
-                key={agent.code}
-                className="p-5 rounded-xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-xl border border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 transition-all shadow-md space-y-3"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10">
-                      {AGENT_ICONS[agent.code] || <Shield className="w-4 h-4 text-cyan-500" />}
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                        {agent.agent}
-                      </h3>
-                      <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                        {agent.code} • {agent.file}
+            {stats?.agentMastery.map((agent) => {
+              const isOverclocked = agent.isOverclocked || agent.count > agent.target;
+              const displayCount = agent.displayCount ?? Math.min(agent.count, agent.target);
+              const percentageText = agent.percentageText || (isOverclocked ? '100%+' : `${agent.percentage}%`);
+
+              return (
+                <div
+                  key={agent.code}
+                  className={`p-5 rounded-xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-xl border transition-all shadow-md space-y-3 ${
+                    isOverclocked
+                      ? 'border-purple-500/30 hover:border-purple-500/60 shadow-[0_0_12px_rgba(168,85,247,0.1)]'
+                      : 'border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10">
+                        {AGENT_ICONS[agent.code] || <Shield className="w-4 h-4 text-cyan-500" />}
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <span>{agent.agent}</span>
+                          {isOverclocked && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
+                              Overclocked
+                            </span>
+                          )}
+                        </h3>
+                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                          {agent.code} • {agent.file}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <span className="text-xs font-mono font-bold text-cyan-600 dark:text-[#00ffff]">
-                    {agent.percentage}%
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-cyan-500 dark:bg-[#00ffff] rounded-full shadow-[0_0_8px_rgba(0,255,255,0.6)]"
-                      style={{ width: `${agent.percentage}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                    <span>
-                      {agent.count} rules registered
+                    <span
+                      className={`text-xs font-mono font-bold ${
+                        isOverclocked
+                          ? 'text-purple-600 dark:text-purple-400'
+                          : 'text-cyan-600 dark:text-[#00ffff]'
+                      }`}
+                    >
+                      {percentageText}
                     </span>
-                    <span>Target: {agent.target}</span>
                   </div>
-                </div>
 
-                <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-snug">
-                  {agent.description}
-                </p>
-              </div>
-            ))}
+                  <div className="space-y-1">
+                    <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isOverclocked
+                            ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                            : 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_8px_rgba(0,255,255,0.6)]'
+                        }`}
+                        style={{ width: `${agent.percentage}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                      <span>
+                        {displayCount} / {agent.target} rules mastered
+                      </span>
+                      <span>Target: {agent.target}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-snug">
+                    {agent.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -43,6 +43,7 @@ import {
   getBrainData,
   verifySevenAgentsGate,
 } from '../../lib/brain-parser';
+import { calculateCortexStats } from '../../lib/stats';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 
@@ -208,40 +209,9 @@ export default function Home() {
     return ids;
   }, [activeGate, graphData]);
 
-  // Dynamic Knowledge Mastery stats per agent (capped at 25 rules = 100%)
-  const agentRuleStats = useMemo(() => {
-    const stats: Record<string, { count: number; percentage: number }> = {};
-    const MASTERY_CAP = 25;
-
-    AGENT_DOCK.forEach((agent) => {
-      const ruleIds = new Set<string>();
-      const allPrefixes = [agent.code, ...agent.prefixes];
-
-      graphData.nodes.forEach((n) => {
-        const cid = String(n.id).split('::')[0];
-        const m = cid.match(/^([A-Z]{1,4}-\d+)/);
-        if (m && allPrefixes.includes(m[1].split('-')[0])) {
-          ruleIds.add(m[1]);
-        }
-        if (n.rules && Array.isArray(n.rules)) {
-          n.rules.forEach((r) => {
-            const rm = r.match(/^([A-Z]{1,4}-\d+)/);
-            if (rm && allPrefixes.includes(rm[1].split('-')[0])) {
-              ruleIds.add(rm[1]);
-            }
-          });
-        }
-        if (n.agentCode === agent.code && m) {
-          ruleIds.add(m[1]);
-        }
-      });
-
-      const count = ruleIds.size;
-      const percentage = Math.min(100, Math.round((count / MASTERY_CAP) * 100));
-      stats[agent.code] = { count, percentage };
-    });
-
-    return stats;
+  // Centralized Dynamic Knowledge Mastery stats via lib/stats.ts (target = 20 rules/agent)
+  const cortexStats = useMemo(() => {
+    return calculateCortexStats(graphData.nodes);
   }, [graphData]);
 
   // Master Hub Node representation for general 7-Agent AI queries
@@ -864,8 +834,15 @@ export default function Home() {
             {/* 7 Core Agents with Dynamic Knowledge Bars */}
             {AGENT_DOCK.map((agent) => {
               const isActive = activeGate === agent.code;
-              const stat = agentRuleStats[agent.code] || { count: 0, percentage: 0 };
-              const tooltipContent = `${agent.fullName} • ${stat.count} / 25 rules mastered (${stat.percentage}%)`;
+              const stat = cortexStats.agents[agent.code] || {
+                count: 0,
+                displayCount: 0,
+                target: 20,
+                percentage: 0,
+                isOverclocked: false,
+                percentageText: '0%',
+              };
+              const tooltipContent = `${agent.fullName} • ${stat.displayCount} / ${stat.target} rules mastered (${stat.percentageText}${stat.isOverclocked ? ' • Overclocked' : ''})`;
 
               return (
                 <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
@@ -875,7 +852,9 @@ export default function Home() {
                     aria-pressed={isActive}
                     className={`w-full px-3 py-2 rounded-lg flex flex-col gap-1.5 text-xs transition-all cursor-pointer border group ${
                       isActive
-                        ? 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
+                        ? stat.isOverclocked
+                          ? 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/50 text-purple-700 dark:text-purple-300 font-semibold shadow-[0_0_14px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/30'
+                          : 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
                         : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
                     }`}
                   >
@@ -884,7 +863,11 @@ export default function Home() {
                       <div className="flex items-center gap-2 min-w-0">
                         <span
                           className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            isActive
+                            stat.isOverclocked
+                              ? isActive
+                                ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
+                                : 'bg-purple-400 group-hover:bg-purple-300'
+                              : isActive
                               ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
                               : 'bg-cyan-500/70 group-hover:bg-cyan-400'
                           }`}
@@ -894,8 +877,14 @@ export default function Home() {
                           {agent.label}
                         </span>
                       </div>
-                      <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff] transition-colors shrink-0">
-                        {stat.percentage}%
+                      <span
+                        className={`text-[10px] font-mono font-semibold transition-colors shrink-0 ${
+                          stat.isOverclocked
+                            ? 'text-purple-600 dark:text-purple-400 group-hover:text-purple-500 dark:group-hover:text-purple-300 font-bold'
+                            : 'text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
+                        }`}
+                      >
+                        {stat.percentageText}
                       </span>
                     </div>
 
@@ -903,7 +892,9 @@ export default function Home() {
                     <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${
-                          isActive
+                          stat.isOverclocked
+                            ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
+                            : isActive
                             ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]'
                             : 'bg-cyan-500/80 dark:bg-[#00ffff]/70 group-hover:bg-cyan-400 group-hover:shadow-[0_0_8px_rgba(0,255,255,0.8)]'
                         }`}
