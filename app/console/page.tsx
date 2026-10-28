@@ -63,6 +63,51 @@ const AGENT_DOCK: Array<{
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
+const WORKFLOW_PILLS = [
+  {
+    cmd: '/grill',
+    label: 'Grill (PM)',
+    desc: 'Interrogate problem & edge cases with Product Manager rules (PM)',
+    prompt: '/grill: Interrogate my application problem and find edge cases. Ask me 5 hard, non-obvious questions before writing code.',
+    agent: 'PM',
+  },
+  {
+    cmd: '/pitch',
+    label: 'Pitch (GR+PM)',
+    desc: 'Write 3-minute executive pitch (Growth + PM)',
+    prompt: '/pitch: Formulate a compelling 3-minute executive pitch to sell this product idea using Growth and PM principles.',
+    agent: 'GR',
+  },
+  {
+    cmd: '/to-spec',
+    label: 'To Spec (SD)',
+    desc: 'Write technical PRD with As-Is/To-Be architectures (SD)',
+    prompt: '/to-spec: Generate a comprehensive technical PRD with As-Is/To-Be architectures, failure modes, and strict non-goals.',
+    agent: 'SD',
+  },
+  {
+    cmd: '/to-tickets',
+    label: 'To Tickets (PM)',
+    desc: 'Decompose PRD into 5 atomic sequential tickets (PM)',
+    prompt: '/to-tickets: Break this PRD specification down into 5 sequential atomic implementation tickets. Do not write code yet.',
+    agent: 'PM',
+  },
+  {
+    cmd: '/implement',
+    label: 'Implement (DB+SEC)',
+    desc: 'Write production code for Ticket 1 enforcing DB/SEC gates',
+    prompt: '/implement: Write production-ready code for Ticket 1 adhering strictly to append-only ledgers and security RLS defaults.',
+    agent: 'DB',
+  },
+  {
+    cmd: '/review',
+    label: 'Review (SEC+SD)',
+    desc: 'Run security and BN-00 architectural review (SEC+SD)',
+    prompt: '/review: Run a comprehensive security and systems audit against Rule BN-00 invariants and STRIDE boundaries.',
+    agent: 'SEC',
+  },
+];
+
 export default function Home() {
   const router = useRouter();
   const [hoveredNode, setHoveredNode] = useState<BrainDocNode | null>(null);
@@ -376,6 +421,61 @@ export default function Home() {
         ...prev,
         {
           id: `ai-${Date.now()}`,
+          role: 'assistant' as const,
+          text: `Neural connection failure: ${err?.message || 'Unable to contact Cortex API.'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleExecuteWorkflowCommand = async (pill: (typeof WORKFLOW_PILLS)[0]) => {
+    if (isChatLoading) return;
+    const userPrompt = chatInput.trim()
+      ? `${pill.cmd}: ${chatInput.trim()}`
+      : pill.prompt;
+
+    const userMsg = {
+      id: `user-${Date.now()}`,
+      role: 'user' as const,
+      text: userPrompt,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    setChatMessages((prev) => [...prev, userMsg]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: userPrompt,
+          contextNode: 'SIX-COMMANDS',
+          workflowCommand: pill.cmd,
+        }),
+      });
+
+      const data = await res.json();
+      const aiText = data.text || data.error || 'No response returned from the neural core.';
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-${Date.now()}`,
+          role: 'assistant' as const,
+          text: aiText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ]);
+    } catch (err: any) {
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          id: `ai-err-${Date.now()}`,
           role: 'assistant' as const,
           text: `Neural connection failure: ${err?.message || 'Unable to contact Cortex API.'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -785,6 +885,34 @@ export default function Home() {
                 </div>
               )}
               <div ref={chatBottomRef} />
+            </div>
+
+            {/* Horizontal Workflow Pipeline Bar (Golden Path SDLC) */}
+            <div className="px-3.5 pt-2.5 pb-2 border-t border-black/10 dark:border-white/10 bg-slate-100/80 dark:bg-black/40">
+              <div className="flex items-center justify-between mb-1.5 px-0.5">
+                <span className="text-[10px] font-mono font-bold tracking-widest text-slate-500 dark:text-zinc-400 uppercase flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]" />
+                  SDLC Workflow
+                </span>
+                <span className="text-[9px] font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
+                  6-Command Pipeline
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                {WORKFLOW_PILLS.map((pill) => (
+                  <button
+                    key={pill.cmd}
+                    type="button"
+                    disabled={isChatLoading}
+                    onClick={() => handleExecuteWorkflowCommand(pill)}
+                    title={pill.desc}
+                    className="px-2.5 py-1 rounded-md bg-white dark:bg-white/5 hover:bg-cyan-500/15 dark:hover:bg-cyan-400/15 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-[#00ffff] border border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 text-[11px] font-mono font-semibold transition-all shrink-0 cursor-pointer disabled:opacity-40 active:scale-95 flex items-center gap-1 shadow-sm"
+                  >
+                    <span>{pill.cmd}</span>
+                    <span className="text-[9px] opacity-60 font-normal">[{pill.agent}]</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Input: Monospace input and Send button */}

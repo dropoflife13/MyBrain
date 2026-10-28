@@ -6,7 +6,7 @@ export interface BrainDocNode {
   description: string;
   group: 1 | 2; // 1 = The 7 Core Agents (Cyan #00ffff), 2 = Rule & Domain Nodes (Tiny White #ffffff)
   agentCode?: 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC';
-  category: 'hub' | 'agent' | 'domain' | 'heuristic' | 'identity' | 'synapse';
+  category: 'hub' | 'agent' | 'domain' | 'heuristic' | 'identity' | 'synapse' | 'workflow';
   content?: string;
   rules?: string[];
   val?: number;
@@ -554,6 +554,19 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **Role:** BSIT Senior & Full-Stack Systems Builder, Project Manager, and UI/UX Lead across institutional SaaS, offline-first marketplaces, and WebGL studios.
 - **Projects:** MerkadoTrack (A-01), Dugtong OJT (A-02), CITEMAS Portal (A-03), Synaptic Constellation 3D Brain (A-04), FlexSpace Iloilo & Agrivet Inventory (A-05).`,
   },
+  {
+    id: 'SIX-COMMANDS',
+    category: 'workflow',
+    anchor: [0, -22, 24],
+    markdown: `# The Six Commands Pipeline — Golden Path SDLC
+The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive questioning, Cortex executes a sequential SDLC pipeline that enforces the 7-Agent execution gate suite at every step:
+- **/grill**: Read productmanageragent.md. Interrogate the problem, uncover edge cases, and challenge assumptions. Ask 5 hard questions about the app idea before writing any code.
+- **/pitch**: Read growthagent.md and productmanageragent.md. Synthesize core value proposition into a crisp 3-minute pitch.
+- **/to-spec**: Read systemsdesignagent.md. Transform the idea into a technical PRD with As-Is/To-Be architectures and strict non-goals.
+- **/to-tickets**: Read productmanageragent.md. Decompose specification into 5 sequential atomic implementation tickets. Do not start coding.
+- **/implement**: Read dbaagent.md, securityagent.md, and integrationagent.md. Write production-ready code for Ticket 1 adhering strictly to append-only ledgers and RLS defaults.
+- **/review**: Read securityagent.md and systemsdesignagent.md. Execute a rigorous STRIDE security review, invariant verification, and check against BN-00 rules.`,
+  },
 ];
 
 const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
@@ -563,6 +576,12 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
   markdown: string;
 }> = [
   ...VAULT_MARKDOWN_SOURCES.filter((s) => s.category === 'agent'),
+  {
+    id: 'SIX-COMMANDS',
+    category: 'workflow',
+    anchor: [0, -22, 24],
+    markdown: `# The Six Commands Pipeline — Golden Path SDLC (Workflow Node)`,
+  },
   {
     id: 'ABOUT-ME',
     category: 'identity',

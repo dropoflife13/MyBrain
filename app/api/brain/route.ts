@@ -104,6 +104,7 @@ export async function GET() {
       { id: 'PATTERNS', relPath: 'brain/03-heuristics/PATTERNS.md', category: 'heuristic' },
       { id: 'RED-FLAGS', relPath: 'brain/03-heuristics/RED-FLAGS.md', category: 'heuristic' },
       { id: 'DIGEST', relPath: 'brain/07-meta/DIGEST.md', category: 'identity' },
+      { id: 'SIX-COMMANDS', relPath: 'brain/08-workflows/SIX-COMMANDS.md', category: 'workflow' },
     ];
 
     const liveById = new Map<string, BrainDocNode>();
