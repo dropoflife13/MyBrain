@@ -225,6 +225,19 @@ function detectWorkflowCommand(query: string, commandProp?: string): WorkflowSte
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 function isHighDemandError(err: any): boolean {
   const status = err?.status || err?.statusCode || err?.code;
   if (status === 503 || status === 429) return true;
@@ -246,7 +259,10 @@ export async function POST(req: Request) {
     const { query, contextNode, workflowCommand } = body;
 
     if (!query || typeof query !== 'string') {
-      return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Query parameter is required' },
+        { status: 400, headers: CORS_HEADERS }
+      );
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -256,7 +272,7 @@ export async function POST(req: Request) {
           error: 'GEMINI_API_KEY is not configured in the environment.',
           text: 'Error: GEMINI_API_KEY is not configured in .env.local. Please provide a valid Gemini API key.',
         },
-        { status: 500 }
+        { status: 500, headers: CORS_HEADERS }
       );
     }
 
@@ -351,11 +367,11 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
           error: 'The AI is currently experiencing high demand. Please try again in a few moments.',
           text: 'The AI is currently experiencing high demand. Please try again in a few moments.',
         },
-        { status: 503 }
+        { status: 503, headers: CORS_HEADERS }
       );
     }
 
-    return NextResponse.json({ text: generatedText });
+    return NextResponse.json({ text: generatedText }, { headers: CORS_HEADERS });
   } catch (error: any) {
     console.error('[Cortex Chat API Unhandled Error]:', error);
     const errorMessage =
@@ -370,7 +386,7 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
           ? errorMessage
           : `Neural link error: ${errorMessage}`,
       },
-      { status: isHighDemandError(error) ? 503 : 500 }
+      { status: isHighDemandError(error) ? 503 : 500, headers: CORS_HEADERS }
     );
   }
 }

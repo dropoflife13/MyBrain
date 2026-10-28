@@ -9,6 +9,19 @@ import {
   verifySevenAgentsGate,
 } from '../../../lib/brain-parser';
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: CORS_HEADERS,
+  });
+}
+
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless lambda environments
 function resolveFilePath(relPath: string): string | null {
   const rootDir = process.cwd();
@@ -73,15 +86,18 @@ export async function GET() {
 
     // Strict Architectural Halt (CS-07): If any of the 7 Agents are genuinely missing, vanish 3D nodes and return failure
     if (missingAgents.length > 0) {
-      return NextResponse.json({
-        nodes: [],
-        links: [],
-        gateStatus: {
-          passed: false,
-          ruleId: 'BN-00',
-          missingAgents,
+      return NextResponse.json(
+        {
+          nodes: [],
+          links: [],
+          gateStatus: {
+            passed: false,
+            ruleId: 'BN-00',
+            missingAgents,
+          },
         },
-      });
+        { headers: CORS_HEADERS }
+      );
     }
 
     const fileMap: Array<{ id: string; relPath: string; category: BrainDocNode['category'] }> = [
@@ -127,18 +143,21 @@ export async function GET() {
       liveOverrides: liveById,
     });
 
-    return NextResponse.json({
-      nodes: liveGraph.nodes,
-      links: liveGraph.links,
-      gateStatus: {
-        passed: true,
-        ruleId: 'BN-00',
-        missingAgents: [],
+    return NextResponse.json(
+      {
+        nodes: liveGraph.nodes,
+        links: liveGraph.links,
+        gateStatus: {
+          passed: true,
+          ruleId: 'BN-00',
+          missingAgents: [],
+        },
+        vaultAudit: liveGraph.vaultAudit,
       },
-      vaultAudit: liveGraph.vaultAudit,
-    });
+      { headers: CORS_HEADERS }
+    );
   } catch (error: any) {
-    return NextResponse.json(getBrainData({ nodeCount: 360 }));
+    return NextResponse.json(getBrainData({ nodeCount: 360 }), { headers: CORS_HEADERS });
   }
 }
 
@@ -179,9 +198,9 @@ export async function POST() {
         error: 'GATE: FAIL BN-00 — Execution Halted. Missing 7-Agent Suite.',
         missingAgents: missingAgents.map((f) => `[ERROR: AGENT_NOT_FOUND: ${f}]`),
       },
-      { status: 422 }
+      { status: 422, headers: CORS_HEADERS }
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { headers: CORS_HEADERS });
 }
