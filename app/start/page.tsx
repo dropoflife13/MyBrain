@@ -18,6 +18,7 @@ import {
   Play,
   Sparkles,
   Terminal,
+  Workflow,
 } from 'lucide-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Button } from '../../components/ui/button';
@@ -28,6 +29,7 @@ export default function StartPage() {
   const [copiedInstall, setCopiedInstall] = useState<boolean>(false);
   const [copiedDev, setCopiedDev] = useState<boolean>(false);
   const [copiedRule, setCopiedRule] = useState<boolean>(false);
+  const [copiedFactory, setCopiedFactory] = useState<boolean>(false);
 
   const copyToClipboard = (
     text: string,
@@ -121,8 +123,8 @@ export default function StartPage() {
 
           <p className="text-base sm:text-lg text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto leading-relaxed">
             You don&apos;t need to be a software engineer or understand complex Git commands to run
-            your own 3D judgment vault. Follow these 5 simple steps to get your Cortex running
-            locally.
+            your own 3D judgment vault. Follow these 6 simple steps to get your Cortex running
+            locally and build with AI agents.
           </p>
         </div>
 
@@ -401,15 +403,15 @@ export default function StartPage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
-                  <span>Add Your First Rule</span>
+                  <span>Write Your Engineering Rules</span>
                 </h2>
                 <Badge variant="outline" className="w-fit text-[10px] font-mono text-cyan-600 dark:text-cyan-300">
-                  LIVE 3D RECOGNITION
+                  MARKDOWN VAULT
                 </Badge>
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code> or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code>. Add your personal engineering rule, save the file, and watch a new glowing synaptic node appear instantly on your 3D canvas!
+                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code> or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code>. Define your hard engineering gates using the standard <code className="font-mono text-xs text-cyan-500">WHEN... DO...</code> trigger format. Every saved rule automatically materializes as a synaptic coordinate in your 3D brain.
               </p>
 
               {/* Code Snippet Box */}
@@ -423,7 +425,7 @@ export default function StartPage() {
                     type="button"
                     onClick={() =>
                       copyToClipboard(
-                        '- **RULE-01** WHEN this happens → DO that.',
+                        '- **RULE-01** WHEN client requests unindexed query → REJECT and mandate index.',
                         setCopiedRule
                       )
                     }
@@ -447,23 +449,97 @@ export default function StartPage() {
                   <code>
                     <span className="text-zinc-500">- </span>
                     <strong className="text-cyan-400 font-bold">**RULE-01**</strong>{' '}
-                    <span className="text-slate-100">WHEN this happens → DO that.</span>
+                    <span className="text-slate-100">WHEN client requests unindexed query → REJECT and mandate index.</span>
                   </code>
                 </pre>
               </div>
+            </div>
+          </motion.div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 text-xs font-mono">
-                <div className="p-3 rounded-lg bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-white/5 space-y-1">
-                  <span className="text-cyan-600 dark:text-cyan-400 font-bold">**RULE-01**</span>
-                  <p className="text-slate-500 dark:text-zinc-400">Unique identifier prefix that links the node in 3D.</p>
+          {/* STEP 6: Run the Software Factory */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-60px' }}
+            transition={{ duration: 0.5 }}
+            className="relative space-y-4"
+          >
+            {/* Timeline Number Node */}
+            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+              06
+            </div>
+
+            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
+                  <Workflow className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
+                  <span>Run the Software Factory</span>
+                </h2>
+                <Badge variant="outline" className="w-fit text-[10px] font-mono text-cyan-600 dark:text-cyan-300">
+                  BUILD WITH AI AGENTS
+                </Badge>
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
+                Open the 3D Console and click any node. The sliding chat panel is your AI factory. Type <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/grill</code> to interrogate a new idea, or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/to-spec</code> to generate a PRD. The AI will read your Markdown rules before writing a single line of code.
+              </p>
+
+              {/* 6-Command Pipeline Matrix Card */}
+              <div className="relative rounded-xl bg-zinc-950 border border-white/10 overflow-hidden font-mono shadow-2xl space-y-0">
+                <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/90 border-b border-white/10 text-xs text-zinc-400">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="text-[11px] text-zinc-300">The Golden Path (6 SDLC Commands)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(
+                        '/grill -> /pitch -> /to-spec -> /to-tickets -> /implement -> /review',
+                        setCopiedFactory
+                      )
+                    }
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 hover:bg-white/15 text-[11px] text-cyan-400 transition-colors cursor-pointer"
+                  >
+                    {copiedFactory ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-400" />
+                        <span className="text-emerald-400">Copied</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Pipeline</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-white/5 space-y-1">
-                  <span className="text-amber-600 dark:text-amber-300 font-bold">WHEN...</span>
-                  <p className="text-slate-500 dark:text-zinc-400">The exact trigger condition or scenario you care about.</p>
-                </div>
-                <div className="p-3 rounded-lg bg-slate-100 dark:bg-zinc-900/60 border border-slate-200 dark:border-white/5 space-y-1">
-                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">DO that</span>
-                  <p className="text-slate-500 dark:text-zinc-400">Your non-negotiable architectural decision.</p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 text-xs">
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/grill</span>
+                    <p className="text-[11px] text-zinc-400">Edge-case interrogation (PM)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/pitch</span>
+                    <p className="text-[11px] text-zinc-400">3-min value prop & GTM (GR)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/to-spec</span>
+                    <p className="text-[11px] text-zinc-400">PRD + architecture rules (PM+SD)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/to-tickets</span>
+                    <p className="text-[11px] text-zinc-400">Linear tickets & criteria (BA)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/implement</span>
+                    <p className="text-[11px] text-zinc-400">Code obeying gates (DB+UX)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-cyan-400 font-bold">/review</span>
+                    <p className="text-[11px] text-zinc-400">STRIDE & BN-00 audit (SEC+SD)</p>
+                  </div>
                 </div>
               </div>
             </div>

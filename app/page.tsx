@@ -40,30 +40,30 @@ interface FaqItem {
 
 const FAQ_ITEMS: FaqItem[] = [
   {
-    question: 'How do I deploy my own Brain Vault?',
+    question: 'What is the "Golden Path"?',
     answer:
-      'Clone the repository and push it directly to Vercel, or download the clean starter template below. Both packages contain the full Next.js 3D WebGL engine, the 7-Agent Execution Suite (/agents), and the diagnostic excavation tests (/brain/05-elicitation).',
+      'It is a 6-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review). Every command is strictly gated by the 7 AI Agents to ensure you don\'t skip architecture or security steps.',
+  },
+  {
+    question: 'Do I need a database for this?',
+    answer:
+      'No. The Cortex uses a Local-First architecture. Your Markdown files in the brain/ and agents/ folders are the database. It is 100% serverless and free to host.',
+  },
+  {
+    question: 'What happens if I delete a core Agent file?',
+    answer:
+      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. We fail loudly, not silently.',
+  },
+  {
+    question: 'Can I use this for non-coding projects?',
+    answer:
+      'Absolutely. You can swap out the dbaagent.md for a legalagent.md and use the 3D brain to govern any complex decision-making process.',
+  },
+  {
+    question: 'How do I deploy this to the web?',
+    answer:
+      'Push your code to GitHub and connect it to Vercel. The /start guide covers the exact step-by-step process to get your own custom URL.',
     hasDownloadButton: true,
-  },
-  {
-    question: 'Why does the forked template start 100% empty (0 rules)?',
-    answer:
-      "You cannot copy-paste someone else's engineering judgment. An unearned vault filled with someone else's decisions is generic slop. The template starts with status: empty (0 active rules) so that you run Launcher L-01 (THE-TEST.md) and earn every single synaptic node through rigorous self-assessment.",
-  },
-  {
-    question: 'What are the 7 Core Agents in the suite?',
-    answer:
-      'The 7 Execution Gatekeepers are: Database Architect (DB), Security Gatekeeper (SEC), UI/UX Frontend Lead (UX), Product Manager (PM), Systems Design Architect (SD), Integration & Reliability Engineer (IR), and Growth Specialist (GR). Each agent owns a specific architectural boundary and executes non-negotiable GATE: PASS or GATE: FAIL checks.',
-  },
-  {
-    question: 'What is the BN-00 Pre-Flight Invariant?',
-    answer:
-      'Rule BN-00 is a hard-stop architectural invariant: a Procedural Brain cannot operate in headless or ungoverned mode. If anyone clones the repository and deletes or omits even one of the 7 agent files in /agents, the procedural kernel crashes with a full-screen sci-fi panic overlay and refuses to execute.',
-  },
-  {
-    question: 'How do I connect this vault to Claude Code, Cursor, or Antigravity?',
-    answer:
-      'Through CLAUDE.md and VS Code Multi-Root Workspaces. When you connect an AI agent to this workspace, it automatically loads Tier 0 governance principles on every prompt, checks active domain rules, and evaluates agent gate checklists before touching code.',
   },
 ];
 
