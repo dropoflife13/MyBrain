@@ -223,6 +223,23 @@ function detectWorkflowCommand(query: string, commandProp?: string): WorkflowSte
   return null;
 }
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isHighDemandError(err: any): boolean {
+  const status = err?.status || err?.statusCode || err?.code;
+  if (status === 503 || status === 429) return true;
+  const msg = String(err?.message || '').toLowerCase();
+  return (
+    msg.includes('503') ||
+    msg.includes('429') ||
+    msg.includes('service unavailable') ||
+    msg.includes('high demand') ||
+    msg.includes('overloaded') ||
+    msg.includes('resource_exhausted') ||
+    msg.includes('unavailable')
+  );
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -243,8 +260,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const modelName = process.env.AI_MODEL || 'gemini-2.5-flash';
-    console.log(`[Cortex Chat API] Using AI Model: ${modelName}`);
+    // 1. Define Fallback Chain: ['gemini-3.8-flash', 'gemini-2.5-flash']
+    const FALLBACK_CHAIN = ['gemini-3.8-flash', 'gemini-2.5-flash'];
+    const modelChain = process.env.AI_MODEL
+      ? Array.from(new Set([process.env.AI_MODEL, ...FALLBACK_CHAIN]))
+      : FALLBACK_CHAIN;
+
+    console.log(`[Cortex Chat API] Initialized Model Fallback Chain: ${modelChain.join(' -> ')}`);
 
     let prompt: string;
     const workflow = detectWorkflowCommand(query, workflowCommand);
@@ -278,34 +300,77 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    let text = '';
+    let generatedText = '';
+    let lastError: any = null;
 
-    try {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      const result = await model.generateContent(prompt);
-      text = result.response.text();
-    } catch (err: any) {
-      // Graceful fallback if the specific model version is deprecated or migrating
-      if (err?.message?.includes('gemini-3.8-flash') || err?.status === 404) {
-        console.log('[Cortex Chat API] Falling back to gemini-3.8-flash');
-        const fallbackModel = genAI.getGenerativeModel({ model: 'gemini-3.8-flash' });
-        const result = await fallbackModel.generateContent(prompt);
-        text = result.response.text();
-      } else {
-        throw err;
+    // 2 & 3. Iterate through fallback chain with Exponential Backoff + Jitter
+    modelLoop: for (let mIndex = 0; mIndex < modelChain.length; mIndex++) {
+      const currentModelName = modelChain[mIndex];
+      const maxRetries = 2; // Up to 2 retries (3 attempts total) per model
+
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(
+            `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1})`
+          );
+          const model = genAI.getGenerativeModel({ model: currentModelName });
+          const result = await model.generateContent(prompt);
+          generatedText = result.response.text();
+
+          console.log(`[Cortex Chat API] Model ${currentModelName} succeeded on attempt ${attempt + 1}.`);
+          break modelLoop; // Success: exit chain
+        } catch (err: any) {
+          lastError = err;
+          const status = err?.status || err?.statusCode || (isHighDemandError(err) ? 503 : 500);
+          console.warn(
+            `[Cortex Chat API] Model ${currentModelName} attempt ${attempt + 1} failed [status: ${status}]: ${err?.message}`
+          );
+
+          if (attempt < maxRetries && isHighDemandError(err)) {
+            // Exponential backoff with jitter: (500ms * 2^attempt) + random(0-500ms)
+            const backoff = 500 * Math.pow(2, attempt) + Math.random() * 500;
+            console.log(
+              `[Cortex Chat API] High demand / rate limit (503/429) detected. Waiting ${Math.round(backoff)}ms before retry ${attempt + 2}...`
+            );
+            await delay(backoff);
+          } else {
+            console.warn(
+              `[Cortex Chat API] Model ${currentModelName} exhausted retries or encountered unrecoverable status. Falling back to next model...`
+            );
+            break; // Break retry loop to try next model in fallback chain
+          }
+        }
       }
     }
 
-    return NextResponse.json({ text });
+    // If all models in the fallback chain fail, return clean message
+    if (!generatedText) {
+      console.error('[Cortex Chat API] All fallback models failed. Last error:', lastError);
+      return NextResponse.json(
+        {
+          error: 'The AI is currently experiencing high demand. Please try again in a few moments.',
+          text: 'The AI is currently experiencing high demand. Please try again in a few moments.',
+        },
+        { status: 503 }
+      );
+    }
+
+    return NextResponse.json({ text: generatedText });
   } catch (error: any) {
-    console.error('[Cortex Chat API Error]:', error);
-    const errorMessage = error?.message || 'An error occurred while querying Gemini.';
+    console.error('[Cortex Chat API Unhandled Error]:', error);
+    const errorMessage =
+      isHighDemandError(error)
+        ? 'The AI is currently experiencing high demand. Please try again in a few moments.'
+        : error?.message || 'An error occurred while querying Gemini.';
+
     return NextResponse.json(
       {
         error: errorMessage,
-        text: `Neural link error: ${errorMessage}`,
+        text: isHighDemandError(error)
+          ? errorMessage
+          : `Neural link error: ${errorMessage}`,
       },
-      { status: 500 }
+      { status: isHighDemandError(error) ? 503 : 500 }
     );
   }
 }

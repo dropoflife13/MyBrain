@@ -378,6 +378,31 @@ export default function Home() {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, isChatLoading]);
 
+  const sanitizeAiMessage = (
+    data: { text?: string; error?: string } | null,
+    fallbackErr?: unknown
+  ): string => {
+    const candidate = String(
+      data?.text ||
+        data?.error ||
+        (fallbackErr instanceof Error ? fallbackErr.message : fallbackErr ? String(fallbackErr) : '') ||
+        ''
+    );
+    const lower = candidate.toLowerCase();
+    if (
+      lower.includes('503') ||
+      lower.includes('429') ||
+      lower.includes('high demand') ||
+      lower.includes('overloaded') ||
+      lower.includes('service unavailable') ||
+      lower.includes('resource_exhausted') ||
+      lower.includes('unavailable')
+    ) {
+      return 'The AI is currently experiencing high demand. Please try again in a few moments.';
+    }
+    return candidate || 'No response returned from the neural core.';
+  };
+
   const handleSendChat = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const query = chatInput.trim();
@@ -404,8 +429,8 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
-      const aiText = data.text || data.error || 'No response returned from the neural core.';
+      const data = await res.json().catch(() => null);
+      const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
 
       setChatMessages((prev) => [
         ...prev,
@@ -422,7 +447,7 @@ export default function Home() {
         {
           id: `ai-${Date.now()}`,
           role: 'assistant' as const,
-          text: `Neural connection failure: ${err?.message || 'Unable to contact Cortex API.'}`,
+          text: sanitizeAiMessage(null, err),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -459,8 +484,8 @@ export default function Home() {
         }),
       });
 
-      const data = await res.json();
-      const aiText = data.text || data.error || 'No response returned from the neural core.';
+      const data = await res.json().catch(() => null);
+      const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
 
       setChatMessages((prev) => [
         ...prev,
@@ -477,7 +502,7 @@ export default function Home() {
         {
           id: `ai-err-${Date.now()}`,
           role: 'assistant' as const,
-          text: `Neural connection failure: ${err?.message || 'Unable to contact Cortex API.'}`,
+          text: sanitizeAiMessage(null, err),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
