@@ -183,9 +183,9 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
   'to-spec': {
     cmd: '/to-spec',
     name: 'Technical Specification & PRD',
-    agents: ['agents/systemsdesignagent.md'],
+    agents: ['agents/systemsdesignagent.md', 'agents/dbaagent.md', 'brain/02-domains/authorization.md'],
     instruction:
-      'You are executing the /to-spec step of the Golden Path SDLC. Follow Systems Design (SD) rules. Write a comprehensive technical PRD with As-Is and To-Be architectures, failure modes, data contracts, and explicit non-goals.',
+      'You are executing the /to-spec step of the Golden Path SDLC. Read systemsdesignagent.md, dbaagent.md, and authorization.md. Draft the architecture, data model, and authorization strategy with As-Is/To-Be architectures, failure modes, data contracts, PDP/PEP enforcement, and explicit non-goals.',
   },
   'to-tickets': {
     cmd: '/to-tickets',
@@ -211,9 +211,9 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
   harden: {
     cmd: '/harden',
     name: 'Enterprise Security & Database Hardening',
-    agents: ['agents/dbaagent.md', 'agents/securityagent.md'],
+    agents: ['agents/dbaagent.md', 'agents/securityagent.md', 'brain/02-domains/authorization.md'],
     instruction:
-      'You are executing the /harden step of the Cortex Pipeline. You strictly enforce DBA Agent rules (DB-13 Atomic Conditionals, DB-14 Multi-Tenant Row Isolation) and Security Agent rules (SEC-14 Server-Side Redaction, SEC-15 Cache-Control for Private Data). Audit the architecture and code for race conditions on counters/stock (DB-13), verify multi-tenant isolation at query/RLS level (DB-14), ensure sensitive commercial fields (e.g. buyingCost, profitMargin, adminNotes) are sanitized server-side before reaching clients (SEC-14), and verify Cache-Control private/no-store headers on authenticated endpoints (SEC-15).',
+      'You are executing the /harden step of the Cortex Pipeline. You strictly enforce DBA Agent rules (DB-13 Atomic Conditionals, DB-14 Multi-Tenant Row Isolation) and Security Agent rules (SEC-14 Server-Side Redaction, SEC-15 Cache-Control for Private Data). Audit the authorization strategy (checking AUTH-01 through AUTH-05: PDP/PEP separation, ABAC dynamic policies, policy-as-code in Git, derived roles, and centralized control planes). Audit the architecture and code for race conditions on counters/stock (DB-13), verify multi-tenant isolation at query/RLS level (DB-14), ensure sensitive commercial fields (e.g. buyingCost, profitMargin, adminNotes) are sanitized server-side before reaching clients (SEC-14), and verify Cache-Control private/no-store headers on authenticated endpoints (SEC-15).',
   },
   research: {
     cmd: '/research',

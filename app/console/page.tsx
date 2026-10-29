@@ -105,9 +105,9 @@ const WORKFLOW_PILLS = [
   },
   {
     cmd: '/to-spec',
-    label: 'To Spec (SD)',
-    desc: 'Write technical PRD with As-Is/To-Be architectures (SD)',
-    prompt: '/to-spec: Generate a comprehensive technical PRD with As-Is/To-Be architectures, failure modes, and strict non-goals.',
+    label: 'To Spec (SD+DB+AUTH)',
+    desc: 'Read systemsdesignagent.md, dbaagent.md, & authorization.md. Draft PRD & auth strategy',
+    prompt: '/to-spec: Read systemsdesignagent.md, dbaagent.md, and authorization.md. Draft the architecture, data model, and authorization strategy with As-Is/To-Be architectures and failure modes.',
     agent: 'SD',
   },
   {
@@ -134,8 +134,8 @@ const WORKFLOW_PILLS = [
   {
     cmd: '/harden',
     label: '/harden [Enterprise]',
-    desc: 'Audit race conditions, tenant isolation, redaction & cache headers (DB+SEC)',
-    prompt: '/harden: Run an enterprise security and database hardening audit. Check for race conditions on counters (DB-13), multi-tenant isolation (DB-14), server-side redaction (SEC-14), and private Cache-Control headers (SEC-15).',
+    desc: 'Audit race conditions, tenant isolation, redaction, cache headers, & AUTH-01..05',
+    prompt: '/harden: Run an enterprise security and database hardening audit. Audit the authorization strategy (checking AUTH-01 through AUTH-05), check for race conditions on counters (DB-13), multi-tenant isolation (DB-14), server-side redaction (SEC-14), and private Cache-Control headers (SEC-15).',
     agent: 'Enterprise',
   },
   {
