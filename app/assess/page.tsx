@@ -5,456 +5,236 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Brain,
   Check,
   CheckCircle2,
-  ChevronRight,
   Code2,
   Copy,
-  Cpu,
   Download,
-  ExternalLink,
   Flame,
   HelpCircle,
   Play,
+  RefreshCw,
   RotateCcw,
   Search,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
-  Terminal,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import Brain3D from '../../components/Brain3D';
 import CommandPalette from '../../components/CommandPalette';
+import NeuralLoader from '../../components/NeuralLoader';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { BrainDocNode, getBrainData } from '../../lib/brain-parser';
 
-interface ScenarioOption {
-  id: 'A' | 'B' | 'C' | 'D';
-  label: string;
-  rationale: string;
-  earnedRuleId: string;
-  earnedRuleTitle: string;
-  ruleCategory: 'security' | 'database' | 'systems' | 'ui' | 'operations' | 'taste';
-  agentCode: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR';
-  confidence: number;
-}
-
-interface DiagnosticScenario {
+export interface QuizQuestion {
   id: string;
-  triggerType: 'Artifact Archaeology' | 'The Cringe Test' | 'Trade-Off Triad' | 'Pre-Flight Invariant' | 'Architecture Probe';
-  agentTarget: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR';
+  questionType: 'recall' | 'scenario' | 'advanced';
   title: string;
   context: string;
   codeSnippet?: string;
   codeLanguage?: string;
   prompt: string;
-  examinerKey: string;
-  options: ScenarioOption[];
+  options: string[];
+  correctAnswer: number; // 0, 1, 2, or 3
+  ruleId: string;
+  explanation: string;
 }
 
-const DIAGNOSTIC_SCENARIOS: DiagnosticScenario[] = [
+// Default battery matching the elite enterprise hardening and multi-agent standards
+const INITIAL_FALLBACK_QUESTIONS: QuizQuestion[] = [
   {
-    id: 'DIAG-01',
-    triggerType: 'The Cringe Test',
-    agentTarget: 'SEC',
-    title: 'Compliant-but-Wrong: RLS & Privileged Keys',
+    id: 'Q1',
+    questionType: 'scenario',
+    title: 'Authorization: Scalable Multi-Tenant Access Control (Cerbos Pattern)',
     context:
-      'During a pre-launch security audit, a SaaS application passes all checklist items: TLS 1.3 enforced, MFA enabled for staff, and Row Level Security (RLS) enabled on all 12 PostgreSQL tables. However, you inspect the Next.js client bundle and database policies.',
-    codeSnippet: `-- supabase/policies.sql
-ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow authenticated read" ON user_sessions
-  FOR SELECT TO authenticated
-  USING (true); -- Notice the condition
-
-// .env.production (bundled into client)
-NEXT_PUBLIC_SUPABASE_SERVICE_KEY="eyJhbGciOi..."`,
-    codeLanguage: 'sql',
-    prompt: 'What is your immediate engineering response before shipping?',
-    examinerKey:
-      'F1: USING (true) permits ANY authenticated user to read all other users’ sessions. F2: Exposing the service-role key client-side completely bypasses RLS anyway.',
-    options: [
-      {
-        id: 'A',
-        label: 'Block release immediately: Replace USING (true) with auth.uid() check and revoke client-side service key.',
-        rationale: 'Fail-closed security: A checklist pass is meaningless if authorization is structurally bypassed.',
-        earnedRuleId: 'CS-01',
-        earnedRuleTitle: 'Least Privilege Service Keys & Scoped RLS',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 3,
-      },
-      {
-        id: 'B',
-        label: 'Ship on schedule since RLS is marked enabled, and file a P2 Jira ticket to restrict the policy next sprint.',
-        rationale: 'Velocity bias over security boundaries; exposes multi-tenant data.',
-        earnedRuleId: 'RF-01',
-        earnedRuleTitle: 'Compliant-but-Insecure Policy Trap',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 1,
-      },
-      {
-        id: 'C',
-        label: 'Add a Cloudflare WAF rule to inspect incoming HTTP payloads for suspicious query parameters.',
-        rationale: 'WAFs cannot fix broken object-level authorization inside the database layer.',
-        earnedRuleId: 'CS-04',
-        earnedRuleTitle: 'Defense in Depth & Database Boundary Separation',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 2,
-      },
-      {
-        id: 'D',
-        label: 'Disable RLS completely and handle all tenant permission filtering inside Next.js server actions.',
-        rationale: 'Moves data boundary into application layer, prone to leakage if any endpoint forgets a WHERE clause.',
-        earnedRuleId: 'SO-03',
-        earnedRuleTitle: 'Database-Level Enforced Isolation',
-        ruleCategory: 'systems',
-        agentCode: 'SD',
-        confidence: 2,
-      },
-    ],
-  },
-  {
-    id: 'DIAG-02',
-    triggerType: 'Trade-Off Triad',
-    agentTarget: 'DB',
-    title: 'High-Volume Tenant Indexing vs Write Throughput',
-    context:
-      'Your application manages 4M active transaction records. A new analytics feature requires filtering by `tenant_id`, `status`, and `created_at`. Under test load, write ingestion takes 18% longer when a composite B-Tree index is added, but read latency drops from 680ms to 4ms.',
-    codeSnippet: `-- Migration candidate
-CREATE INDEX CONCURRENTLY idx_transactions_tenant_status_date 
-  ON transactions(tenant_id, status, created_at DESC);`,
-    codeLanguage: 'sql',
-    prompt: 'How do you structure this database boundary under production constraints?',
-    examinerKey:
-      'Index strategy must balance write amplification with query SLA. The tenant_id lead column provides cardinality isolation; concurrent creation prevents write locking.',
-    options: [
-      {
-        id: 'A',
-        label: 'Deploy CONCURRENTLY with tenant_id prefix; accept 18% write overhead to guarantee sub-10ms queries.',
-        rationale: 'Reads outnumber writes 15:1; predictable latency and zero downtime migration take precedence.',
-        earnedRuleId: 'DB-01',
-        earnedRuleTitle: 'Concurrent Composite Indexing with Tenant Lead',
-        ruleCategory: 'database',
-        agentCode: 'DB',
-        confidence: 3,
-      },
-      {
-        id: 'B',
-        label: 'Avoid the index to protect write speed; offload read queries to an in-memory Redis cache with 60s TTL.',
-        rationale: 'Caching masks underlying database design flaws and leads to cache invalidation race conditions.',
-        earnedRuleId: 'DB-05',
-        earnedRuleTitle: 'Primary Store Authority over Ephemeral Caching',
-        ruleCategory: 'database',
-        agentCode: 'DB',
-        confidence: 2,
-      },
-      {
-        id: 'C',
-        label: 'Split the table into separate per-tenant schemas immediately to eliminate the need for tenant indexing.',
-        rationale: 'Extreme operational complexity; schema sprawl breaks migrations for early-stage systems.',
-        earnedRuleId: 'SO-04',
-        earnedRuleTitle: 'Proportional Data Architecture',
-        ruleCategory: 'systems',
-        agentCode: 'SD',
-        confidence: 2,
-      },
-      {
-        id: 'D',
-        label: 'Delay the migration until traffic reaches 10M rows and queries breach 1500ms.',
-        rationale: 'Reactive maintenance causes production outages during sudden traffic spikes.',
-        earnedRuleId: 'OP-02',
-        earnedRuleTitle: 'Proactive Telemetry & Query Budgeting',
-        ruleCategory: 'operations',
-        agentCode: 'IR',
-        confidence: 1,
-      },
-    ],
-  },
-  {
-    id: 'DIAG-03',
-    triggerType: 'Architecture Probe',
-    agentTarget: 'PM',
-    title: 'The Golden Path: Initial Feature Interrogation',
-    context:
-      'You are starting work on a complex new feature in the Cortex Software Factory. Before writing a single ticket or generating code, the Golden Path SDLC mandates executing a specific command to unearth hidden edge cases and stress-test assumptions with the 7 Agent suite.',
-    codeSnippet: `// The Golden Path 6-Step Pipeline:
-Step 1: [ ??? ] -> Step 2: /pitch -> Step 3: /to-spec 
-Step 4: /to-tickets -> Step 5: /implement -> Step 6: /review`,
-    codeLanguage: 'bash',
-    prompt: 'If you are building a new feature, which command do you run first to interrogate the problem and find edge cases?',
-    examinerKey:
-      'Golden Path SDLC: /grill activates the Product Manager (PM) agent to relentlessly interrogate assumptions, define boundaries, and surface unhandled edge cases before any code or spec is committed.',
-    options: [
-      {
-        id: 'A',
-        label: '/implement',
-        rationale: 'Premature implementation without specification or edge-case discovery creates regression chaos.',
-        earnedRuleId: 'RF-04',
-        earnedRuleTitle: 'Premature Implementation Without Spec',
-        ruleCategory: 'operations',
-        agentCode: 'SD',
-        confidence: 1,
-      },
-      {
-        id: 'B',
-        label: '/grill',
-        rationale: 'Rigorous interrogative inquiry (/grill) forces clarification of failure modes and user empathy before writing specs.',
-        earnedRuleId: 'PM-01',
-        earnedRuleTitle: 'Pre-Spec Edge Case Interrogation (/grill)',
-        ruleCategory: 'systems',
-        agentCode: 'PM',
-        confidence: 3,
-      },
-      {
-        id: 'C',
-        label: '/pitch',
-        rationale: 'Pitching value proposition should happen only after the underlying engineering problem and scope are interrogated.',
-        earnedRuleId: 'BA-02',
-        earnedRuleTitle: 'Value Proposition & Problem Sizing',
-        ruleCategory: 'operations',
-        agentCode: 'GR',
-        confidence: 2,
-      },
-      {
-        id: 'D',
-        label: '/review',
-        rationale: 'Code and security review (/review) is Step 6 (the final verification gate), not the first step.',
-        earnedRuleId: 'SO-07',
-        earnedRuleTitle: 'Final SDLC Verification Gate',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 1,
-      },
-    ],
-  },
-  {
-    id: 'DIAG-04',
-    triggerType: 'The Cringe Test',
-    agentTarget: 'SEC',
-    title: 'Gatekeeper Authority: Schema & Invariant Enforcement',
-    context:
-      'Your AI generates a database schema migration with tables, indices, and foreign keys. In the Cortex 7-Agent governance framework, a specific gatekeeper owns the invariant boundary prohibiting unauthenticated data leakage and headless execution.',
-    codeSnippet: `-- Generated Database Migration:
-CREATE TABLE user_profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL,
-  encrypted_pii TEXT NOT NULL
-);
--- Verifying BN-00 & SEC-01 invariants...`,
-    codeLanguage: 'sql',
-    prompt: 'Your AI generates a database schema. Which Agent Gatekeeper is responsible for ensuring it follows the BN-00 and SEC-01 invariants?',
-    examinerKey:
-      'The Security Gatekeeper (SEC) owns cryptographic boundaries, invariant defense (BN-00), and least privilege enforcement (SEC-01 / CS-01) before any database schema can be promoted.',
-    options: [
-      {
-        id: 'A',
-        label: 'PM Agent',
-        rationale: 'Product Manager owns requirements, PRDs, and user stories, but does not enforce cryptographic or security invariants.',
-        earnedRuleId: 'PM-03',
-        earnedRuleTitle: 'Product Scope & Acceptance Criteria',
-        ruleCategory: 'operations',
-        agentCode: 'PM',
-        confidence: 1,
-      },
-      {
-        id: 'B',
-        label: 'GR Agent',
-        rationale: 'Growth Agent manages conversion optimization and viral loops, not database security governance.',
-        earnedRuleId: 'GR-01',
-        earnedRuleTitle: 'Growth & User Acquisition Mechanics',
-        ruleCategory: 'operations',
-        agentCode: 'GR',
-        confidence: 1,
-      },
-      {
-        id: 'C',
-        label: 'SEC Agent',
-        rationale: 'Security Gatekeeper (SEC) enforces non-negotiable architectural boundaries, cryptographic controls, and Rule BN-00 invariants.',
-        earnedRuleId: 'CS-07',
-        earnedRuleTitle: 'Security Gatekeeper Authority & Invariant Auditing',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 3,
-      },
-      {
-        id: 'D',
-        label: 'UX Agent',
-        rationale: 'UI/UX Agent governs visual accessibility, component tokens, and client interactions, not backend security invariants.',
-        earnedRuleId: 'UI-01',
-        earnedRuleTitle: 'Frontend Accessibility & Interaction Design',
-        ruleCategory: 'ui',
-        agentCode: 'UX',
-        confidence: 1,
-      },
-    ],
-  },
-  {
-    id: 'DIAG-05',
-    triggerType: 'Pre-Flight Invariant',
-    agentTarget: 'IR',
-    title: 'Fail-Closed Gatekeeper: Invariant BN-00 Verification',
-    context:
-      'A teammate clones your repository into production. To make their minimal feature run faster, they delete the security gatekeeper and database architect configuration files, believing optional agents can be skipped during early staging.',
-    codeSnippet: `// Terminal command executed:
-$ rm agents/securityagent.md
-$ npm run dev
-
-// System Reaction:
-[CORTEX KERNEL] Pre-flight audit initialized...
-GATE: FAIL BN-00 • AGENT_NOT_FOUND: securityagent.md`,
-    codeLanguage: 'bash',
-    prompt: 'Should the runtime degrade silently and boot anyway, or halt completely?',
-    examinerKey:
-      'Fail-closed governance (BN-00 / CS-07): A system cannot operate in ungoverned mode. Missing gatekeepers must crash the boot sequence with a clear invariant failure.',
-    options: [
-      {
-        id: 'A',
-        label: 'Fail-closed hard halt: Display the red PANIC overlay and block all API routes until all 7 agents are restored.',
-        rationale: 'Architectural invariants are non-negotiable (BN-00, CS-07). A headless cortex compromises governance.',
-        earnedRuleId: 'SO-07',
-        earnedRuleTitle: 'Strict Pre-Flight Gatekeeping & Fail-Closed Boot',
-        ruleCategory: 'systems',
-        agentCode: 'IR',
-        confidence: 3,
-      },
-      {
-        id: 'B',
-        label: 'Boot in degraded mode with a yellow console warning so the developer is not blocked.',
-        rationale: 'Silent degradation allows ungoverned code to bypass security and schema audits into production.',
-        earnedRuleId: 'RF-05',
-        earnedRuleTitle: 'Silent Degradation & Governance Bypass',
-        ruleCategory: 'operations',
-        agentCode: 'IR',
-        confidence: 1,
-      },
-      {
-        id: 'C',
-        label: 'Automatically generate an empty placeholder file so the build passes.',
-        rationale: 'Fake compliance that satisfies the check while gutting the actual gatekeeper logic.',
-        earnedRuleId: 'CS-07',
-        earnedRuleTitle: 'Authentic Gate Validation & Checksum Verification',
-        ruleCategory: 'security',
-        agentCode: 'SEC',
-        confidence: 2,
-      },
-      {
-        id: 'D',
-        label: 'Only enforce the gate check on git push, but allow local dev and staging to run freely without agents.',
-        rationale: 'Creates drift between local environment behavior and production verification.',
-        earnedRuleId: 'OP-04',
-        earnedRuleTitle: 'Environment Parity & Universal Invariants',
-        ruleCategory: 'operations',
-        agentCode: 'IR',
-        confidence: 2,
-      },
-    ],
-  },
-  {
-    id: 'DIAG-06',
-    triggerType: 'Trade-Off Triad',
-    agentTarget: 'PM',
-    title: 'The 48-Hour Launch Razor: Craft vs Velocity',
-    context:
-      'You are 48 hours away from a high-profile public release. A core API response has an N+1 query issue that takes 450ms. A quick 1-line Redis cache hides the latency to 5ms, but a proper refactoring of the relational join would take 14 hours of focused coding and risk introducing regression bugs.',
-    codeSnippet: `// Option 1: Band-aid Cache (3 minutes)
-await redis.set(\`user_feed:\${id}\`, data, 'EX', 120);
-
-// Option 2: Join Refactoring (14 hours)
-SELECT u.*, json_agg(posts.*) FROM users u 
-JOIN posts ON posts.user_id = u.id GROUP BY u.id;`,
+      'You are building a multi-tenant SaaS where a user can only edit their own posts. You currently have if (user.role === \'author\') hardcoded in your API route.',
+    codeSnippet: `// Legacy hardcoded role check in API route:
+if (user.role === 'author') {
+  await updatePost(postId, payload);
+}`,
     codeLanguage: 'typescript',
-    prompt: 'What is your operational razor under real-world launch pressure?',
-    examinerKey:
-      'Pragmatic triage: Ship with the defensive cache to protect release velocity, but file a P0 debt invariant with automated telemetry to refactor within 72h post-launch.',
+    prompt: 'What is the most scalable way to handle this?',
     options: [
-      {
-        id: 'A',
-        label: 'Ship with defensive Redis caching for the launch window; lock a P0 refactor ticket with telemetry to resolve in sprint +1.',
-        rationale: 'Pragmatic engineering razor: Protects the launch milestone without denying technical debt (OP-01).',
-        earnedRuleId: 'OP-01',
-        earnedRuleTitle: 'Pragmatic Delivery Razor & Tracked Debt Invariants',
-        ruleCategory: 'operations',
-        agentCode: 'PM',
-        confidence: 3,
-      },
-      {
-        id: 'B',
-        label: 'Delay the public launch by 4 days to completely rewrite the data access layer.',
-        rationale: 'Uncoordinated launch delays destroy commercial trust when a viable compensating control exists.',
-        earnedRuleId: 'BA-02',
-        earnedRuleTitle: 'Commercial Viability & Commitment Delivery',
-        ruleCategory: 'operations',
-        agentCode: 'PM',
-        confidence: 2,
-      },
-      {
-        id: 'C',
-        label: 'Ship the N+1 query directly without caching or refactoring and see if the database crashes.',
-        rationale: 'Negligent launch posture that risks catastrophic downtime under public traffic.',
-        earnedRuleId: 'RF-02',
-        earnedRuleTitle: 'Uncontrolled Production Exposure',
-        ruleCategory: 'operations',
-        agentCode: 'IR',
-        confidence: 1,
-      },
-      {
-        id: 'D',
-        label: 'Apply the Redis cache and permanently delete the refactor ticket since users cannot tell the difference.',
-        rationale: 'Accumulates silent architectural rot that detonates during future schema migrations.',
-        earnedRuleId: 'TA-02',
-        earnedRuleTitle: 'Integrity of Internal State & Craft Standards',
-        ruleCategory: 'taste',
-        agentCode: 'PM',
-        confidence: 1,
-      },
+      'Add more roles (e.g., post_owner, post_editor) to the database.',
+      'Use Postgres Row-Level Security (RLS) with a user_id = auth.uid() policy.',
+      'Externalize the decision to a PDP using ABAC and Derived Roles (e.g., role: owner if resource.ownerId == principal.id).',
+      'Create a new table for every user.',
     ],
+    correctAnswer: 2,
+    ruleId: 'AUTH-04',
+    explanation:
+      'Matches AUTH-01 and AUTH-04: Static roles cause role explosion. Externalizing authorization to a Policy Decision Point (PDP) using ABAC and derived roles decouples logic from application code.',
+  },
+  {
+    id: 'Q2',
+    questionType: 'scenario',
+    title: 'Race Conditions: Concurrent Stock Decrement (Agrivet Pattern)',
+    context:
+      'Two cashiers buy the last bag of feed at the exact same millisecond. Your code does SELECT stock then UPDATE stock - 1. Both succeed, resulting in -1 inventory.',
+    codeSnippet: `-- Vulnerable non-atomic read-then-write:
+SELECT quantity FROM inventory WHERE product_id = 'prod_1';
+UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 'prod_1';`,
+    codeLanguage: 'sql',
+    prompt: 'How do you fix this at the database level?',
+    options: [
+      'Add a UI loading spinner to block the second click.',
+      'Use an atomic conditional update (UPDATE stock SET quantity = quantity - 1 WHERE quantity >= 1).',
+      'Store the stock in a Redis cache.',
+      'Use a cron job to fix negative inventory every hour.',
+    ],
+    correctAnswer: 1,
+    ruleId: 'DB-13',
+    explanation:
+      'Matches DB-13: Never calculate stock in application memory. Use an atomic conditional update in the database engine (WHERE quantity >= 1) to guarantee stock never breaches zero without locks.',
+  },
+  {
+    id: 'Q3',
+    questionType: 'scenario',
+    title: 'Data Privacy: Commercial Margin & Cost Redaction (Agrivet Pattern)',
+    context:
+      'A store owner wants their cashiers to use the POS system, but cashiers must NOT see the buyingCost or profitMargin of the products.',
+    codeSnippet: `// Cashier POS query:
+const products = await db.products.findMany();
+// Response contains: { id, name, price, buyingCost, profitMargin }
+return res.json(products);`,
+    codeLanguage: 'typescript',
+    prompt: 'Where should this data redaction be enforced?',
+    options: [
+      'Hide the UI column using React conditional rendering.',
+      'Use CSS to make the text invisible.',
+      'Sanitize the API response on the server to strip buyingCost before it reaches the client.',
+      'Trust the cashiers not to open DevTools.',
+    ],
+    correctAnswer: 2,
+    ruleId: 'SEC-14',
+    explanation:
+      'Matches SEC-14: Server-side projection and sanitization must strip confidential commercial fields before payloads leave the server boundary. Never rely on client-side hiding.',
+  },
+  {
+    id: 'Q4',
+    questionType: 'recall',
+    title: 'Anti-Hallucination: Epistemic Rigor (The Research Agent)',
+    context:
+      'A user asks the AI: "What is the current inflation rate in the Philippines today?" You have no local Markdown documents containing current statistics, and real-time web access is unavailable.',
+    codeSnippet: `// User prompt to Cortex:
+"What is the current inflation rate in the Philippines today?"
+// Local Vault: No macroeconomic stats present. Web retrieval: Offline.`,
+    codeLanguage: 'text',
+    prompt: 'What should the AI do if it does not have real-time web access?',
+    options: [
+      'Guess the number based on the year.',
+      'Say "I don\'t know, but it\'s probably around 4%."',
+      'State: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source."',
+      'Refuse to answer and end the chat.',
+    ],
+    correctAnswer: 2,
+    ruleId: 'RS-03',
+    explanation:
+      'Matches RS-03: When local vault documents do not contain verified data and web retrieval is unavailable, the AI must halt and state the explicit anti-hallucination warning.',
+  },
+  {
+    id: 'Q5',
+    questionType: 'recall',
+    title: 'The Golden Path: Problem Interrogation (SDLC)',
+    context:
+      'You are starting a new project in the Cortex Software Factory. You want to interrogate the problem, uncover edge cases, and challenge assumptions before writing the PRD.',
+    codeSnippet: `# The Cortex Golden Path SDLC Pipeline:
+Step 1: [ ??? ] -> Step 2: /pitch -> Step 3: /to-spec -> Step 4: /to-tickets`,
+    codeLanguage: 'bash',
+    prompt: 'Which pipeline command do you run first?',
+    options: ['/to-spec', '/grill', '/implement', '/harden'],
+    correctAnswer: 1,
+    ruleId: 'PM-01',
+    explanation:
+      'Matches PM-01 and the Golden Path SDLC: /grill activates Product Manager rules to interrogate assumptions and surface edge cases before any specification or code is produced.',
+  },
+  {
+    id: 'Q6',
+    questionType: 'advanced',
+    title: 'Enterprise Hardening: CDN Cache Isolation & Tenant Boundaries',
+    context:
+      'Your API serves tenant-specific data. A global CDN (like Cloudflare) caches the response, and the next user sees the previous user\'s data.',
+    codeSnippet: `HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: public, max-age=3600`,
+    codeLanguage: 'http',
+    prompt: 'What header prevents cross-tenant CDN cache leaks?',
+    options: [
+      'Cache-Control: public, max-age=3600',
+      'Cache-Control: private, no-store, no-cache, must-revalidate',
+      'Access-Control-Allow-Origin: *',
+      'Content-Type: application/json',
+    ],
+    correctAnswer: 1,
+    ruleId: 'SEC-15',
+    explanation:
+      'Matches SEC-15: Setting Cache-Control: private, no-store, no-cache, must-revalidate on authenticated routes prevents shared proxies, CDNs, and browsers from leaking tenant data.',
   },
 ];
 
+const OPTION_LETTERS = ['A', 'B', 'C', 'D'] as const;
+
 export default function AssessmentPage() {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState<number>(0); // 0 = Intro, 1..6 = Scenarios, 7 = Results
-  const [answers, setAnswers] = useState<Record<number, 'A' | 'B' | 'C' | 'D'>>({});
+
+  // Dynamic Quiz State
+  const [questions, setQuestions] = useState<QuizQuestion[]>(INITIAL_FALLBACK_QUESTIONS);
+  const [currentStep, setCurrentStep] = useState<number>(0); // 0 = Intro, 1..N = Scenarios, N+1 = Results
+  const [answers, setAnswers] = useState<Record<number, number>>({}); // index (0..5) -> selected option index (0..3)
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const [copiedInbox, setCopiedInbox] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
 
   const graphData = useMemo(() => getBrainData({ nodeCount: 360 }), []);
 
-  // Compute active focused node in the 3D constellation based on current scenario
-  const currentScenario = currentStep >= 1 && currentStep <= DIAGNOSTIC_SCENARIOS.length
-    ? DIAGNOSTIC_SCENARIOS[currentStep - 1]
-    : null;
+  // Compute active question
+  const currentQuestion =
+    currentStep >= 1 && currentStep <= questions.length ? questions[currentStep - 1] : null;
 
+  // Compute active focused node in the 3D constellation based on current question
   const currentFocusedNode = useMemo(() => {
-    if (!currentScenario) return null;
-    const selectedAnswerKey = answers[currentStep - 1];
-    if (selectedAnswerKey) {
-      const opt = currentScenario.options.find((o) => o.id === selectedAnswerKey);
-      if (opt) {
-        const found = graphData.nodes.find(
-          (n) =>
-            n.id.toLowerCase() === opt.earnedRuleId.toLowerCase() ||
-            String(n.id).toLowerCase().startsWith(`${opt.earnedRuleId.toLowerCase()}::`)
-        );
-        if (found) return found;
-      }
-    }
-    // Fallback: focus on the target agent hub
-    return (
-      graphData.nodes.find(
-        (n) => n.agentCode === currentScenario.agentTarget && n.category === 'agent'
-      ) || null
+    if (!currentQuestion) return null;
+    const rulePrefix = currentQuestion.ruleId.split('-')[0].toUpperCase();
+
+    // 1. Try to find the exact rule node in the graph
+    const exactMatch = graphData.nodes.find(
+      (n) =>
+        n.id.toLowerCase() === currentQuestion.ruleId.toLowerCase() ||
+        String(n.id).toLowerCase().startsWith(`${currentQuestion.ruleId.toLowerCase()}::`)
     );
-  }, [currentScenario, currentStep, answers, graphData.nodes]);
+    if (exactMatch) return exactMatch;
+
+    // 2. Map rule prefix to target agent hub node
+    const prefixMap: Record<string, string> = {
+      AUTH: 'SEC',
+      SEC: 'SEC',
+      CS: 'SEC',
+      DB: 'DB',
+      SD: 'SD',
+      SO: 'SD',
+      UX: 'UX',
+      UI: 'UX',
+      IR: 'IR',
+      PM: 'PM',
+      OP: 'PM',
+      GR: 'GR',
+      RS: 'RS',
+    };
+
+    const targetAgent = prefixMap[rulePrefix] || 'SEC';
+    return (
+      graphData.nodes.find((n) => n.agentCode === targetAgent && n.category === 'agent') ||
+      graphData.nodes.find((n) => n.id === 'HUB') ||
+      null
+    );
+  }, [currentQuestion, graphData.nodes]);
 
   // Handle hotkeys (1, 2, 3, 4, Enter, Cmd+K, Escape)
   useEffect(() => {
@@ -471,15 +251,13 @@ export default function AssessmentPage() {
         }
       }
 
-      if (currentStep >= 1 && currentStep <= DIAGNOSTIC_SCENARIOS.length) {
+      if (currentStep >= 1 && currentStep <= questions.length) {
         if (['1', '2', '3', '4'].includes(e.key) && !showExplanation) {
-          const map: Record<string, 'A' | 'B' | 'C' | 'D'> = {
-            '1': 'A',
-            '2': 'B',
-            '3': 'C',
-            '4': 'D',
-          };
-          handleSelectOption(map[e.key]);
+          const index = parseInt(e.key, 10) - 1;
+          handleSelectOption(index);
+        } else if (['a', 'b', 'c', 'd'].includes(e.key.toLowerCase()) && !showExplanation) {
+          const charMap: Record<string, number> = { a: 0, b: 1, c: 2, d: 3 };
+          handleSelectOption(charMap[e.key.toLowerCase()]);
         } else if (e.key === 'Enter' && showExplanation) {
           handleNextScenario();
         }
@@ -488,90 +266,141 @@ export default function AssessmentPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, showExplanation, isCmdPaletteOpen]);
+  }, [currentStep, showExplanation, isCmdPaletteOpen, questions.length]);
 
-  const handleSelectOption = (optionId: 'A' | 'B' | 'C' | 'D') => {
-    setAnswers((prev) => ({ ...prev, [currentStep - 1]: optionId }));
+  // Call the Dynamic Quiz Generation API
+  const handleGenerateAssessment = async () => {
+    setIsGenerating(true);
+    setGenerationError(null);
+
+    try {
+      const response = await fetch('/api/quiz/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data?.questions && Array.isArray(data.questions) && data.questions.length > 0) {
+        setQuestions(data.questions);
+      } else {
+        setQuestions(INITIAL_FALLBACK_QUESTIONS);
+      }
+
+      setAnswers({});
+      setShowExplanation(false);
+      setCurrentStep(1);
+    } catch (err: any) {
+      console.warn('[Assessment] AI generation failed, using standard invariant battery:', err);
+      setGenerationError(
+        'AI generation experienced latency or rate limits. Loaded standard high-rigor invariant battery.'
+      );
+      setQuestions(INITIAL_FALLBACK_QUESTIONS);
+      setAnswers({});
+      setShowExplanation(false);
+      setCurrentStep(1);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSelectOption = (optionIndex: number) => {
+    setAnswers((prev) => ({ ...prev, [currentStep - 1]: optionIndex }));
     setShowExplanation(true);
   };
 
   const handleNextScenario = () => {
     setShowExplanation(false);
-    if (currentStep < DIAGNOSTIC_SCENARIOS.length) {
+    if (currentStep < questions.length) {
       setCurrentStep((prev) => prev + 1);
     } else {
-      setCurrentStep(DIAGNOSTIC_SCENARIOS.length + 1); // Go to results
+      setCurrentStep(questions.length + 1); // Go to results
     }
   };
 
   // Score computation
   const results = useMemo(() => {
-    const unlockedRules: ScenarioOption[] = [];
-    const agentScores: Record<string, number> = {
-      SEC: 0,
-      DB: 0,
-      SD: 0,
-      UX: 0,
-      IR: 0,
-      PM: 0,
-      GR: 0,
-    };
+    const totalQuestions = questions.length;
+    let correctCount = 0;
+    const failedQuestions: QuizQuestion[] = [];
+    const passedQuestions: QuizQuestion[] = [];
 
-    DIAGNOSTIC_SCENARIOS.forEach((scenario, idx) => {
-      const ansKey = answers[idx];
-      if (ansKey) {
-        const option = scenario.options.find((o) => o.id === ansKey);
-        if (option) {
-          unlockedRules.push(option);
-          agentScores[option.agentCode] = (agentScores[option.agentCode] || 0) + option.confidence;
-        }
+    questions.forEach((q, idx) => {
+      const userSelected = answers[idx];
+      if (userSelected === q.correctAnswer) {
+        correctCount += 1;
+        passedQuestions.push(q);
+      } else {
+        failedQuestions.push(q);
       }
     });
 
-    const totalConfidence = unlockedRules.reduce((acc, r) => acc + r.confidence, 0);
-    const maxConfidence = DIAGNOSTIC_SCENARIOS.length * 3;
-    const rigorPercentage = Math.round((totalConfidence / maxConfidence) * 100);
+    const scorePercentage = Math.round((correctCount / totalQuestions) * 100);
 
     let classification = 'Pragmatic Systems Architect';
-    if (rigorPercentage >= 85) {
-      classification = 'High-Rigor Principal Systems Gatekeeper';
-    } else if (agentScores.SEC >= 5) {
-      classification = 'Defensive Security & Resilience Specialist';
-    } else if (agentScores.DB >= 5) {
-      classification = 'High-Throughput Data Infrastructure Architect';
-    } else if (agentScores.UX >= 5) {
-      classification = 'Craft-Focused Full-Stack Frontend Engineer';
+    if (scorePercentage === 100) {
+      classification = 'High-Rigor Principal Systems Gatekeeper (100% Invariant Compliance)';
+    } else if (scorePercentage >= 80) {
+      classification = 'Defensive Senior Systems Architect (High Rigor)';
+    } else if (scorePercentage >= 60) {
+      classification = 'Pragmatic Systems Engineer (Intermediate Rigor)';
+    } else {
+      classification = 'Emerging Systems Practitioner (Remediation Required)';
     }
 
     return {
-      unlockedRules,
-      agentScores,
-      rigorPercentage,
+      totalQuestions,
+      correctCount,
+      scorePercentage,
+      passedQuestions,
+      failedQuestions,
       classification,
     };
-  }, [answers]);
+  }, [answers, questions]);
 
+  // Copy ONLY failed rules to clipboard for inbox.md study
   const handleCopyInbox = () => {
-    const lines = [
-      '# Custom Inbox Rules — Excavated from Launcher L-01',
-      `# Date: ${new Date().toISOString().split('T')[0]}`,
-      `# Archetype: ${results.classification} (Rigor: ${results.rigorPercentage}%)`,
-      '',
-    ];
+    if (results.failedQuestions.length === 0) {
+      const lines = [
+        '# Custom Inbox Rules — Excavated from Launcher L-01',
+        `# Date: ${new Date().toISOString().split('T')[0]}`,
+        `# Status: 100% Invariant Compliance — No Failed Rules to Remediate!`,
+        '',
+        'All tested invariant gates passed cleanly with zero violations.',
+      ];
+      navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+    } else {
+      const lines = [
+        '# Custom Inbox Rules — Excavated from Launcher L-01',
+        `# Date: ${new Date().toISOString().split('T')[0]}`,
+        `# Archetype: ${results.classification} (Score: ${results.correctCount}/${results.totalQuestions})`,
+        `# Rules to Study: ${results.failedQuestions.length} Failed Invariants`,
+        '',
+      ];
 
-    results.unlockedRules.forEach((rule) => {
-      lines.push(
-        `- **${rule.earnedRuleId}** | ${rule.earnedRuleTitle} | ${rule.rationale} | conf: ${rule.confidence} | ev: L-01-web-assessment | status: active ^${rule.earnedRuleId.toLowerCase()}`
-      );
-    });
+      results.failedQuestions.forEach((q) => {
+        lines.push(
+          `- **${q.ruleId}** | ${q.title} | ${q.explanation} | conf: 1 | ev: L-01-assessment-failed | status: pending ^${q.ruleId.toLowerCase()}`
+        );
+      });
 
-    navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+      navigator.clipboard.writeText(lines.join('\n')).catch(() => {});
+    }
+
     setCopiedInbox(true);
     setTimeout(() => setCopiedInbox(false), 2200);
   };
 
   return (
     <div className="relative min-h-screen bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-white transition-colors duration-300 selection:bg-cyan-500 selection:text-black overflow-x-hidden font-sans">
+      {/* Dynamic Full-Screen Neural Loader */}
+      <AnimatePresence>
+        {isGenerating && <NeuralLoader key="dynamic-quiz-loader" />}
+      </AnimatePresence>
+
       {/* 1. Full-Screen Interactive 3D Synaptic Constellation Background */}
       <div className="fixed inset-0 w-full h-full pointer-events-none z-0">
         <Brain3D
@@ -616,16 +445,16 @@ export default function AssessmentPage() {
 
         {/* Center: Stage Indicator */}
         <div className="flex items-center justify-center pointer-events-auto">
-          {currentStep >= 1 && currentStep <= DIAGNOSTIC_SCENARIOS.length && (
+          {currentStep >= 1 && currentStep <= questions.length && (
             <div className="h-10 px-4 rounded-xl bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 shadow-xl flex items-center gap-3">
               <span className="text-xs font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
-                Challenge {currentStep} / {DIAGNOSTIC_SCENARIOS.length}
+                Challenge {currentStep} / {questions.length}
               </span>
               <div className="w-24 h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-cyan-500 transition-all duration-300 shadow-[0_0_8px_rgba(0,255,255,0.6)]"
                   style={{
-                    width: `${(currentStep / DIAGNOSTIC_SCENARIOS.length) * 100}%`,
+                    width: `${(currentStep / questions.length) * 100}%`,
                   }}
                 />
               </div>
@@ -668,10 +497,10 @@ export default function AssessmentPage() {
 
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-xs font-mono font-bold tracking-widest text-cyan-600 dark:text-[#00ffff] uppercase bg-cyan-500/10 px-2.5 py-1 rounded-md border border-cyan-500/20">
-                  PROTOCOL: LAUNCHER L-01
+                  PROTOCOL: DYNAMIC LAUNCHER L-01
                 </span>
                 <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">
-                  Fast Diagnostic Excavation
+                  Real-Time Vault Synthesis
                 </span>
               </div>
 
@@ -680,57 +509,77 @@ export default function AssessmentPage() {
               </h1>
 
               <p className="text-slate-600 dark:text-zinc-300 text-sm sm:text-base leading-relaxed mb-6 max-w-2xl">
-                A blank-slate vault begins with <strong>0 rules</strong>. You cannot copy-paste someone
-                else’s decisions: true judgment is earned through high-pressure trade-offs. Step through
-                6 authentic scenarios spanning Security, Database Architecture, Systems Sizing, and
-                Pre-Flight Governance.
+                A blank-slate vault begins with <strong>0 rules</strong>. True judgment cannot be copy-pasted:
+                it is forged through high-pressure trade-offs. The Cortex AI reads all 14 knowledge domains
+                and 7 execution agents in your vault to generate an authentic 6-challenge exam on demand.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
                   <Flame className="w-5 h-5 text-amber-500 mb-2" />
                   <div className="text-xs font-bold text-slate-900 dark:text-white font-mono">
-                    The Cringe Test
+                    Dynamic Rule Sampling
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                    Spot structural flaws before checklists mislead you.
+                    AI synthesizes authentic challenges across all 14 domains.
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
                   <Zap className="w-5 h-5 text-cyan-500 mb-2" />
                   <div className="text-xs font-bold text-slate-900 dark:text-white font-mono">
-                    Trade-Off Triads
+                    Strict Invariant Grading
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                    Pressure-test velocity vs data integrity under 48h deadlines.
+                    Spot flawed assumptions before checklists mislead you.
                   </div>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
                   <ShieldCheck className="w-5 h-5 text-emerald-500 mb-2" />
                   <div className="text-xs font-bold text-slate-900 dark:text-white font-mono">
-                    7-Agent Validation
+                    Inbox.md Remediation
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-1">
-                    Watch synaptic nodes light up in 3D WebGL in real time.
+                    Export ONLY the rules you missed directly into your study inbox.
                   </div>
                 </div>
               </div>
 
+              {generationError && (
+                <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-300 text-xs font-mono flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{generationError}</span>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(1)}
+                  onClick={handleGenerateAssessment}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-sm transition-all shadow-[0_0_25px_rgba(0,255,255,0.35)] cursor-pointer"
                 >
-                  <Play className="w-4 h-4 fill-black" />
-                  <span>Begin Diagnostic Probe →</span>
+                  <Sparkles className="w-4 h-4 fill-black" />
+                  <span>Generate AI Assessment →</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuestions(INITIAL_FALLBACK_QUESTIONS);
+                    setAnswers({});
+                    setShowExplanation(false);
+                    setCurrentStep(1);
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/80 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-white/15 text-slate-700 dark:text-zinc-200 text-sm font-mono transition-colors cursor-pointer"
+                >
+                  <Play className="w-4 h-4 text-cyan-500" />
+                  <span>Quick Start Battery</span>
                 </button>
 
                 <Link
                   href="/console"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white/80 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-white/15 text-slate-700 dark:text-zinc-200 text-sm font-mono transition-colors"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-white text-sm font-mono transition-colors"
                 >
                   <span>Skip to 3D Console</span>
                 </Link>
@@ -738,10 +587,10 @@ export default function AssessmentPage() {
             </motion.div>
           )}
 
-          {/* STAGE 1..6: SCENARIOS */}
-          {currentScenario && (
+          {/* STAGE 1..N: DYNAMIC SCENARIO QUESTIONS */}
+          {currentQuestion && (
             <motion.div
-              key={`scenario-${currentScenario.id}`}
+              key={`scenario-${currentQuestion.id}-${currentStep}`}
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
@@ -752,10 +601,10 @@ export default function AssessmentPage() {
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 font-bold uppercase">
-                    {currentScenario.triggerType}
+                    TYPE: {currentQuestion.questionType.toUpperCase()}
                   </span>
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-white/10">
-                    Agent: {currentScenario.agentTarget}
+                    Rule Target: [{currentQuestion.ruleId}]
                   </span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">
@@ -765,23 +614,23 @@ export default function AssessmentPage() {
 
               {/* Title & Context */}
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white mb-3">
-                {currentScenario.title}
+                {currentQuestion.title}
               </h2>
               <p className="text-slate-600 dark:text-zinc-300 text-sm leading-relaxed mb-4">
-                {currentScenario.context}
+                {currentQuestion.context}
               </p>
 
               {/* Code Snippet Box */}
-              {currentScenario.codeSnippet && (
+              {currentQuestion.codeSnippet && (
                 <div className="mb-5 rounded-xl bg-slate-900 border border-slate-800 dark:border-white/10 p-4 font-mono text-xs overflow-x-auto text-slate-200 shadow-inner">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[10px] text-slate-400">
                     <span className="flex items-center gap-1.5">
                       <Code2 className="w-3.5 h-3.5 text-cyan-400" />
-                      {currentScenario.codeLanguage?.toUpperCase()} INSPECTION
+                      {(currentQuestion.codeLanguage || 'CODE').toUpperCase()} INSPECTION
                     </span>
                   </div>
                   <pre className="leading-relaxed whitespace-pre font-mono">
-                    {currentScenario.codeSnippet}
+                    {currentQuestion.codeSnippet}
                   </pre>
                 </div>
               )}
@@ -789,44 +638,49 @@ export default function AssessmentPage() {
               {/* Prompt */}
               <div className="text-sm font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <HelpCircle className="w-4 h-4 text-cyan-500" />
-                <span>{currentScenario.prompt}</span>
+                <span>{currentQuestion.prompt}</span>
               </div>
 
               {/* Option Buttons */}
               <div className="grid grid-cols-1 gap-2.5 mb-6">
-                {currentScenario.options.map((opt, i) => {
-                  const isSelected = answers[currentStep - 1] === opt.id;
-                  const isBest = opt.confidence === 3;
+                {currentQuestion.options.map((optionText, optIdx) => {
+                  const letter = OPTION_LETTERS[optIdx];
+                  const isSelected = answers[currentStep - 1] === optIdx;
+                  const isCorrect = optIdx === currentQuestion.correctAnswer;
 
                   return (
                     <button
-                      key={opt.id}
+                      key={optIdx}
                       type="button"
                       disabled={showExplanation}
-                      onClick={() => handleSelectOption(opt.id)}
+                      onClick={() => handleSelectOption(optIdx)}
                       className={`text-left p-4 rounded-xl border transition-all text-xs sm:text-sm font-sans flex items-start gap-3 cursor-pointer ${
                         isSelected
-                          ? isBest
+                          ? isCorrect
                             ? 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                            : 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]'
+                            : 'bg-rose-500/10 dark:bg-rose-500/15 border-rose-500 text-slate-900 dark:text-white shadow-[0_0_15px_rgba(244,63,94,0.2)]'
                           : showExplanation
-                          ? 'opacity-60 bg-slate-50 dark:bg-zinc-900/40 border-slate-200 dark:border-white/5 text-slate-500 dark:text-zinc-400'
+                          ? isCorrect
+                            ? 'bg-emerald-500/5 border-emerald-500/40 text-slate-800 dark:text-zinc-200'
+                            : 'opacity-50 bg-slate-50 dark:bg-zinc-900/40 border-slate-200 dark:border-white/5 text-slate-500 dark:text-zinc-400'
                           : 'bg-white dark:bg-zinc-900/70 hover:bg-slate-50 dark:hover:bg-zinc-800/80 border-slate-200 dark:border-white/10 text-slate-800 dark:text-zinc-200 hover:border-cyan-500/40'
                       }`}
                     >
                       <span
                         className={`w-6 h-6 rounded-lg font-mono text-xs font-bold flex items-center justify-center shrink-0 ${
                           isSelected
-                            ? isBest
+                            ? isCorrect
                               ? 'bg-emerald-500 text-white'
-                              : 'bg-amber-500 text-black'
+                              : 'bg-rose-500 text-white'
+                            : showExplanation && isCorrect
+                            ? 'bg-emerald-500/80 text-white'
                             : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'
                         }`}
                       >
-                        {opt.id}
+                        {letter}
                       </span>
                       <div className="flex-1 leading-snug">
-                        <span className="font-medium">{opt.label}</span>
+                        <span className="font-medium">{optionText}</span>
                       </div>
                     </button>
                   );
@@ -842,30 +696,58 @@ export default function AssessmentPage() {
                     exit={{ opacity: 0, height: 0 }}
                     className="overflow-hidden mb-6"
                   >
-                    <div className="p-4 rounded-2xl bg-cyan-500/10 dark:bg-cyan-950/30 border border-cyan-500/30 dark:border-cyan-400/30 text-xs sm:text-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-cyan-600 dark:text-[#00ffff] font-mono font-bold text-xs uppercase">
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>SYNAPTIC NODE ACTIVATED</span>
+                    {answers[currentStep - 1] === currentQuestion.correctAnswer ? (
+                      // CORRECT ANSWER HUD (Emerald)
+                      <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/30 dark:border-emerald-400/30 text-xs sm:text-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs uppercase">
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>INVARIANT VERIFIED (+1 PT)</span>
+                          </div>
+                          {currentFocusedNode && (
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
+                              Active Node: {currentFocusedNode.id}
+                            </span>
+                          )}
                         </div>
-                        {currentFocusedNode && (
-                          <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
-                            Node: {currentFocusedNode.id}
+
+                        <p className="text-slate-700 dark:text-zinc-200 leading-relaxed mb-3">
+                          {currentQuestion.explanation}
+                        </p>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-emerald-500/20 text-xs font-mono text-emerald-700 dark:text-emerald-300">
+                          <span>Rule Validated: [{currentQuestion.ruleId}]</span>
+                          <span className="font-semibold text-emerald-500">Status: PASS</span>
+                        </div>
+                      </div>
+                    ) : (
+                      // INCORRECT ANSWER HUD (Rose/Red)
+                      <div className="p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/30 dark:border-rose-400/30 text-xs sm:text-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-mono font-bold text-xs uppercase">
+                            <AlertTriangle className="w-4 h-4" />
+                            <span>INVARIANT VIOLATION (0 PTS)</span>
+                          </div>
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-500 border border-rose-500/30 uppercase">
+                            Failed Rule: {currentQuestion.ruleId}
                           </span>
-                        )}
-                      </div>
+                        </div>
 
-                      <p className="text-slate-700 dark:text-zinc-200 leading-relaxed mb-3">
-                        {currentScenario.examinerKey}
-                      </p>
+                        <p className="text-slate-700 dark:text-zinc-200 leading-relaxed mb-3">
+                          {currentQuestion.explanation}
+                        </p>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-cyan-500/20 text-xs font-mono text-cyan-700 dark:text-cyan-300">
-                        <span>Unlocked: [{currentScenario.options.find(o => o.id === answers[currentStep - 1])?.earnedRuleId}]</span>
-                        <span className="font-semibold">
-                          Confidence: +{currentScenario.options.find(o => o.id === answers[currentStep - 1])?.confidence} / 3
-                        </span>
+                        <div className="flex items-center justify-between pt-2 border-t border-rose-500/20 text-xs font-mono text-rose-700 dark:text-rose-300">
+                          <span>
+                            Correct Answer:{' '}
+                            <strong>
+                              Option {OPTION_LETTERS[currentQuestion.correctAnswer]}
+                            </strong>
+                          </span>
+                          <span className="font-semibold text-rose-500">Status: FAILED</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -879,9 +761,9 @@ export default function AssessmentPage() {
                     className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] cursor-pointer"
                   >
                     <span>
-                      {currentStep < DIAGNOSTIC_SCENARIOS.length
+                      {currentStep < questions.length
                         ? 'Next Challenge →'
-                        : 'View Judgment Report →'}
+                        : 'View Diagnostic Report →'}
                     </span>
                     <kbd className="text-[9px] px-1 py-0.5 rounded bg-black/20 text-black font-mono">
                       Enter
@@ -892,8 +774,8 @@ export default function AssessmentPage() {
             </motion.div>
           )}
 
-          {/* STAGE 7: DIAGNOSTIC RESULTS REPORT */}
-          {currentStep > DIAGNOSTIC_SCENARIOS.length && (
+          {/* STAGE RESULTS: DIAGNOSTIC REPORT */}
+          {currentStep > questions.length && (
             <motion.div
               key="results-screen"
               initial={{ opacity: 0, scale: 0.98 }}
@@ -913,41 +795,72 @@ export default function AssessmentPage() {
               </h1>
 
               <p className="text-slate-600 dark:text-zinc-300 text-sm leading-relaxed mb-6">
-                Your engineering instincts scored an overall Architectural Rigor rating of{' '}
-                <strong className="text-cyan-600 dark:text-[#00ffff]">
-                  {results.rigorPercentage}%
-                </strong>
-                . You earned {results.unlockedRules.length} verified rules across the 7-Agent
-                governance matrix.
+                Your engineering instincts scored{' '}
+                <strong className="text-cyan-600 dark:text-[#00ffff] font-mono text-base">
+                  {results.correctCount} / {results.totalQuestions}
+                </strong>{' '}
+                ({results.scorePercentage}% Compliance) across the Multi-Agent governance matrix.
               </p>
 
-              {/* Agent Alignment Matrix */}
+              {/* Score Metric Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-8">
-                {Object.entries(results.agentScores).map(([agent, score]) => (
-                  <div
-                    key={agent}
-                    className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10"
-                  >
-                    <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
-                      Agent [{agent}]
-                    </div>
-                    <div className="text-lg font-bold font-mono text-slate-900 dark:text-white mt-0.5">
-                      +{score} pts
-                    </div>
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
+                    Score
                   </div>
-                ))}
+                  <div className="text-xl font-bold font-mono text-cyan-600 dark:text-[#00ffff] mt-0.5">
+                    {results.correctCount} / {results.totalQuestions}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
+                    Compliance
+                  </div>
+                  <div className="text-xl font-bold font-mono text-emerald-500 mt-0.5">
+                    {results.scorePercentage}%
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
+                    Passed Invariants
+                  </div>
+                  <div className="text-xl font-bold font-mono text-emerald-500 mt-0.5">
+                    +{results.passedQuestions.length}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10">
+                  <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-400 uppercase">
+                    Failed Rules
+                  </div>
+                  <div className="text-xl font-bold font-mono text-rose-500 mt-0.5">
+                    {results.failedQuestions.length}
+                  </div>
+                </div>
               </div>
 
-              {/* Earned Rules Breakdown */}
+              {/* Failed Rules Remediation Section */}
               <div className="mb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-zinc-300 tracking-wider">
-                    Activated Canonical Rules
-                  </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h3 className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-zinc-300 tracking-wider">
+                      {results.failedQuestions.length > 0
+                        ? 'Failed Rules Requiring Remediation'
+                        : 'All Invariant Gates Passed'}
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">
+                      {results.failedQuestions.length > 0
+                        ? 'Copy failed rules into your inbox.md to study before shipping to production.'
+                        : 'Flawless evaluation. Zero failed invariants detected.'}
+                    </p>
+                  </div>
+
                   <button
                     type="button"
                     onClick={handleCopyInbox}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-mono text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-xs font-mono text-slate-700 dark:text-zinc-200 transition-colors cursor-pointer self-start sm:self-auto shrink-0"
                   >
                     {copiedInbox ? (
                       <>
@@ -963,46 +876,62 @@ export default function AssessmentPage() {
                   </button>
                 </div>
 
-                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                  {results.unlockedRules.map((rule) => (
-                    <div
-                      key={rule.earnedRuleId}
-                      className="p-3 rounded-xl bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-white/10 flex items-start gap-3"
-                    >
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 shrink-0">
-                        {rule.earnedRuleId}
-                      </span>
-                      <div className="flex-1 text-xs">
-                        <div className="font-semibold text-slate-900 dark:text-white">
-                          {rule.earnedRuleTitle}
-                        </div>
-                        <div className="text-slate-500 dark:text-zinc-400 mt-0.5">
-                          {rule.rationale}
+                {results.failedQuestions.length > 0 ? (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {results.failedQuestions.map((q) => (
+                      <div
+                        key={q.ruleId}
+                        className="p-3.5 rounded-xl bg-rose-500/5 dark:bg-rose-950/20 border border-rose-500/20 flex items-start gap-3"
+                      >
+                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                          {q.ruleId}
+                        </span>
+                        <div className="flex-1 text-xs">
+                          <div className="font-semibold text-slate-900 dark:text-white">
+                            {q.title}
+                          </div>
+                          <div className="text-slate-600 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                            {q.explanation}
+                          </div>
                         </div>
                       </div>
-                      <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
-                        conf: {rule.confidence}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-mono flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                    <span>
+                      Zero failed rules detected. Your architecture aligns 100% with canonical
+                      governance invariants.
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Primary Call to Actions */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-slate-200 dark:border-white/10">
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-200 dark:border-white/10">
+                <button
+                  type="button"
+                  onClick={handleGenerateAssessment}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 fill-black" />
+                  <span>Generate New AI Assessment →</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => router.push('/console')}
-                  className="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs transition-all shadow-[0_0_20px_rgba(0,255,255,0.3)] cursor-pointer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/80 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-white/15 text-slate-800 dark:text-zinc-200 font-mono text-xs transition-colors cursor-pointer"
                 >
                   <Brain className="w-4 h-4" />
-                  <span>Launch in 3D Console →</span>
+                  <span>Launch 3D Console</span>
                 </button>
 
                 <a
                   href="/brain-template.zip"
                   download="brain-vault-blank-template.zip"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-white/15 text-slate-800 dark:text-zinc-200 font-mono text-xs transition-colors"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 border border-slate-200 dark:border-white/15 text-slate-800 dark:text-zinc-200 font-mono text-xs transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download Blank Vault (.zip)</span>
@@ -1016,7 +945,7 @@ export default function AssessmentPage() {
                     setShowExplanation(false);
                   }}
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-mono text-xs transition-colors cursor-pointer"
-                  title="Retake Diagnostic Quiz"
+                  title="Reset Assessment"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset</span>
@@ -1041,4 +970,3 @@ export default function AssessmentPage() {
     </div>
   );
 }
-

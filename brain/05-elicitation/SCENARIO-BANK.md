@@ -5,6 +5,9 @@ status: active
 ---
 # Scenario Bank
 
+> [!NOTE]
+> The live web app dynamically generates new scenarios from the Vault rules via `/api/quiz/generate`.
+
 Examiner-only keys. Do not show a key before the module ends (TE-02). Keys are signals, not answers (TE-07). Add scenarios per EXTENDING.md.
 
 ## Flash (T1) — first move + one-line reason, ≤ 30 s
@@ -73,3 +76,14 @@ Examiner-only keys. Do not show a key before the module ends (TE-02). Keys are s
 - **PRE-1** An app you shipped for a public office is abandoned 18 months later. Headline and three causes.
 - **PRE-2** A security review you signed off is followed by a breach. What did you miss?
 - **PRE-3** A requirements document you wrote produced the wrong system. Where did it go wrong?
+
+## Diagnostic Launcher (L-01) — Enterprise Hardening & Modern Cortex Scenarios
+| ID | Topic & Pattern | Core Invariant & Razor | Primary Domain |
+|---|---|---|---|
+| DIAG-01 | Authorization (The Cerbos Pattern): Multi-tenant post edit access (`if role == author`). | Externalize to a Policy Decision Point (PDP) with ABAC & Derived Roles (`role: owner` if `resource.ownerId == principal.id`). Avoid role explosion and SQL/RLS policy coupling. | `AUTH-01`, `AUTH-04` |
+| DIAG-02 | Race Conditions (The Agrivet Pattern): Concurrent inventory decrement resulting in `-1` stock. | Atomic conditional update in database engine (`UPDATE stock SET quantity = quantity - 1 WHERE quantity >= 1`). Never read-then-update. | `DB-13` |
+| DIAG-03 | Data Privacy (The Agrivet Pattern): Cashier POS view must not see `buyingCost` or `profitMargin`. | Server-side redaction and projection. Strip sensitive fields before payload leaves the server. Never rely on client-side or CSS hiding. | `SEC-14` |
+| DIAG-04 | Anti-Hallucination (The Research Agent): Macroeconomic query without real-time web access. | The "I Don't Know" Rule: State `"WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source."` Never speculate. | `RS-03` |
+| DIAG-05 | The Golden Path (SDLC): Interrogate problem & edge cases before writing the technical PRD. | Execute `/grill` first. Interrogate assumptions, failure modes, and user empathy through Product Manager (PM) gates before committing specifications. | `PM-01` |
+| DIAG-06 | Enterprise Hardening: CDN edge caching tenant-specific private API responses. | Set `Cache-Control: private, no-store, no-cache, must-revalidate` on all authenticated endpoints to prevent cross-tenant cache leaks. | `SEC-15` |
+
