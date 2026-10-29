@@ -355,7 +355,9 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **DB-07** Indexing: every FK, RLS-predicate column, and hot WHERE/ORDER is indexed with EXPLAIN (ANALYZE, BUFFERS) evidence.
 - **DB-08** Read scaling order: index → query rewrite → cache → materialized/read model → read replica.
 - **DB-09** Write scaling order: batch → async via outbox/queue → native partitioning → sharding only with approved ADR.
-- **DB-10** Migrations: versioned, forward-only, expand-contract for destructive changes.`,
+- **DB-10** Migrations: versioned, forward-only, expand-contract for destructive changes.
+- **DB-13** Atomic Conditionals (Race Conditions): WHEN decrementing a counter or stock level → DO NOT fetch the value and then update it. Use an atomic conditional update (e.g., quantity: { $gte: requiredQty } with $inc). If two users attempt to buy the last item simultaneously, the second transaction must fail gracefully rather than producing a negative balance. | conf: 5
+- **DB-14** Multi-Tenant Row Isolation: WHEN building a multi-tenant SaaS → DO enforce tenant isolation at the query level (e.g., tenant_id in every WHERE clause) or via RLS. Platform Admins must not be able to read tenant operational data unless explicitly authorized by the tenant. | conf: 5`,
   },
   {
     id: 'securityagent',
@@ -371,7 +373,9 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **SEC-07** Webhook authenticity: HMAC-SHA256 over raw body + timestamp, constant-time compare, <= 5-min replay window.
 - **SEC-08** Web hardening: strict CSP, HSTS, frame-ancestors 'none', nosniff, Referrer-Policy, CSRF protection.
 - **SEC-09** Abuse control: rate limits per IP/user/device and schema validation at every boundary.
-- **SEC-13** API Rate Limiting & Validation: WHEN building public API routes (especially AI endpoints) → DO enforce strict rate limiting (e.g., 5 req/min per IP) and Zod payload validation (max string lengths, max file sizes) to prevent quota draining and DDoS attacks. *breaks: internal private APIs behind a secure VPN.*`,
+- **SEC-13** API Rate Limiting & Validation: WHEN building public API routes (especially AI endpoints) → DO enforce strict rate limiting (e.g., 5 req/min per IP) and Zod payload validation (max string lengths, max file sizes) to prevent quota draining and DDoS attacks. *breaks: internal private APIs behind a secure VPN.* | conf: 5
+- **SEC-14** Server-Side Redaction (Commercial Privacy): WHEN returning API responses to lower-privileged roles (e.g., Staff, Cashier) → DO sanitize the payload on the server. Strip sensitive fields like buyingCost, profitMargin, and adminNotes before the JSON reaches the client. Do not rely on the frontend to hide them. | conf: 5
+- **SEC-15** Cache-Control for Private Data: WHEN serving API routes that contain user or tenant-specific data → DO enforce Cache-Control: private, no-store, no-cache, must-revalidate in the headers to prevent CDN caching. | conf: 5`,
   },
   {
     id: 'uiuxagent',
@@ -639,6 +643,7 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
 - **/to-tickets**: Read productmanageragent.md. Decompose specification into 5 sequential atomic implementation tickets. Do not start coding.
 - **/implement**: Read dbaagent.md, securityagent.md, and integrationagent.md. Write production-ready code for Ticket 1 adhering strictly to append-only ledgers and RLS defaults.
 - **/review**: Read securityagent.md and systemsdesignagent.md. Execute a rigorous STRIDE security review, invariant verification, and check against BN-00 rules.
+- **/harden**: Read dbaagent.md and securityagent.md. Run an enterprise security and database hardening audit (Checking DB-13 race conditions, DB-14 tenant isolation, SEC-14 server-side redaction, and SEC-15 cache-control headers).
 - **/research**: Read researchagent.md. Fact-check claims, triangulate across primary sources, distinguish consensus from hypothesis, and state "I do not know" when evidence is absent.`,
   },
   {

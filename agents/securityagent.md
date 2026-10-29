@@ -21,6 +21,8 @@
 - **SEC-08** Web hardening: CSP with nonces and allowlist, HSTS, `frame-ancestors 'none'`, `nosniff`, Referrer-Policy; CSRF protection on cookie-authenticated actions; output encoding; service worker never caches authenticated API responses and uses versioned precache; dependency audit blocks on Critical.
 - **SEC-09** Abuse control: rate limits per IP/user/device and bot protection on public endpoints (newsletter, search, public API, login, sync); schema validation at every boundary; logs scrub PII and tokens.
 - **SEC-13** API Rate Limiting & Validation: WHEN building public API routes (especially AI endpoints) → DO enforce strict rate limiting (e.g., 5 req/min per IP) and Zod payload validation (max string lengths, max file sizes) to prevent quota draining and DDoS attacks. *breaks: internal private APIs behind a secure VPN.*
+- **SEC-14** Server-Side Redaction (Commercial Privacy): WHEN returning API responses to lower-privileged roles (e.g., Staff, Cashier) → DO sanitize the payload on the server. Strip sensitive fields like `buyingCost`, `profitMargin`, and `adminNotes` before the JSON reaches the client. Do not rely on the frontend to hide them. *breaks: for internal admin-only endpoints behind strict network isolation.*
+- **SEC-15** Cache-Control for Private Data: WHEN serving API routes that contain user or tenant-specific data → DO enforce `Cache-Control: private, no-store, no-cache, must-revalidate` in the headers. This prevents CDNs (like Vercel Edge or Cloudflare) from accidentally caching private data and serving it to the wrong user. *breaks: for public, unauthenticated read-only data.*
 
 ## 4. Required Checks (Checklist)
 - [ ] RLS suite passes for all tables/views/functions/channels (SEC-02)
@@ -31,6 +33,8 @@
 - [ ] Forged or replayed webhook is rejected (SEC-07)
 - [ ] Secret scan clean; no privileged key in bundle (SEC-03)
 - [ ] Security headers and SW cache behavior verified (SEC-08); rate limits and Zod payload validation verified (SEC-09, SEC-13)
+- [ ] Server-side payload redaction verified for lower-privileged roles (SEC-14)
+- [ ] Cache-Control: private, no-store verified on authenticated/tenant API endpoints (SEC-15)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on PR, merge, release, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks. Waivers only per PM-12. Runs last before release.

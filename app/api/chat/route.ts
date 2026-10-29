@@ -205,6 +205,13 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
     instruction:
       'You are executing the /review step of the Golden Path SDLC. Run a strict architectural and security code review against Rule BN-00 invariants, STRIDE threat boundaries, RLS bypass vectors, and systems integrity.',
   },
+  harden: {
+    cmd: '/harden',
+    name: 'Enterprise Security & Database Hardening',
+    agents: ['agents/dbaagent.md', 'agents/securityagent.md'],
+    instruction:
+      'You are executing the /harden step of the Cortex Pipeline. You strictly enforce DBA Agent rules (DB-13 Atomic Conditionals, DB-14 Multi-Tenant Row Isolation) and Security Agent rules (SEC-14 Server-Side Redaction, SEC-15 Cache-Control for Private Data). Audit the architecture and code for race conditions on counters/stock (DB-13), verify multi-tenant isolation at query/RLS level (DB-14), ensure sensitive commercial fields (e.g. buyingCost, profitMargin, adminNotes) are sanitized server-side before reaching clients (SEC-14), and verify Cache-Control private/no-store headers on authenticated endpoints (SEC-15).',
+  },
   research: {
     cmd: '/research',
     name: 'Epistemic Rigor & Source Verification',
@@ -234,6 +241,7 @@ function detectWorkflowCommand(query: string, commandProp?: string): WorkflowSte
     if (WORKFLOW_COMMANDS[clean]) return WORKFLOW_COMMANDS[clean];
     if (clean === 'code-review') return WORKFLOW_COMMANDS['review'];
     if (clean === 'grill-with-docs') return WORKFLOW_COMMANDS['grill'];
+    if (clean === 'harden' || clean === 'enterprise-harden') return WORKFLOW_COMMANDS['harden'];
   }
 
   const q = query.trim().toLowerCase();

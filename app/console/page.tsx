@@ -132,6 +132,13 @@ const WORKFLOW_PILLS = [
     agent: 'SEC',
   },
   {
+    cmd: '/harden',
+    label: '/harden [Enterprise]',
+    desc: 'Audit race conditions, tenant isolation, redaction & cache headers (DB+SEC)',
+    prompt: '/harden: Run an enterprise security and database hardening audit. Check for race conditions on counters (DB-13), multi-tenant isolation (DB-14), server-side redaction (SEC-14), and private Cache-Control headers (SEC-15).',
+    agent: 'Enterprise',
+  },
+  {
     cmd: '/research',
     label: 'Research (RS)',
     desc: 'Fact-check, triangulate sources, and prevent hallucinations (RS)',
