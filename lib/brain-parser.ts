@@ -300,7 +300,8 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **SEC-06** Auth SPOF: >= 2 admins, MFA for privileged roles, server-minted claims only, working session revocation.
 - **SEC-07** Webhook authenticity: HMAC-SHA256 over raw body + timestamp, constant-time compare, <= 5-min replay window.
 - **SEC-08** Web hardening: strict CSP, HSTS, frame-ancestors 'none', nosniff, Referrer-Policy, CSRF protection.
-- **SEC-09** Abuse control: rate limits per IP/user/device and schema validation at every boundary.`,
+- **SEC-09** Abuse control: rate limits per IP/user/device and schema validation at every boundary.
+- **SEC-13** API Rate Limiting & Validation: WHEN building public API routes (especially AI endpoints) → DO enforce strict rate limiting (e.g., 5 req/min per IP) and Zod payload validation (max string lengths, max file sizes) to prevent quota draining and DDoS attacks. *breaks: internal private APIs behind a secure VPN.*`,
   },
   {
     id: 'uiuxagent',

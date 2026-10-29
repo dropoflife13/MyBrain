@@ -20,6 +20,7 @@
 - **SEC-07** Webhook authenticity: HMAC-SHA256 over raw body + timestamp, constant-time compare, ≤ 5-min tolerance, replay cache on event id, per-endpoint secrets with dual-secret rotation; outbound targets https-only with SSRF blocklist (private/link-local ranges). Delivery semantics → See IR-01.
 - **SEC-08** Web hardening: CSP with nonces and allowlist, HSTS, `frame-ancestors 'none'`, `nosniff`, Referrer-Policy; CSRF protection on cookie-authenticated actions; output encoding; service worker never caches authenticated API responses and uses versioned precache; dependency audit blocks on Critical.
 - **SEC-09** Abuse control: rate limits per IP/user/device and bot protection on public endpoints (newsletter, search, public API, login, sync); schema validation at every boundary; logs scrub PII and tokens.
+- **SEC-13** API Rate Limiting & Validation: WHEN building public API routes (especially AI endpoints) → DO enforce strict rate limiting (e.g., 5 req/min per IP) and Zod payload validation (max string lengths, max file sizes) to prevent quota draining and DDoS attacks. *breaks: internal private APIs behind a secure VPN.*
 
 ## 4. Required Checks (Checklist)
 - [ ] RLS suite passes for all tables/views/functions/channels (SEC-02)
@@ -29,7 +30,7 @@
 - [ ] Outlier is quarantined; self-approval blocked; decision audit-logged (SEC-05)
 - [ ] Forged or replayed webhook is rejected (SEC-07)
 - [ ] Secret scan clean; no privileged key in bundle (SEC-03)
-- [ ] Security headers and SW cache behavior verified (SEC-08); rate limits verified (SEC-09)
+- [ ] Security headers and SW cache behavior verified (SEC-08); rate limits and Zod payload validation verified (SEC-09, SEC-13)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on PR, merge, release, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks. Waivers only per PM-12. Runs last before release.
