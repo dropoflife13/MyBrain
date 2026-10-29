@@ -140,9 +140,9 @@ const WORKFLOW_PILLS = [
   },
   {
     cmd: '/research',
-    label: 'Research (RS)',
-    desc: 'Fact-check, triangulate sources, and prevent hallucinations (RS)',
-    prompt: '/research: Investigate and fact-check this claim or topic. Cite primary sources, distinguish consensus from hypothesis, and explicitly state "I do not know" if verifiable evidence is missing.',
+    label: '/research [topic]',
+    desc: 'Verify facts, triangulate across primary sources, and prevent hallucinations (RS)',
+    prompt: '/research [topic]: Investigate and fact-check this claim or topic. Enforce researchagent.md rules: cite primary sources and dates (RS-01), distinguish facts from opinions (RS-02), output "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source." if data is unverified (RS-03), and require two independent sources (RS-04).',
     agent: 'RS',
   },
 ];

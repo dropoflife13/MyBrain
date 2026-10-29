@@ -29,6 +29,7 @@ Active rules from the brain feed directly into the execution checklists in `agen
 - `02-domains/solutions.md` (`SO-01..08`) → Feeds `systemsdesignagent.md` (`SD`), `dbaagent.md` (`DB`), and `integrationagent.md` (`IR`).
 - `02-domains/cybersec.md` (`CS-01..07`) → Feeds `securityagent.md` (`SEC`) and `dbaagent.md` (`DB`).
 - `02-domains/ui-frontend.md` (`UI-01..09`) → Feeds `uiuxagent.md` (`UX`).
+- `agents/researchagent.md` (`RS-01..04`) → Governs epistemic rigor, factual triangulation, and anti-hallucination across all domains.
 
 ## Domain Map
 | Domain | Prefix | File | Active rules | Avg conf | Coverage |
@@ -38,10 +39,16 @@ Active rules from the brain feed directly into the execution checklists in `agen
 | Business Analysis | BA | [[business-analysis]] | 7 (`BA-01..07`) | 4.7 | ok (6/6 sub-areas) |
 | UI & Frontend | UI | [[ui-frontend]] | 9 (`UI-01..09`) | 4.9 | ok (6/6 sub-areas) |
 | Cross-Domain Heuristics | H / P / RF | [[HEURISTICS]] · [[PATTERNS]] · [[RED-FLAGS]] | 6 H · 5 P · 10 RF | 4.9 | rich |
+| Psychology | PSY | [[psychology]] | 0 (draft) | - | Human behavior, biases, cognitive science |
+| Economy | ECO | [[economy]] | 0 (draft) | - | Macroeconomics, finance, market trends |
+| Philosophy | PHI | [[philosophy]] | 0 (draft) | - | Logic, ethics, epistemology |
+| Geopolitics | GEO | [[geopolitics]] | 0 (draft) | - | History, global trade, current events |
+| Rhetoric | RHE | [[rhetoric]] | 0 (draft) | - | Vocabulary, persuasion, communication |
+| Health | HLT | [[health]] | 0 (draft) | - | Physical, mental, and longevity |
 
 Counts are refreshed by GAP-FINDER. Add a domain: see [[EXTENDING]].
 
 ## Folders
-- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`)
+- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`, `PSY`, `ECO`, `PHI`, `GEO`, `RHE`, `HLT`)
 - `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01`, `M-02`)
 - `05-elicitation/` fast micro-triggers, artifact archaeology, session logs (`S-01`, `S-02`, `S-03`) · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest, architecture (`ARCHITECTURE.md`)

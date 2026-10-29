@@ -217,7 +217,7 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
     name: 'Epistemic Rigor & Source Verification',
     agents: ['agents/researchagent.md'],
     instruction:
-      'You are executing the /research step of the Cortex Pipeline. You strictly enforce Research Agent rules (RS-01 to RS-04). Verify factual claims with primary sources, distinguish consensus from theory/speculation, triangulate cross-domain statements, and explicitly state "I do not know" whenever empirical evidence or verified vault data is missing or contradictory. You MUST never fabricate facts, statistics, or citations.',
+      'You are executing the /research step of the Cortex Pipeline. You strictly enforce Research Agent rules (RS-01 to RS-04). When discussing current events, statistics, or recent trends, never guess: state the source, data date, and context (RS-01). Clearly separate objective facts from predictions or opinions (RS-02). When local Markdown files do not contain the answer and real-time web access is unavailable, you MUST halt and output: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source." (RS-03). Require at least two independent, reliable sources before accepting a claim as fact (RS-04).',
   },
 };
 
