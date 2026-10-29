@@ -44,7 +44,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What is the "Golden Path"?',
     answer:
-      'It is a 6-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review). Every command is strictly gated by the 7 AI Agents to ensure you don\'t skip architecture or security steps.',
+      'It is an 8-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research). Every command is strictly gated by the 14 domains.',
   },
   {
     question: 'Do I need a database for this?',
@@ -54,7 +54,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What happens if I delete a core Agent file?',
     answer:
-      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. We fail loudly, not silently.',
+      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. The 14 domains depend on these execution gates to enforce invariants across Engineering, Humanities, and World clusters. We fail loudly, not silently.',
   },
   {
     question: 'Can I use this for non-coding projects?',
@@ -255,7 +255,7 @@ export default function LandingPage() {
           {/* Subtitle Badge */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 text-cyan-600 dark:text-cyan-400 text-xs font-mono font-semibold tracking-wider uppercase mb-8 shadow-sm">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Procedural Judgment Engine &amp; 7-Agent Gate Suite</span>
+            <span>Procedural Judgment Engine &amp; Multi-Agent Gate Suite</span>
           </div>
 
           {/* Main Headline with High-Contrast Text-Shadow Protection */}
@@ -286,12 +286,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 mt-12 text-xs font-mono text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-              7 Autonomous Agents
+              14 Domains &amp; 8 Agents
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
-              360 Synaptic Coordinates
+              175+ Synaptic Coordinates
             </span>
             <span>•</span>
             <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
@@ -339,14 +339,14 @@ export default function LandingPage() {
                   The Synaptic Constellation
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  A 360-node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
+                  A 175+ node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
                   boundary (<code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">breaks:</code>) is mathematically
                   anchored in 3D orbit around the central cognitive hub.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  360 SYNAPTIC NODES • PROCEDURAL GL
+                  175+ SYNAPTIC NODES • PROCEDURAL GL
                 </Badge>
               </div>
             </div>
@@ -359,7 +359,7 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                    The 7-Agent Execution Suite
+                    The Multi-Agent Suite
                   </h3>
                   <Link
                     href="/agents"
@@ -370,14 +370,13 @@ export default function LandingPage() {
                   </Link>
                 </div>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Seven autonomous gatekeepers (<code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">PM, UX, GR, SD, IR, DB, SEC</code>).
-                  They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
+                  14 specialized domains across Engineering (7 Agents), Humanities (3), and World (4). They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
                   <code className="text-red-500 font-mono font-bold">GATE: FAIL</code> on violations.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  7 EXECUTION AGENTS • ZERO SLOP
+                  14 EXECUTION DOMAINS • ZERO SLOP
                 </Badge>
               </div>
             </div>
@@ -460,8 +459,8 @@ export default function LandingPage() {
                     </h4>
                     <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
                       Attach the vault to Claude Code, Cursor, or Antigravity via{' '}
-                      <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code>. The AI loads Tier 0
-                      Operating Principles and gates every ticket before touching files.
+                      <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code>. The 14 Domains will immediately enforce Tier 0
+                      Operating Principles and gate every ticket before touching files.
                     </p>
                   </div>
                 </div>
@@ -515,7 +514,7 @@ export default function LandingPage() {
                   </div>
                   <p className="text-xs text-slate-600 dark:text-zinc-400 font-sans">
                     Explore the complete Next.js 16 App Router implementation, custom Three.js WebGL
-                    runtime, and the 7-Agent Gate Suite markdown files.
+                    runtime, and the Multi-Agent Gate Suite markdown files.
                   </p>
                 </div>
 
@@ -544,7 +543,7 @@ export default function LandingPage() {
                   href="/agents"
                   className="text-xs font-mono text-slate-500 dark:text-zinc-400 hover:underline"
                 >
-                  View 7 Agents Directory &rarr;
+                  View Agents Directory &rarr;
                 </Link>
                 <button
                   type="button"
@@ -605,7 +604,7 @@ export default function LandingPage() {
                   Govern Future Projects
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 7 Agents will immediately enforce your PM, Security, and Database rules on day one.
+                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 14 Domains (Engineering, Humanities, World) will immediately enforce your rules on day one.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">

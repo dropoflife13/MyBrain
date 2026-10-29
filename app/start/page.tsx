@@ -130,21 +130,26 @@ export default function StartPage() {
         </div>
 
         {/* 7-Step Vertical Timeline */}
-        <div className="relative border-l-2 border-cyan-500/30 dark:border-cyan-400/25 ml-4 sm:ml-8 pl-6 sm:pl-10 space-y-16">
+        <div className="relative space-y-16">
+          {/* Vertical Connecting Axis Line (Centered with the circle nodes) */}
+          <div className="absolute left-4 sm:left-5 top-4 bottom-4 w-0.5 -translate-x-1/2 bg-gradient-to-b from-cyan-500/50 via-cyan-400/30 to-cyan-500/50 pointer-events-none" />
+
           {/* STEP 1: Download the Vault */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              01
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                01
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Download className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
@@ -172,38 +177,39 @@ export default function StartPage() {
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-zinc-900/70 border border-slate-200 dark:border-white/5 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed font-mono">
-                ✓ Unzipping gives you the complete ready-to-run folder with the 7 Agent Gatekeepers and all 3D engine assets.
+                ✓ Unzipping gives you the complete ready-to-run folder with the 7 Agent Gatekeepers, 14 domains, and all 3D engine assets.
               </div>
             </div>
           </motion.div>
 
-          {/* STEP 2: Get a Free Gemini API Key */}
+          {/* STEP 2: Get an API Key */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              02
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                02
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Key className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
                   <span>Get an API Key</span>
                 </h2>
                 <Badge variant="outline" className="w-fit text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                  100% FREE • NO CREDIT CARD
+                  100% FREE • MULTI-MODEL
                 </Badge>
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Your Cortex uses Google Gemini to power its reasoning agents and interactive
-                self-assessment. Go to Google AI Studio to generate your personal free API key.
+                Your Cortex uses an AI Engine to power its reasoning. We recommend Google Gemini (Free Tier) or NVIDIA NIM. Go to Google AI Studio to generate your personal free API key.
               </p>
 
               <div className="pt-2">
@@ -222,7 +228,7 @@ export default function StartPage() {
               <ol className="list-decimal list-inside space-y-1.5 text-xs text-slate-600 dark:text-zinc-400 font-mono pl-1">
                 <li>Sign in with any standard Google account.</li>
                 <li>Click <strong className="text-slate-900 dark:text-white">&ldquo;Create API key&rdquo;</strong> in the dashboard.</li>
-                <li>Copy the generated key to your clipboard.</li>
+                <li>Copy the generated key to your clipboard. (Cortex includes multi-model fallback across Gemini and NVIDIA NIM).</li>
               </ol>
             </div>
           </motion.div>
@@ -233,14 +239,16 @@ export default function StartPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              03
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                03
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Laptop className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
@@ -303,14 +311,16 @@ export default function StartPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              04
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                04
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Play className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
@@ -393,18 +403,20 @@ export default function StartPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              05
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                05
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
-                  <span>Write Your Engineering Rules</span>
+                  <span>Write Your First Rules</span>
                 </h2>
                 <Badge variant="outline" className="w-fit text-[10px] font-mono text-cyan-600 dark:text-cyan-300">
                   MARKDOWN VAULT
@@ -412,7 +424,7 @@ export default function StartPage() {
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code> or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code>. Define your hard engineering gates using the standard <code className="font-mono text-xs text-cyan-500 font-bold">WHEN... DO...</code> trigger format. Every saved rule automatically materializes as a synaptic coordinate in your 3D brain. Think of this as writing to your permanent memory. The AI will use this rule to govern your future projects, even years from now.
+                Open any markdown file in <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">brain/02-domains/</code> (for engineering or non-engineering topics like psychology, economy, philosophy) or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300">agents/</code>. Define your hard gates using the standard <code className="font-mono text-xs text-cyan-500 font-bold">WHEN... DO...</code> trigger format. Every saved rule automatically materializes as a synaptic coordinate in your 3D brain. Think of this as writing to your permanent memory. The AI will use this rule to govern your future projects, even years from now.
               </p>
 
               {/* Code Snippet Box */}
@@ -426,7 +438,7 @@ export default function StartPage() {
                     type="button"
                     onClick={() =>
                       copyToClipboard(
-                        '- **RULE-01** WHEN client requests unindexed query → REJECT and mandate index.',
+                        '- **CUSTOM-01** WHEN client requests unindexed query → REJECT and mandate index.',
                         setCopiedRule
                       )
                     }
@@ -449,7 +461,7 @@ export default function StartPage() {
                 <pre className="p-4 text-xs sm:text-sm text-zinc-200 overflow-x-auto leading-relaxed">
                   <code>
                     <span className="text-zinc-500">- </span>
-                    <strong className="text-cyan-400 font-bold">**RULE-01**</strong>{' '}
+                    <strong className="text-cyan-400 font-bold">**CUSTOM-01**</strong>{' '}
                     <span className="text-slate-100">WHEN client requests unindexed query → REJECT and mandate index.</span>
                   </code>
                 </pre>
@@ -463,14 +475,16 @@ export default function StartPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              06
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                06
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Workflow className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
@@ -482,7 +496,7 @@ export default function StartPage() {
               </div>
 
               <p className="text-sm sm:text-base text-slate-600 dark:text-zinc-300 leading-relaxed">
-                Open the 3D Console and click any node. The sliding chat panel is your AI factory. Type <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/grill</code> to interrogate a new idea, or <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/to-spec</code> to generate a PRD. The AI will read your Markdown rules before writing a single line of code.
+                Open the 3D Console and click any node. The sliding chat panel is your AI factory. Run the 8-step Golden Path pipeline (<code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research</code>). Type <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/grill</code> to interrogate a new idea, <code className="font-mono text-xs text-cyan-600 dark:text-cyan-300 font-bold">/to-spec</code> to draft architecture and authorization strategies, <code className="font-mono text-xs text-purple-600 dark:text-purple-400 font-bold">/harden</code> to audit enterprise security, or <code className="font-mono text-xs text-emerald-600 dark:text-emerald-400 font-bold">/research</code> to triangulate facts across primary sources. The AI reads your Markdown rules before writing a single line of code.
               </p>
 
               {/* 6-Command Pipeline Matrix Card */}
@@ -560,14 +574,16 @@ export default function StartPage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.5 }}
-            className="relative space-y-4"
+            className="relative flex items-start gap-4 sm:gap-6"
           >
             {/* Timeline Number Node */}
-            <div className="absolute -left-[35px] sm:-left-[51px] top-0 flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm shadow-[0_0_20px_rgba(0,255,255,0.6)]">
-              07
+            <div className="relative z-10 flex-shrink-0 w-8 sm:w-10 flex items-center justify-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-cyan-500 text-black font-mono font-bold text-xs sm:text-sm flex items-center justify-center shadow-[0_0_20px_rgba(0,255,255,0.6)]">
+                07
+              </div>
             </div>
 
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
+            <div className="flex-1 min-w-0 rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-xl dark:shadow-2xl space-y-4 hover:border-cyan-400/40 transition-all">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-950 dark:text-white font-mono flex items-center gap-2">
                   <Brain className="w-5 h-5 text-cyan-500 dark:text-[#00ffff]" />
@@ -617,7 +633,7 @@ export default function StartPage() {
               Ready to Explore?
             </h3>
             <p className="text-sm text-slate-600 dark:text-zinc-400 max-w-md mx-auto">
-              Dive into the interactive 3D console to inspect the 360 synaptic coordinates and 7 execution gatekeepers live.
+              Dive into the interactive 3D console to inspect the 175+ synaptic coordinates and 14 execution domains live.
             </p>
           </div>
 
