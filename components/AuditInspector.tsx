@@ -94,8 +94,8 @@ interface DomainAgentMap {
   domainName: string;
   rulePrefix: string;
   activeCount: number;
-  primaryAgent: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR';
-  secondaryAgent?: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR';
+  primaryAgent: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR' | 'RS';
+  secondaryAgent?: 'SEC' | 'DB' | 'SD' | 'UX' | 'IR' | 'PM' | 'GR' | 'RS';
   gateCheck: string;
   coverage: string;
 }
@@ -104,40 +104,40 @@ const DOMAIN_AGENT_MAP: DomainAgentMap[] = [
   {
     domainKey: 'cybersec',
     domainName: 'Cybersecurity & Zero-Trust',
-    rulePrefix: 'CS-01..07',
-    activeCount: 7,
+    rulePrefix: 'CS-01..07, SEC-01..15',
+    activeCount: 19,
     primaryAgent: 'SEC',
     secondaryAgent: 'IR',
-    gateCheck: 'GATE: PASS SEC-01 • Service Role & RLS Bounds',
+    gateCheck: 'GATE: PASS SEC-01 • Service Role, RLS & Rate Limits',
     coverage: '100% (6/6 Sub-areas)',
   },
   {
     domainKey: 'database',
     domainName: 'Database Architecture & Schemas',
-    rulePrefix: 'DB-01..10',
-    activeCount: 10,
+    rulePrefix: 'DB-01..10, DB-13..14',
+    activeCount: 12,
     primaryAgent: 'DB',
     secondaryAgent: 'SD',
-    gateCheck: 'GATE: PASS DB-01 • Zero Downtime Migrations',
+    gateCheck: 'GATE: PASS DB-01 • Append-Only & Atomic Conditionals',
     coverage: '100% (6/6 Sub-areas)',
   },
   {
     domainKey: 'solutions',
     domainName: 'Systems Design & Distributed Architecture',
-    rulePrefix: 'SO-01..08',
-    activeCount: 8,
+    rulePrefix: 'SO-01..08, SD-01..12',
+    activeCount: 20,
     primaryAgent: 'SD',
     secondaryAgent: 'IR',
-    gateCheck: 'GATE: PASS SD-01 • Modular Monolith First',
+    gateCheck: 'GATE: PASS SD-01 • CAP/PACELC & Measured SLOs',
     coverage: '100% (6/6 Sub-areas)',
   },
   {
     domainKey: 'ui-frontend',
     domainName: 'UI/UX & WebGL Frontend Engineering',
-    rulePrefix: 'UI-01..09',
-    activeCount: 9,
+    rulePrefix: 'UI-01..09, UX-01..16',
+    activeCount: 25,
     primaryAgent: 'UX',
-    gateCheck: 'GATE: PASS UX-01 • Single-Owner OrbitControls',
+    gateCheck: 'GATE: PASS UX-01 • Single-Owner OrbitControls & Zero FOUC',
     coverage: '100% (6/6 Sub-areas)',
   },
   {
@@ -152,33 +152,43 @@ const DOMAIN_AGENT_MAP: DomainAgentMap[] = [
   },
   {
     domainKey: 'business-analysis',
-    domainName: 'Business Analysis & Scoping',
-    rulePrefix: 'BA-01..07',
-    activeCount: 7,
+    domainName: 'Business Analysis & Product Scoping',
+    rulePrefix: 'BA-01..07, PM-01..16',
+    activeCount: 23,
     primaryAgent: 'PM',
     secondaryAgent: 'GR',
-    gateCheck: 'GATE: PASS PM-01 • 2-Tier Progressive Onboarding',
+    gateCheck: 'GATE: PASS PM-01 • Empathy Gate & Cognitive Tracking',
     coverage: '100% (6/6 Sub-areas)',
   },
   {
     domainKey: 'operating-principles',
     domainName: 'Operating Principles & Governance',
-    rulePrefix: 'OP-01..15',
-    activeCount: 15,
+    rulePrefix: 'OP-01..15, GR-01..08',
+    activeCount: 23,
     primaryAgent: 'PM',
-    secondaryAgent: 'SD',
+    secondaryAgent: 'GR',
     gateCheck: 'GATE: PASS PM-02 • Pragmatic Delivery Razor',
     coverage: 'Universal Tier 0',
   },
   {
     domainKey: 'heuristics-cross',
-    domainName: 'Heuristics, Patterns & Red Flags',
-    rulePrefix: 'H-01..06, P-01..05, RF-01..10',
-    activeCount: 21,
+    domainName: 'Integration, Heuristics, Patterns & Red Flags',
+    rulePrefix: 'IR-01..09, H-01..06, P-01..05, RF-01..10',
+    activeCount: 30,
     primaryAgent: 'IR',
     secondaryAgent: 'SEC',
     gateCheck: 'GATE: PASS IR-01 • Fail-Closed Telemetry Invariant',
     coverage: 'Cross-Agent Matrix',
+  },
+  {
+    domainKey: 'research',
+    domainName: 'Epistemic Verification & Anti-Hallucination',
+    rulePrefix: 'RS-01..04',
+    activeCount: 4,
+    primaryAgent: 'RS',
+    secondaryAgent: 'PM',
+    gateCheck: 'GATE: PASS RS-01 • Primary Source Triangulation',
+    coverage: 'Global Second Brain',
   },
 ];
 
@@ -417,7 +427,7 @@ export default function AuditInspector({
                       Total Active Rules
                     </div>
                     <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                      {auditReport?.totalRules ?? 139}
+                      {auditReport?.totalRules ?? 170}
                     </div>
                     <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 mt-1">
                       100% Unique IDs
@@ -470,12 +480,12 @@ export default function AuditInspector({
                     </span>
                     <span className="text-emerald-400 font-bold">STATUS: PASS</span>
                   </div>
-                  <div className="text-slate-400">&gt;&gt;&gt; Scanning 31 canonical vault files in /brain...</div>
+                  <div className="text-slate-400">&gt;&gt;&gt; Scanning 43 canonical vault files in /brain...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying grammar: status: active, breaks:, ev: tags (CV-02)...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying block ID anchors ^[prefix]-[nn] (CV-08)...</div>
-                  <div className="text-slate-400">&gt;&gt;&gt; Verifying 7 Core Agent files in /agents (BN-00)...</div>
+                  <div className="text-slate-400">&gt;&gt;&gt; Verifying 7 Core Agent files in /agents (BN-00) + Research Agent (RS)...</div>
                   <div className="text-emerald-400 font-semibold">
-                    &gt;&gt;&gt; AUDIT COMPLETE: 31 files | 0 errors | 0 warnings | 139 verified rules.
+                    &gt;&gt;&gt; AUDIT COMPLETE: 43 files | 0 errors | 0 warnings | {auditReport?.totalRules ?? 170} verified rules.
                   </div>
                 </div>
               </div>

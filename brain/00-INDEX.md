@@ -23,9 +23,9 @@ Files with `status: empty` or `draft` are skipped; only `status: active` lines c
 
 ## Brain ↔ Agent Suite Mapping
 Active rules from the brain feed directly into the execution checklists in `agents/`:
-- `01-identity/OPERATING-PRINCIPLES.md` (`OP-01..15`, Tier 0) → Governs all 7 agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`).
+- `01-identity/OPERATING-PRINCIPLES.md` (`OP-01..15`, Tier 0) → Governs all 7 core agents (`PM`, `SD`, `DB`, `IR`, `UX`, `GR`, `SEC`).
 - `01-identity/TASTE.md` (`TA-01..14`) → Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`).
-- `02-domains/business-analysis.md` (`BA-01..07`) → Feeds `productmanageragent.md` (`PM`).
+- `02-domains/business-analysis.md` (`BA-01..07`) & `02-domains/empathy-personas.md` → Feed `productmanageragent.md` (`PM`).
 - `02-domains/solutions.md` (`SO-01..08`) → Feeds `systemsdesignagent.md` (`SD`), `dbaagent.md` (`DB`), and `integrationagent.md` (`IR`).
 - `02-domains/cybersec.md` (`CS-01..07`) → Feeds `securityagent.md` (`SEC`) and `dbaagent.md` (`DB`).
 - `02-domains/ui-frontend.md` (`UI-01..09`) → Feeds `uiuxagent.md` (`UX`).
@@ -38,6 +38,7 @@ Active rules from the brain feed directly into the execution checklists in `agen
 | Solutions | SO | [[solutions]] | 8 (`SO-01..08`) | 4.4 | ok (6/6 sub-areas) |
 | Business Analysis | BA | [[business-analysis]] | 7 (`BA-01..07`) | 4.7 | ok (6/6 sub-areas) |
 | UI & Frontend | UI | [[ui-frontend]] | 9 (`UI-01..09`) | 4.9 | ok (6/6 sub-areas) |
+| Empathy & Personas | PM | [[empathy-personas]] | Reference framework | - | Empathy Map & Target Personas (`PM-14`, `PM-15`) |
 | Cross-Domain Heuristics | H / P / RF | [[HEURISTICS]] · [[PATTERNS]] · [[RED-FLAGS]] | 6 H · 5 P · 10 RF | 4.9 | rich |
 | Psychology | PSY | [[psychology]] | 0 (draft) | - | Human behavior, biases, cognitive science |
 | Economy | ECO | [[economy]] | 0 (draft) | - | Macroeconomics, finance, market trends |
@@ -46,9 +47,11 @@ Active rules from the brain feed directly into the execution checklists in `agen
 | Rhetoric | RHE | [[rhetoric]] | 0 (draft) | - | Vocabulary, persuasion, communication |
 | Health | HLT | [[health]] | 0 (draft) | - | Physical, mental, and longevity |
 
-Counts are refreshed by GAP-FINDER. Add a domain: see [[EXTENDING]].
+Counts are refreshed by [[GAP-FINDER]]. Add a domain: see [[EXTENDING]] and `02-domains/_TEMPLATE.md`.
 
 ## Folders
-- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`, `PSY`, `ECO`, `PHI`, `GEO`, `RHE`, `HLT`)
-- `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01`, `M-02`)
-- `05-elicitation/` fast micro-triggers, artifact archaeology, session logs (`S-01`, `S-02`, `S-03`) · `06-raw/` candidate inbox · `07-meta/` conventions, sync, extending, digest, architecture (`ARCHITECTURE.md`)
+- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`, `empathy-personas.md`, `PSY`, `ECO`, `PHI`, `GEO`, `RHE`, `HLT`, `_TEMPLATE.md`)
+- `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01-blast-radius.md`, `M-02-offline-sync.md`, `_TEMPLATE.md`)
+- `05-elicitation/` protocols & triggers (`THE-TEST.md`, `ELICITATION-PROTOCOL.md`, `QUESTION-BANK.md`, `SCENARIO-BANK.md`, `ARTIFACT-ARCHAEOLOGY.md`, `GAP-FINDER.md`, `LAUNCHERS.md`), `artifacts/` (`A-01`–`A-06`), `sessions/` (`S-01`–`S-03`)
+- `06-raw/` candidate staging (`inbox.md`) · `07-meta/` vault governance (`ARCHITECTURE.md`, `DIGEST.md`, `CONVENTIONS.md`, `SYNC-PROTOCOL.md`, `EXTENDING.md`, `NEW-PROJECT-SNIPPET.md`, `brainagent.md`, `check-vault.py`)
+- `08-workflows/` slash-command workflows & stats spec (`SIX-COMMANDS.md`, `STATS-ENGINE.md`)

@@ -99,13 +99,13 @@ const PREFIX_TO_AGENT_FILE: Record<string, string> = {
 
 function getFileContentForNode(contextNode: any): string {
   if (!contextNode) {
-    return 'Cortex Knowledge Vault: 7 Core Agent Gatekeepers (PM, UX, GR, SD, IR, DB, SEC) with 159 engineering invariants.';
+    return 'Cortex Knowledge Vault: 7 Core Agent Gatekeepers (PM, UX, GR, SD, IR, DB, SEC) + Research Agent (RS) with 170 engineering and research invariants.';
   }
 
   const rawId = typeof contextNode === 'string' ? contextNode : contextNode.id || '';
   const cleanId = rawId.split('::')[0].trim();
 
-  // If node is hub, pass a combined summary of the 7 core agent gatekeepers
+  // If node is hub, pass a combined summary of the 7 core agent gatekeepers + research agent
   if (cleanId === 'hub' || cleanId.toLowerCase() === 'hub') {
     const agentFiles = [
       'agents/productmanageragent.md',
@@ -115,6 +115,7 @@ function getFileContentForNode(contextNode: any): string {
       'agents/integrationagent.md',
       'agents/dbaagent.md',
       'agents/securityagent.md',
+      'agents/researchagent.md',
     ];
     const sections: string[] = [];
     for (const rel of agentFiles) {

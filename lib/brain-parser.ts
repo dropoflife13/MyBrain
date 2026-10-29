@@ -1,7 +1,6 @@
 import { buildBrainGraph } from './brainGraph';
 import {
   forceSimulation,
-  forceRadial,
   forceX,
   forceY,
   forceZ,
@@ -97,7 +96,7 @@ export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
   };
 }
 
-const RESERVED_AGENT_PREFIXES = new Set(['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC']);
+const RESERVED_AGENT_PREFIXES = new Set(['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC', 'RS']);
 
 /**
  * Deterministic anti-overlap & mechanical consistency check (H-03, H-06, BN-12).
@@ -650,9 +649,9 @@ const VAULT_MARKDOWN_SOURCES: Array<{
     anchor: [-20, -4, -30],
     markdown: `# Heuristics — Cross-Domain Judgment
 - **H-01** WHEN integrating AI or automated analytics → DO run deterministic math and statistical baselines first (z-score/MAD, regex, Zod) and keep AI strictly as an assistive copilot | conf: 5
-- **H-02** WHEN a teammate's backend endpoint breaks right before a live defense and they are unreachable → DO isolate a minimal fix on your own branch and disclose it in the handoff log, never faking the save in UI | conf: 5
+- **H-02** WHEN a teammate's backend endpoint breaks right before a live defense and they are unreachable → DO isolate a minimal fix on your own branch and disclose it in the handoff log, never faking the save in UI | conf: 4
 - **H-03** WHEN dividing responsibility across agents or docs → DO give every rule a single canonical owner and cite its stable ID (DB-01, SEC-05) instead of duplicating text | conf: 5
-- **H-04** WHEN designing a reviewing agent → DO separate blocking Gate Mode (hard invariants) from non-blocking Insight Mode (advisory optimizations) | conf: 4
+- **H-04** WHEN designing a reviewing agent → DO separate blocking Gate Mode (hard invariants) from non-blocking Insight Mode (advisory optimizations) | conf: 5
 - **H-05** WHEN hitting the same build or runtime error twice in a row → DO stop immediately, state what was tried and the likely root cause in plain English, and align before a third attempt | conf: 4
 - **H-06** WHEN evolving a live markdown knowledge vault alongside a TypeScript app → DO derive runtime graph state directly from live .md files, sync the fallback snapshot, and run check-vault to guarantee zero overlap or drift | conf: 5`,
   },
@@ -721,7 +720,7 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
     category: 'agent',
     anchor: [-78, -2, -4],
     markdown: `# [RS] Research Agent — The Fact-Checker & Synthesizer
-- **RS-01** Verification: WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context. | conf: 4
+- **RS-01** Verification: WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context. Never state unverified assumptions as facts. *breaks: internal product scoping assumptions logged explicitly with an owner and date under PM-13.* | conf: 4
 - **RS-02** Distinction: WHEN answering → DO clearly separate objective facts from predictions or opinions. | conf: 4
 - **RS-03** The "I Don't Know" Rule: WHEN local Markdown files do not contain the answer AND real-time web access is unavailable → DO halt and output: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source." | conf: 4
 - **RS-04** Triangulation: WHEN verifying a claim → DO require at least two independent, reliable sources before accepting it as a fact. | conf: 4`,

@@ -52,30 +52,41 @@ function resolveDirectories(): { brainDir: string | null; agentsDir: string | nu
   return { brainDir, agentsDir };
 }
 
-function collectMarkdownFiles(dir: string): string[] {
-  let results: string[] = [];
-  if (!fs.existsSync(dir)) return results;
-  try {
-    const list = fs.readdirSync(dir);
-    for (const file of list) {
-      const full = path.join(dir, file);
-      const stat = fs.statSync(full);
-      if (stat.isDirectory()) {
-        results = results.concat(collectMarkdownFiles(full));
-      } else if (file.endsWith('.md')) {
-        results.push(full);
+function collectRuleBearingFiles(brainDir: string | null, agentsDir: string | null): string[] {
+  const results: string[] = [];
+
+  if (agentsDir && fs.existsSync(agentsDir)) {
+    try {
+      for (const file of fs.readdirSync(agentsDir)) {
+        if (file.endsWith('.md') && file.toLowerCase() !== 'readme.md') {
+          results.push(path.join(agentsDir, file));
+        }
       }
+    } catch {}
+  }
+
+  if (brainDir && fs.existsSync(brainDir)) {
+    const ruleSubdirs = ['01-identity', '02-domains', '03-heuristics'];
+    for (const sub of ruleSubdirs) {
+      const subDir = path.join(brainDir, sub);
+      if (!fs.existsSync(subDir)) continue;
+      try {
+        for (const file of fs.readdirSync(subDir)) {
+          if (file.endsWith('.md') && !file.startsWith('_')) {
+            results.push(path.join(subDir, file));
+          }
+        }
+      } catch {}
     }
-  } catch {}
-  return results;
+  }
+
+  return Array.from(new Set(results));
 }
 
 export async function GET() {
   try {
     const { brainDir, agentsDir } = resolveDirectories();
-    const brainFiles = brainDir ? collectMarkdownFiles(brainDir) : [];
-    const agentsFiles = agentsDir ? collectMarkdownFiles(agentsDir) : [];
-    const allFiles = Array.from(new Set([...brainFiles, ...agentsFiles]));
+    const allFiles = collectRuleBearingFiles(brainDir, agentsDir);
 
     const markdownContents: string[] = [];
 
@@ -140,6 +151,8 @@ export async function GET() {
         targetWeightedScorePerAgent: cortexStats.targetWeightedScorePerAgent,
         cognitiveStats,
         agentMastery,
+        clusters: cortexStats.clusters,
+        clusterList: cortexStats.clusterList,
         blindSpots: cortexStats.blindSpots,
         prefixCounts: cortexStats.prefixCounts,
         prefixWeights: cortexStats.prefixWeights,

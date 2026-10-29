@@ -9,6 +9,7 @@ import {
   Cpu,
   Database,
   ExternalLink,
+  FileCheck,
   FileSpreadsheet,
   Layout,
   Network,
@@ -20,7 +21,7 @@ import { Badge } from '../../components/ui/badge';
 import { ThemeToggle } from '../../components/ThemeToggle';
 
 interface AgentInfo {
-  code: 'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR';
+  code: 'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR' | 'RS';
   name: string;
   role: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -122,6 +123,19 @@ const AGENTS: AgentInfo[] = [
       'SEO baseline: unique title/description per route, canonical URLs, JSON-LD structured data, noindex on auth routes.',
     file: 'agents/growthagent.md',
     accent: 'text-rose-400 border-rose-400/30 bg-rose-400/10',
+  },
+  {
+    code: 'RS',
+    name: 'Research Agent',
+    role: 'The Fact-Checker & Synthesizer',
+    icon: FileCheck,
+    description:
+      'Governs epistemic rigor across the Global Second Brain: enforces primary source citations, separates facts from predictions, and blocks hallucinations.',
+    ruleCode: 'RS-01',
+    ruleSnippet:
+      'WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context.',
+    file: 'agents/researchagent.md',
+    accent: 'text-teal-400 border-teal-400/30 bg-teal-400/10',
   },
 ];
 

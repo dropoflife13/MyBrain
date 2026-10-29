@@ -490,13 +490,13 @@ export default function StartPage() {
                 <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/90 border-b border-white/10 text-xs text-zinc-400">
                   <div className="flex items-center gap-2">
                     <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                    <span className="text-[11px] text-zinc-300">The Golden Path (6 SDLC Commands)</span>
+                    <span className="text-[11px] text-zinc-300">The Golden Path (8 SDLC &amp; Research Commands)</span>
                   </div>
                   <button
                     type="button"
                     onClick={() =>
                       copyToClipboard(
-                        '/grill -> /pitch -> /to-spec -> /to-tickets -> /implement -> /review',
+                        '/grill -> /pitch -> /to-spec -> /to-tickets -> /implement -> /review -> /harden -> /research',
                         setCopiedFactory
                       )
                     }
@@ -516,14 +516,14 @@ export default function StartPage() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 text-xs">
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/grill</span>
                     <p className="text-[11px] text-zinc-400">Edge-case interrogation (PM)</p>
                   </div>
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/pitch</span>
-                    <p className="text-[11px] text-zinc-400">3-min value prop & GTM (GR)</p>
+                    <p className="text-[11px] text-zinc-400">3-min value prop &amp; GTM (GR)</p>
                   </div>
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/to-spec</span>
@@ -531,15 +531,23 @@ export default function StartPage() {
                   </div>
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/to-tickets</span>
-                    <p className="text-[11px] text-zinc-400">Linear tickets & criteria (BA)</p>
+                    <p className="text-[11px] text-zinc-400">5 atomic tickets (PM)</p>
                   </div>
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/implement</span>
-                    <p className="text-[11px] text-zinc-400">Code obeying gates (DB+UX)</p>
+                    <p className="text-[11px] text-zinc-400">Code obeying gates (DB+SEC)</p>
                   </div>
                   <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
                     <span className="text-cyan-400 font-bold">/review</span>
-                    <p className="text-[11px] text-zinc-400">STRIDE & BN-00 audit (SEC+SD)</p>
+                    <p className="text-[11px] text-zinc-400">STRIDE &amp; BN-00 audit (SEC+SD)</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-purple-400 font-bold">/harden</span>
+                    <p className="text-[11px] text-zinc-400">Enterprise DB &amp; SEC audit</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-zinc-900/80 border border-white/5 space-y-1">
+                    <span className="text-emerald-400 font-bold">/research</span>
+                    <p className="text-[11px] text-zinc-400">Source triangulation (RS)</p>
                   </div>
                 </div>
               </div>

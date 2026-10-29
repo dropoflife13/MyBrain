@@ -69,7 +69,7 @@ const AGENT_DOCK: Array<{
   { id: 'dbaagent', code: 'DB', cluster: 'Engineering', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
   { id: 'securityagent', code: 'SEC', cluster: 'Engineering', label: 'Security', fullName: 'Security Agent', prefixes: ['SEC', 'CS'] },
   { id: 'uiuxagent', code: 'UX', cluster: 'Engineering', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UX', 'UI', 'TA'] },
-  { id: 'productmanageragent', code: 'PM', cluster: 'Engineering', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP', 'EP'] },
+  { id: 'productmanageragent', code: 'PM', cluster: 'Engineering', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP'] },
   { id: 'systemsdesignagent', code: 'SD', cluster: 'Engineering', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SD', 'SO'] },
   { id: 'integrationagent', code: 'IR', cluster: 'Engineering', label: 'Integration', fullName: 'Integration Agent', prefixes: ['IR', 'RF', 'H', 'P'] },
   { id: 'growthagent', code: 'GR', cluster: 'Engineering', label: 'Growth', fullName: 'Growth Agent', prefixes: ['GR'] },
@@ -656,7 +656,6 @@ export default function Home() {
           autoSpin={autoSpin}
           onNodeHover={setHoveredNode}
           onNodeClick={(node) => {
-            console.log("Node clicked:", node);
             if (node) {
               setSelectedNode(node);
               setQueryText('');
@@ -1029,7 +1028,7 @@ export default function Home() {
           </nav>
 
           <div className="px-5 py-3 border-t border-slate-200 dark:border-white/10 text-[10px] text-slate-500 dark:text-zinc-500">
-            {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 159} rules • {fps} FPS
+            {graphData.nodes.length - 1} synapses • {graphData.vaultAudit?.uniqueRuleIds ?? 170} rules • {fps} FPS
           </div>
         </div>
       </motion.aside>
@@ -1185,7 +1184,7 @@ export default function Home() {
                   SDLC Workflow
                 </span>
                 <span className="text-[9px] font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
-                  6-Command Pipeline
+                  8-Command Pipeline
                 </span>
               </div>
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
@@ -1460,7 +1459,7 @@ export default function Home() {
                 <Eye className="w-3.5 h-3.5 text-amber-300" />
                 <span>
                   {vaultMode === 'blank'
-                    ? "Switch Back to Neil's Assessed 3D Cortex (86 Rules)"
+                    ? "Switch Back to Neil's Assessed 3D Cortex (170 Rules)"
                     : 'Preview Blank-Slate Fork in 3D (0 Personal Rules)'}
                 </span>
               </button>

@@ -60,7 +60,7 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     label: 'Product',
     fullName: 'Product Manager Agent',
     file: 'agents/productmanageragent.md',
-    prefixes: ['PM', 'BA', 'OP', 'EP'],
+    prefixes: ['PM', 'BA', 'OP'],
     description: 'Interrogation, edge cases, scope boundary enforcement, acceptance criteria.',
   },
   {
@@ -186,7 +186,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     subject: 'Engineering',
     label: 'Engineering Cluster',
     cluster: 'Engineering',
-    prefixes: ['DB', 'SEC', 'CS', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'EP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
+    prefixes: ['DB', 'SEC', 'CS', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
     agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR'],
     agentCount: 7, // 7 * 60 = 420 pts
     description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
@@ -317,6 +317,10 @@ export function parseConfidenceWeight(line: string): number {
  * Deterministic helper to extract unique rules, their confidence weights (1..5),
  * and per-prefix counts/weights from BrainDocNode[], markdown strings, or pre-parsed maps.
  */
+export const VALID_RULE_PREFIXES = new Set(
+  AGENT_STAT_CONFIGS.flatMap((a) => a.prefixes)
+);
+
 function extractRulesAndWeights(input: StatsCalculationInput): {
   ruleMap: Map<string, { prefix: string; weight: number }>;
   prefixCounts: Record<string, number>;
@@ -326,6 +330,7 @@ function extractRulesAndWeights(input: StatsCalculationInput): {
 
   const recordRule = (prefix: string, id: string, weight: number = 1) => {
     const cleanPrefix = prefix.toUpperCase();
+    if (!VALID_RULE_PREFIXES.has(cleanPrefix)) return;
     const cleanId = id.toUpperCase();
     const cleanWeight = Math.max(1, Math.min(5, weight));
     const existing = ruleMap.get(cleanId);
@@ -473,7 +478,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     totalUniqueRules =
       input.totalRules ||
       Object.values(prefixCounts).reduce((a, b) => a + b, 0) ||
-      159;
+      170;
     totalWeightedScore =
       Object.values(prefixWeights).reduce((a, b) => a + b, 0) ||
       totalUniqueRules;
