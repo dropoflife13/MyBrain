@@ -22,13 +22,13 @@ export interface Brain3DProps {
 }
 
 /**
- * Generates quadratic Bézier curved line coordinates for galactic synaptic links.
- * Curvature gives links a swooping, orbital trajectory instead of rigid sticks.
+ * Generates quadratic Bézier curved line coordinates for neural synaptic links.
+ * Curvature gives links a natural, organic neural web trajectory instead of rigid sticks.
  */
 function buildCurvedLineCoords(
   p1: THREE.Vector3,
   p2: THREE.Vector3,
-  curvature = 0.24,
+  curvature = 0.15,
   segments = 10
 ): number[] {
   const v = new THREE.Vector3().subVectors(p2, p1);
@@ -226,49 +226,9 @@ export default function Brain3D({
       controls.enableZoom = false;
     }
 
-    // 5. Ambient Deep-Space Starfield & Tactical Orbital Rings
+    // 5. Ambient Deep-Space Starfield & Tactical Grid
     const environmentGroup = new THREE.Group();
     scene.add(environmentGroup);
-
-    // Subtle radial concentric orbital rings around the galaxy cortex
-    // Ring 1 (Core / Engineering Ring ~28)
-    const ringGeo1 = new THREE.RingGeometry(27.8, 28.25, 128);
-    ringGeo1.rotateX(Math.PI / 2);
-    const ringMat1 = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x0284c7 : 0x00ffff,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: isLight ? 0.38 : 0.30,
-    });
-    const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
-    ring1.position.y = -32;
-    environmentGroup.add(ring1);
-
-    // Ring 2 (Humanities Ring ~80)
-    const ringGeo2 = new THREE.RingGeometry(79.7, 80.3, 160);
-    ringGeo2.rotateX(Math.PI / 2);
-    const ringMat2 = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x9333ea : 0xd946ef,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: isLight ? 0.32 : 0.24,
-    });
-    const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
-    ring2.position.y = -32;
-    environmentGroup.add(ring2);
-
-    // Ring 3 (World Ring ~140)
-    const ringGeo3 = new THREE.RingGeometry(139.5, 140.4, 192);
-    ringGeo3.rotateX(Math.PI / 2);
-    const ringMat3 = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x059669 : 0x10b981,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: isLight ? 0.26 : 0.18,
-    });
-    const ring3 = new THREE.Mesh(ringGeo3, ringMat3);
-    ring3.position.y = -32;
-    environmentGroup.add(ring3);
 
     // Polar crosshairs on the tactical floor plane
     const gridHelper = new THREE.GridHelper(
@@ -416,7 +376,7 @@ export default function Brain3D({
       if (a && b) {
         const p1 = new THREE.Vector3(a.fx ?? a.x ?? 0, a.fy ?? a.y ?? 0, a.fz ?? a.z ?? 0);
         const p2 = new THREE.Vector3(b.fx ?? b.x ?? 0, b.fy ?? b.y ?? 0, b.fz ?? b.z ?? 0);
-        const curveCoords = buildCurvedLineCoords(p1, p2, 0.24, 10);
+        const curveCoords = buildCurvedLineCoords(p1, p2, 0.15, 10);
         const isLongRange =
           (a.group === 1 && b.category === 'synapse') || (b.group === 1 && a.category === 'synapse');
 
@@ -534,12 +494,6 @@ export default function Brain3D({
       const nextBg = lightMode ? 0xf8fafc : 0x050505;
       scene.background = new THREE.Color(nextBg);
       scene.fog = new THREE.FogExp2(nextBg, lightMode ? 0.0016 : 0.0022);
-      ringMat1.color.setHex(lightMode ? 0x0284c7 : 0x00ffff);
-      ringMat1.opacity = lightMode ? 0.38 : 0.30;
-      ringMat2.color.setHex(lightMode ? 0x9333ea : 0xd946ef);
-      ringMat2.opacity = lightMode ? 0.32 : 0.24;
-      ringMat3.color.setHex(lightMode ? 0x059669 : 0x10b981);
-      ringMat3.opacity = lightMode ? 0.26 : 0.18;
       (gridHelper.material as THREE.Material).opacity = lightMode ? 0.35 : 0.25;
       starMat.color.setHex(lightMode ? 0x64748b : 0x38bdf8);
       starMat.size = lightMode ? 0.95 : 0.85;
@@ -656,14 +610,11 @@ export default function Brain3D({
 
       controls.update();
 
-      // Continuous subtle rotation so the entire galaxy slowly revolves in space
+      // Continuous subtle rotation so the brain cortex slowly revolves in space
       if (!isLockedOnNode) {
         brainGroup.rotation.y += 0.0006;
       }
       starField.rotation.y += 0.0003;
-      ring1.rotation.z += 0.0008;
-      ring2.rotation.z -= 0.0006;
-      ring3.rotation.z += 0.0004;
 
       renderer.render(scene, camera);
 

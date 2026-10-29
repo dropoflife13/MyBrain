@@ -168,11 +168,46 @@ const SEVEN_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' 
  */
 export function resolveAgentOwner(idOrPrefix: string): {
   agentId: string;
-  agentCode: 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC';
+  agentCode:
+    | 'PM'
+    | 'UX'
+    | 'GR'
+    | 'SD'
+    | 'IR'
+    | 'DB'
+    | 'SEC'
+    | 'PSY'
+    | 'PHI'
+    | 'RHE'
+    | 'ECO'
+    | 'GEO'
+    | 'HLT'
+    | 'RS';
 } {
   const clean = idOrPrefix.split('::')[0].trim();
-  const prefix = clean.split('-')[0].toUpperCase();
+  const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
 
+  if (clean === 'psychology' || prefix === 'PSY') {
+    return { agentId: 'psychology', agentCode: 'PSY' };
+  }
+  if (clean === 'philosophy' || prefix === 'PHI') {
+    return { agentId: 'philosophy', agentCode: 'PHI' };
+  }
+  if (clean === 'rhetoric' || prefix === 'RHE') {
+    return { agentId: 'rhetoric', agentCode: 'RHE' };
+  }
+  if (clean === 'economy' || prefix === 'ECO') {
+    return { agentId: 'economy', agentCode: 'ECO' };
+  }
+  if (clean === 'geopolitics' || prefix === 'GEO') {
+    return { agentId: 'geopolitics', agentCode: 'GEO' };
+  }
+  if (clean === 'health' || prefix === 'HLT') {
+    return { agentId: 'health', agentCode: 'HLT' };
+  }
+  if (clean === 'researchagent' || prefix === 'RS') {
+    return { agentId: 'researchagent', agentCode: 'RS' };
+  }
   if (clean === 'dbaagent' || prefix === 'DB') {
     return { agentId: 'dbaagent', agentCode: 'DB' };
   }
@@ -218,15 +253,15 @@ export function resolveAgentOwner(idOrPrefix: string): {
 
 /**
  * Deterministic mapping of any document ID, agent, or rule prefix to its 3D Cluster lobe.
- * Engineering: Left (x < 0)
- * Humanities: Right (x > 0)
- * World: Bottom (y < 0)
+ * Engineering: Two Central Brain Hemispheres (Left x ≈ -30, Right x ≈ +30)
+ * Humanities: Right Lobe (x ≈ +78)
+ * World: Left Lobe (x ≈ -78)
  */
 export function resolveNodeCluster(idOrPrefix: string): ClusterId {
   const clean = idOrPrefix.split('::')[0].trim();
-  const prefix = clean.split('-')[0].toUpperCase();
+  const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
 
-  // Humanities Cluster (PSY, PHI, RHE)
+  // Humanities Cluster — Right Lobe (PSY, PHI, RHE)
   if (
     clean === 'psychology' ||
     clean === 'philosophy' ||
@@ -238,7 +273,7 @@ export function resolveNodeCluster(idOrPrefix: string): ClusterId {
     return 'Humanities';
   }
 
-  // World Cluster (ECO, GEO, HLT, RS)
+  // World Cluster — Left Lobe (ECO, GEO, HLT, RS)
   if (
     clean === 'economy' ||
     clean === 'geopolitics' ||
@@ -252,8 +287,39 @@ export function resolveNodeCluster(idOrPrefix: string): ClusterId {
     return 'World';
   }
 
-  // Engineering Cluster (7 Core Agents + Engineering domains)
+  // Engineering Cluster — Core Left & Right Hemispheres (7 Core Agents + Engineering domains)
   return 'Engineering';
+}
+
+/**
+ * Determines whether an Engineering node belongs to the Left Hemisphere (-1, x ≈ -30)
+ * or Right Hemisphere (+1, x ≈ +30) so the core splits into two distinct brain hemispheres.
+ */
+export function resolveEngineeringHemisphere(idOrPrefix: string): -1 | 1 {
+  const clean = idOrPrefix.split('::')[0].trim();
+  const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
+  if (
+    clean === 'dbaagent' ||
+    clean === 'uiuxagent' ||
+    clean === 'systemsdesignagent' ||
+    clean === 'growthagent' ||
+    clean === 'solutions' ||
+    clean === 'ui-frontend' ||
+    clean === 'OPERATING-PRINCIPLES' ||
+    clean === 'HEURISTICS' ||
+    clean === 'DIGEST' ||
+    prefix === 'DB' ||
+    prefix === 'UX' ||
+    prefix === 'UI' ||
+    prefix === 'SD' ||
+    prefix === 'SO' ||
+    prefix === 'GR' ||
+    prefix === 'OP' ||
+    prefix === 'H'
+  ) {
+    return -1;
+  }
+  return 1;
 }
 
 /**
@@ -461,7 +527,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'growthagent',
     category: 'agent',
-    anchor: [0, -16, -42],
+    anchor: [-26, -14, -24],
     markdown: `# [GR] Growth Agent — The Marketing
 - **GR-01** Newsletter & onboarding: double opt-in, explicit consent record, PH Data Privacy Act (RA 10173) compliance.
 - **GR-02** UTM links: built only by a single helper, lowercase kebab-case registered in UTM_REGISTRY.md, zero PII.
@@ -653,7 +719,7 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
   {
     id: 'researchagent',
     category: 'agent',
-    anchor: [0, -28, 30],
+    anchor: [-78, -2, -4],
     markdown: `# [RS] Research Agent — The Fact-Checker & Synthesizer
 - **RS-01** Verification: WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context. | conf: 4
 - **RS-02** Distinction: WHEN answering → DO clearly separate objective facts from predictions or opinions. | conf: 4
@@ -663,42 +729,42 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
   {
     id: 'psychology',
     category: 'domain',
-    anchor: [44, 16, 20],
+    anchor: [76, 14, 14],
     markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
 - **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
   },
   {
     id: 'philosophy',
     category: 'domain',
-    anchor: [48, 8, 38],
+    anchor: [80, 2, -12],
     markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
 - **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
   },
   {
     id: 'rhetoric',
     category: 'domain',
-    anchor: [42, 22, -16],
+    anchor: [74, -12, 16],
     markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
 - **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
   },
   {
     id: 'economy',
     category: 'domain',
-    anchor: [-20, -32, 20],
+    anchor: [-76, 14, 14],
     markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
 - **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
   },
   {
     id: 'geopolitics',
     category: 'domain',
-    anchor: [20, -32, 20],
+    anchor: [-80, 2, -12],
     markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
 - **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
   },
   {
     id: 'health',
     category: 'domain',
-    anchor: [0, -36, -20],
+    anchor: [-74, -12, 16],
     markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
 - **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
   },
@@ -770,42 +836,42 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'psychology',
     category: 'domain',
-    anchor: [44, 16, 20],
+    anchor: [76, 14, 14],
     markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
 - **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
   },
   {
     id: 'philosophy',
     category: 'domain',
-    anchor: [48, 8, 38],
+    anchor: [80, 2, -12],
     markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
 - **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
   },
   {
     id: 'rhetoric',
     category: 'domain',
-    anchor: [42, 22, -16],
+    anchor: [74, -12, 16],
     markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
 - **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
   },
   {
     id: 'economy',
     category: 'domain',
-    anchor: [-20, -32, 20],
+    anchor: [-76, 14, 14],
     markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
 - **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
   },
   {
     id: 'geopolitics',
     category: 'domain',
-    anchor: [20, -32, 20],
+    anchor: [-80, 2, -12],
     markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
 - **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
   },
   {
     id: 'health',
     category: 'domain',
-    anchor: [0, -36, -20],
+    anchor: [-74, -12, 16],
     markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
 - **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
   },
@@ -908,24 +974,69 @@ export function getBrainData(options?: {
     };
   });
 
-  const allRulesCatalog: Array<{
+  interface RuleCatalogEntry {
     ruleId: string;
     parentName: string;
     description: string;
     parentContent: string;
-  }> = [];
+  }
+
+  const allRulesCatalog: RuleCatalogEntry[] = [];
+  const leftEngCatalog: RuleCatalogEntry[] = [];
+  const rightEngCatalog: RuleCatalogEntry[] = [];
+  const humanitiesCatalog: RuleCatalogEntry[] = [];
+  const worldCatalog: RuleCatalogEntry[] = [];
 
   for (const doc of docNodes) {
     if (doc.rules && doc.rules.length > 0) {
       for (const r of doc.rules) {
         const [prefixPart] = r.split(':');
-        allRulesCatalog.push({
+        const entry: RuleCatalogEntry = {
           ruleId: prefixPart.trim(),
           parentName: doc.name,
           description: r,
           parentContent: doc.content || r,
-        });
+        };
+        allRulesCatalog.push(entry);
+        const cluster = resolveNodeCluster(entry.ruleId);
+        if (cluster === 'Humanities') {
+          humanitiesCatalog.push(entry);
+        } else if (cluster === 'World') {
+          worldCatalog.push(entry);
+        } else if (resolveEngineeringHemisphere(entry.ruleId) === -1) {
+          leftEngCatalog.push(entry);
+        } else {
+          rightEngCatalog.push(entry);
+        }
       }
+    } else {
+      // Seed draft Humanities / World domain slots so outer cortical lobes have synaptic density
+      const cluster = resolveNodeCluster(doc.id);
+      const owner = resolveAgentOwner(doc.id);
+      const seedEntry: RuleCatalogEntry = {
+        ruleId: `EMPTY-${owner.agentCode}`,
+        parentName: doc.name,
+        description: doc.description,
+        parentContent: doc.content || doc.description,
+      };
+      if (cluster === 'Humanities') {
+        humanitiesCatalog.push(seedEntry);
+      } else if (cluster === 'World') {
+        worldCatalog.push(seedEntry);
+      }
+    }
+  }
+
+  // Ensure World catalog also includes seed slots for ECO, GEO, HLT alongside RS rules
+  for (const doc of docNodes) {
+    if (doc.id === 'economy' || doc.id === 'geopolitics' || doc.id === 'health') {
+      const owner = resolveAgentOwner(doc.id);
+      worldCatalog.push({
+        ruleId: `EMPTY-${owner.agentCode}`,
+        parentName: doc.name,
+        description: doc.description,
+        parentContent: doc.content || doc.description,
+      });
     }
   }
 
@@ -945,7 +1056,12 @@ export function getBrainData(options?: {
     fz: 0,
   });
 
-  // Map procedural 3D coordinates to the 7 core agents (`group: 1`) and rule nodes (`group: 2`)
+  let leftEngIdx = 0;
+  let rightEngIdx = 0;
+  let humIdx = 0;
+  let worldIdx = 0;
+
+  // Map procedural 3D coordinates to the 7 core agents (`group: 1`), domain anchors, and rule nodes (`group: 2`)
   procedural.nodes.forEach((pNode, index) => {
     if (index < docNodes.length) {
       const doc = docNodes[index];
@@ -975,7 +1091,20 @@ export function getBrainData(options?: {
         });
       }
     } else {
-      const ruleEntry = allRulesCatalog[index % allRulesCatalog.length];
+      // Assign synapse rules by cortical hemisphere & lateral lobe so neighbor links form a cohesive brain
+      let ruleEntry: RuleCatalogEntry;
+      if (pNode.ax > 36 && humanitiesCatalog.length > 0) {
+        ruleEntry = humanitiesCatalog[humIdx++ % humanitiesCatalog.length];
+      } else if (pNode.ax < -36 && worldCatalog.length > 0) {
+        ruleEntry = worldCatalog[worldIdx++ % worldCatalog.length];
+      } else if (pNode.ax < 0 && leftEngCatalog.length > 0) {
+        ruleEntry = leftEngCatalog[leftEngIdx++ % leftEngCatalog.length];
+      } else if (rightEngCatalog.length > 0) {
+        ruleEntry = rightEngCatalog[rightEngIdx++ % rightEngCatalog.length];
+      } else {
+        ruleEntry = allRulesCatalog[index % allRulesCatalog.length];
+      }
+
       const nodeId = `${ruleEntry.ruleId}::${pNode.id}`;
       const owner = resolveAgentOwner(ruleEntry.ruleId);
       const cluster = resolveNodeCluster(ruleEntry.ruleId);
@@ -1002,7 +1131,9 @@ export function getBrainData(options?: {
   });
 
   // Inter-connect the 7 core agents (`group: 1`) in a subtle cortical ring
-  const coreAgentIds = docNodes.filter((d) => d.group === 1).map((d) => d.id);
+  const coreAgentIds = docNodes
+    .filter((d) => Boolean(SEVEN_CORE_AGENTS[d.id] && d.id !== 'researchagent'))
+    .map((d) => d.id);
   for (let i = 0; i < coreAgentIds.length; i++) {
     links.push({
       source: coreAgentIds[i],
@@ -1031,60 +1162,115 @@ export function getBrainData(options?: {
     }
   });
 
-  // 3D Force-Directed Galaxy Cortex Physics (Concentric Orbital Rings)
-  // Pulls Engineering / 7 Core Agents tightly into the center (radius 0-30),
-  // Humanities into a middle ring (radius ~80), and World into an outer ring (radius ~140).
-  const getGalaxyRadius = (d: any): number => {
-    if (d.id === 'hub') return 0;
-    const isCore = d.group === 1 || (d.val && d.val >= 20);
-    const isDomain = d.category === 'agent' || d.category === 'domain' || (d.val && d.val >= 10);
-    if (d.cluster === 'Engineering') {
-      return isCore ? 18 : 28;
-    }
-    if (d.cluster === 'Humanities') {
-      return isDomain ? 78 : 84;
-    }
-    if (d.cluster === 'World') {
-      return isDomain ? 136 : 142;
-    }
-    return 28;
-  };
+  // 3D Force-Directed Brain Hemisphere & Lobe Physics (forceX, forceY, forceZ)
+  // - Engineering (Core): Split into Left Hemisphere (x ≈ -30) and Right Hemisphere (x ≈ +30), Z flattened
+  // - Humanities (Right Lobe): Pulled to the right lobe (x ≈ +78)
+  // - World (Left Lobe): Pulled to the left lobe (x ≈ -78)
+  // - Vertical (Y): Arched cortical profile so nodes interweave into a 3D brain silhouette
+  const simNodes = nodes.map((n) => {
+    const cluster = n.cluster ?? resolveNodeCluster(n.id);
+    const baseAx = n.fx ?? n.x ?? 0;
+    const baseAy = n.fy ?? n.y ?? 0;
+    const baseAz = n.fz ?? n.z ?? 0;
 
-  const simNodes = nodes.map((n) => ({
-    id: n.id,
-    cluster: n.cluster ?? resolveNodeCluster(n.id),
-    fx: n.id === 'hub' ? 0 : undefined,
-    fy: n.id === 'hub' ? 0 : undefined,
-    fz: n.id === 'hub' ? 0 : undefined,
-    x: n.fx !== undefined ? n.fx : (n.x ?? (Math.random() - 0.5) * 20),
-    y: n.fy !== undefined ? n.fy : (n.y ?? (Math.random() - 0.5) * 20),
-    z: n.fz !== undefined ? n.fz : (n.z ?? (Math.random() - 0.5) * 20),
-    group: n.group,
-    val: n.val,
-    category: n.category,
-  }));
+    let targetX = 0;
+    let targetY = baseAy * 0.85;
+    let targetZ = baseAz * 0.65; // Flatten Z-axis slightly for an oval brain shape
 
-  const simLinks = links.map((l) => ({
-    source: typeof l.source === 'object' ? (l.source as any).id : l.source,
-    target: typeof l.target === 'object' ? (l.target as any).id : l.target,
-  }));
+    if (n.id === 'hub') {
+      targetX = 0;
+      targetY = 0;
+      targetZ = 0;
+    } else if (cluster === 'Humanities') {
+      // Right Lobe expanding outward around x = +78
+      const lobeSpread = (Math.abs(baseAx) - 42) * 0.45;
+      targetX = n.category !== 'synapse' ? (n.fx ?? 78) : 76 + Math.max(-10, Math.min(10, lobeSpread));
+      targetY = baseAy * 0.78;
+      targetZ = baseAz * 0.6;
+    } else if (cluster === 'World') {
+      // Left Lobe expanding outward around x = -78
+      const lobeSpread = (Math.abs(baseAx) - 42) * 0.45;
+      targetX = n.category !== 'synapse' ? (n.fx ?? -78) : -76 - Math.max(-10, Math.min(10, lobeSpread));
+      targetY = baseAy * 0.78;
+      targetZ = baseAz * 0.6;
+    } else {
+      // Engineering Core: Left Hemisphere (x ≈ -30) and Right Hemisphere (x ≈ +30)
+      const hemi = resolveEngineeringHemisphere(n.id);
+      if (n.category !== 'synapse' && n.fx !== undefined) {
+        targetX = hemi * Math.max(16, Math.min(34, Math.abs(n.fx)));
+      } else {
+        const localSpread = (Math.abs(baseAx) - 24) * 0.65;
+        const clampedMag = Math.max(9, Math.min(48, 30 + localSpread));
+        targetX = hemi * clampedMag;
+      }
+    }
+
+    return {
+      id: n.id,
+      cluster,
+      targetX,
+      targetY,
+      targetZ,
+      fx: n.id === 'hub' ? 0 : undefined,
+      fy: n.id === 'hub' ? 0 : undefined,
+      fz: n.id === 'hub' ? 0 : undefined,
+      x: targetX + (Math.random() - 0.5) * 4,
+      y: targetY + (Math.random() - 0.5) * 4,
+      z: targetZ + (Math.random() - 0.5) * 4,
+      group: n.group,
+      val: n.val,
+      category: n.category,
+    };
+  });
+
+  const nodeCategoryById = new Map<string, string>(nodes.map((n) => [String(n.id), n.category]));
+  // Filter physics simulation links to local cortical connections so hub/agent star-spokes don't collapse hemispheres into balls
+  const simLinks = links
+    .map((l) => ({
+      source: typeof l.source === 'object' ? (l.source as any).id : l.source,
+      target: typeof l.target === 'object' ? (l.target as any).id : l.target,
+    }))
+    .filter((l) => {
+      if (l.source === 'hub' || l.target === 'hub') return false;
+      const catA = nodeCategoryById.get(String(l.source));
+      const catB = nodeCategoryById.get(String(l.target));
+      const isLongRangeSpoke =
+        (catA === 'agent' && catB === 'synapse') ||
+        (catB === 'agent' && catA === 'synapse') ||
+        (catA === 'domain' && catB === 'synapse') ||
+        (catB === 'domain' && catA === 'synapse');
+      return !isLongRangeSpoke;
+    });
 
   const simulation = forceSimulation(simNodes, 3)
     .force(
-      'radial',
-      forceRadial(getGalaxyRadius, 0, 0, 0).strength((d: any) => (d.id === 'hub' ? 1.0 : 0.65))
+      'x',
+      forceX((d: any) => (d.id === 'hub' ? 0 : d.targetX)).strength((d: any) =>
+        d.id === 'hub' ? 1.0 : 0.55
+      )
     )
-    .force('charge', forceManyBody().strength(-5))
-    .force('z', forceZ(0).strength(0.35))
+    .force(
+      'y',
+      forceY((d: any) => (d.id === 'hub' ? 0 : d.targetY)).strength((d: any) =>
+        d.id === 'hub' ? 1.0 : 0.45
+      )
+    )
+    .force(
+      'z',
+      forceZ((d: any) => (d.id === 'hub' ? 0 : d.targetZ)).strength((d: any) =>
+        d.id === 'hub' ? 1.0 : 0.48
+      )
+    )
+    .force('charge', forceManyBody().strength(-3.5))
     .force(
       'link',
       forceLink(simLinks)
         .id((d: any) => d.id)
         .distance(14)
-        .strength(0.08)
+        .strength(0.05)
     );
 
-  // Run 80 simulation ticks so nodes settle into distinct concentric orbital rings
+  // Run 80 simulation ticks so nodes settle into two distinct brain hemispheres and outer lobes
   for (let i = 0; i < 80; i++) {
     simulation.tick();
   }
