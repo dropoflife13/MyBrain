@@ -69,6 +69,7 @@ const FILE_MAP: Record<string, string> = {
   economy: 'brain/02-domains/economy.md',
   geopolitics: 'brain/02-domains/geopolitics.md',
   health: 'brain/02-domains/health.md',
+  authorization: 'brain/02-domains/authorization.md',
 };
 
 const PREFIX_TO_AGENT_FILE: Record<string, string> = {
@@ -95,11 +96,12 @@ const PREFIX_TO_AGENT_FILE: Record<string, string> = {
   ECO: 'brain/02-domains/economy.md',
   GEO: 'brain/02-domains/geopolitics.md',
   HLT: 'brain/02-domains/health.md',
+  AUTH: 'brain/02-domains/authorization.md',
 };
 
 function getFileContentForNode(contextNode: any): string {
   if (!contextNode) {
-    return 'Cortex Knowledge Vault: 7 Core Agent Gatekeepers (PM, UX, GR, SD, IR, DB, SEC) + Research Agent (RS) with 170 engineering and research invariants.';
+    return 'Cortex Knowledge Vault: 7 Core Agent Gatekeepers (PM, UX, GR, SD, IR, DB, SEC) + Research Agent (RS) with 175 engineering and research invariants.';
   }
 
   const rawId = typeof contextNode === 'string' ? contextNode : contextNode.id || '';

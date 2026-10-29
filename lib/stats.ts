@@ -40,8 +40,8 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     label: 'Security',
     fullName: 'Security Agent',
     file: 'agents/securityagent.md',
-    prefixes: ['SEC', 'CS'],
-    description: 'Offensive & defensive security, RLS bypass suites, secret isolation, rate limits.',
+    prefixes: ['SEC', 'CS', 'AUTH'],
+    description: 'Offensive & defensive security, RLS bypass suites, externalized authorization, secret isolation, rate limits.',
   },
   {
     id: 'uiuxagent',
@@ -186,7 +186,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     subject: 'Engineering',
     label: 'Engineering Cluster',
     cluster: 'Engineering',
-    prefixes: ['DB', 'SEC', 'CS', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
+    prefixes: ['DB', 'SEC', 'CS', 'AUTH', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
     agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR'],
     agentCount: 7, // 7 * 60 = 420 pts
     description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
@@ -478,7 +478,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     totalUniqueRules =
       input.totalRules ||
       Object.values(prefixCounts).reduce((a, b) => a + b, 0) ||
-      170;
+      175;
     totalWeightedScore =
       Object.values(prefixWeights).reduce((a, b) => a + b, 0) ||
       totalUniqueRules;

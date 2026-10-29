@@ -210,7 +210,14 @@ export function resolveAgentOwner(idOrPrefix: string): {
   if (clean === 'dbaagent' || prefix === 'DB') {
     return { agentId: 'dbaagent', agentCode: 'DB' };
   }
-  if (clean === 'securityagent' || clean === 'cybersec' || prefix === 'SEC' || prefix === 'CS') {
+  if (
+    clean === 'securityagent' ||
+    clean === 'cybersec' ||
+    clean === 'authorization' ||
+    prefix === 'SEC' ||
+    prefix === 'CS' ||
+    prefix === 'AUTH'
+  ) {
     return { agentId: 'securityagent', agentCode: 'SEC' };
   }
   if (
@@ -551,6 +558,17 @@ const VAULT_MARKDOWN_SOURCES: Array<{
 - **CS-07** WHEN enforcing pre-flight architectural gates (BN-00) at API and UI boundaries → DO fail closed (HTTP 422 / empty nodes) and return only sanitized relative filenames without leaking host OS paths | conf: 5`,
   },
   {
+    id: 'authorization',
+    category: 'domain',
+    anchor: [22, 24, 8],
+    markdown: `# Externalized Authorization — How I Think
+- **AUTH-01** (PDP/PEP Separation): WHEN designing authorization → DO externalize the decision logic to a Policy Decision Point (PDP) and enforce it at the Policy Enforcement Point (PEP) in the application. Do not scatter authorization logic inside database queries (like RLS) or app code (like \`if/else\` checks) | breaks: for simple monolithic apps where a single database policy is sufficient | conf: 4
+- **AUTH-02** (ABAC > RBAC): WHEN access rules depend on resource ownership (e.g., "a user can edit their own post") → DO use Attribute-Based Access Control (ABAC) rather than static Role-Based Access Control to prevent role explosion | breaks: for flat systems with only 2-3 system-wide roles and no ownership logic | conf: 4
+- **AUTH-03** (Policy-as-Code): WHEN defining access rules → DO write them as versioned, testable YAML policies in Git so they can be tested in CI/CD, rather than relying on manual testing or database migrations | conf: 4
+- **AUTH-04** (Derived Roles): WHEN a user's permission depends on the specific resource they are accessing → DO compute "derived roles" dynamically at runtime (e.g., \`role: owner\` if \`resource.ownerId == principal.id\`) | conf: 4
+- **AUTH-05** (Centralized Control Plane): WHEN managing authorization across multiple microservices → DO use a centralized control plane to distribute policy updates across all services in seconds and aggregate a centralized audit trail of every access decision | conf: 4`,
+  },
+  {
     id: 'solutions',
     category: 'domain',
     anchor: [-18, 22, 6],
@@ -810,6 +828,13 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
     anchor: [18, 22, 6],
     markdown: `# Cybersecurity Specialist — How I Think (status: draft • 0 Rules)
 - **EMPTY-CS** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Cybersecurity scenarios in 05-elicitation/THE-TEST.md to earn CS-nn rules.`,
+  },
+  {
+    id: 'authorization',
+    category: 'domain',
+    anchor: [22, 24, 8],
+    markdown: `# Externalized Authorization — How I Think (status: draft • 0 Rules)
+- **EMPTY-AUTH** _None yet._ Complete authorization modeling in 05-elicitation/THE-TEST.md to earn AUTH-nn rules.`,
   },
   {
     id: 'solutions',

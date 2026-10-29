@@ -190,6 +190,16 @@ const DOMAIN_AGENT_MAP: DomainAgentMap[] = [
     gateCheck: 'GATE: PASS RS-01 • Primary Source Triangulation',
     coverage: 'Global Second Brain',
   },
+  {
+    domainKey: 'authorization',
+    domainName: 'Externalized Authorization Architecture',
+    rulePrefix: 'AUTH-01..05',
+    activeCount: 5,
+    primaryAgent: 'SEC',
+    secondaryAgent: 'SD',
+    gateCheck: 'GATE: PASS SEC-01 • PDP/PEP Separation & ABAC',
+    coverage: '100% (5/5 Sub-areas)',
+  },
 ];
 
 export default function AuditInspector({
@@ -427,7 +437,7 @@ export default function AuditInspector({
                       Total Active Rules
                     </div>
                     <div className="text-2xl font-bold font-mono text-slate-900 dark:text-white mt-1">
-                      {auditReport?.totalRules ?? 170}
+                      {auditReport?.totalRules ?? 175}
                     </div>
                     <div className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 mt-1">
                       100% Unique IDs
@@ -480,12 +490,12 @@ export default function AuditInspector({
                     </span>
                     <span className="text-emerald-400 font-bold">STATUS: PASS</span>
                   </div>
-                  <div className="text-slate-400">&gt;&gt;&gt; Scanning 43 canonical vault files in /brain...</div>
+                  <div className="text-slate-400">&gt;&gt;&gt; Scanning 44 canonical vault files in /brain...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying grammar: status: active, breaks:, ev: tags (CV-02)...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying block ID anchors ^[prefix]-[nn] (CV-08)...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying 7 Core Agent files in /agents (BN-00) + Research Agent (RS)...</div>
                   <div className="text-emerald-400 font-semibold">
-                    &gt;&gt;&gt; AUDIT COMPLETE: 43 files | 0 errors | 0 warnings | {auditReport?.totalRules ?? 170} verified rules.
+                    &gt;&gt;&gt; AUDIT COMPLETE: 44 files | 0 errors | 0 warnings | {auditReport?.totalRules ?? 175} verified rules.
                   </div>
                 </div>
               </div>

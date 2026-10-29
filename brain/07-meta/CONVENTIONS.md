@@ -39,5 +39,5 @@ Formats, ID rules, and thresholds are defined here only. Other files cite CV-nn.
 | Vault rule files | BN (brain agent) · EP (elicitation) · TE (test examiner) · CV (conventions) · SP (sync) · AA (archaeology) |
 | Content IDs | H heuristic · RF red flag · P pattern · M model · OP principle · TA taste · Q question · S session · A artifact · X contradiction · CAND candidate · TS tacit signal · PB probe · LN lens |
 | Scenario / excavation IDs | FL flash · FH flaw hunt · CW compliant-but-wrong · RK rank · PRE pre-mortem |
-| Domains in use | CS cybersec · SO solutions · BA business analysis · UI ui-frontend · PSY psychology · ECO economy · PHI philosophy · GEO geopolitics · RHE rhetoric · HLT health |
+| Domains in use | CS cybersec · SO solutions · BA business analysis · UI ui-frontend · AUTH authorization · PSY psychology · ECO economy · PHI philosophy · GEO geopolitics · RHE rhetoric · HLT health |
 | Domain free pool | DA data · AR architecture · GC governance/compliance · PV privacy · DV devops · ML AI/ML |
