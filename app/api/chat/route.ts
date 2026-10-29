@@ -3,6 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { getBrainData } from '../../../lib/brain-parser';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+import { z } from 'zod';
 
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless environments
 function resolveFilePath(relPath: string): string | null {
@@ -238,6 +241,121 @@ export async function OPTIONS() {
   });
 }
 
+// Rate Limiter: Upstash Redis if configured, otherwise reliable in-memory sliding window
+let upstashRatelimit: Ratelimit | null = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    upstashRatelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, '60 s'),
+      analytics: true,
+      prefix: 'cortex:ratelimit:chat',
+    });
+  } catch (e) {
+    console.warn('[Cortex Chat API] Failed to initialize Upstash Ratelimit:', e);
+  }
+}
+
+interface InMemoryRateLimitRecord {
+  timestamps: number[];
+}
+const inMemoryRateLimitStore = new Map<string, InMemoryRateLimitRecord>();
+
+function checkInMemoryRateLimit(
+  ip: string,
+  limit = 5,
+  windowMs = 60 * 1000
+): { success: boolean; reset: number } {
+  const now = Date.now();
+  const record = inMemoryRateLimitStore.get(ip) || { timestamps: [] };
+  // Keep only timestamps within sliding window
+  record.timestamps = record.timestamps.filter((ts) => now - ts < windowMs);
+
+  if (record.timestamps.length >= limit) {
+    const oldest = record.timestamps[0];
+    const resetSec = Math.max(1, Math.ceil((oldest + windowMs - now) / 1000));
+    return { success: false, reset: resetSec };
+  }
+
+  record.timestamps.push(now);
+  inMemoryRateLimitStore.set(ip, record);
+
+  // Periodic cleanup of stale IPs
+  if (inMemoryRateLimitStore.size > 5000) {
+    for (const [key, val] of inMemoryRateLimitStore.entries()) {
+      if (val.timestamps.every((ts) => now - ts >= windowMs)) {
+        inMemoryRateLimitStore.delete(key);
+      }
+    }
+  }
+
+  return { success: true, reset: 60 };
+}
+
+function getClientIp(req: Request): string {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  const realIp = req.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
+  return '127.0.0.1';
+}
+
+async function verifyRateLimit(req: Request): Promise<{ success: boolean; reset: number }> {
+  const ip = getClientIp(req);
+
+  if (upstashRatelimit) {
+    try {
+      const result = await upstashRatelimit.limit(ip);
+      return {
+        success: result.success,
+        reset: Math.max(1, Math.ceil(result.reset / 1000)),
+      };
+    } catch (err) {
+      console.warn('[Cortex Chat API] Upstash rate limit check failed, falling back to in-memory:', err);
+    }
+  }
+
+  return checkInMemoryRateLimit(ip, 5, 60 * 1000);
+}
+
+// 2MB base64 string length limit (2,097,152 characters)
+const MAX_IMAGE_BASE64_LENGTH = 2 * 1024 * 1024;
+
+const ChatRequestSchema = z.object({
+  query: z
+    .string()
+    .min(1, 'Query parameter cannot be empty')
+    .max(2000, 'Query parameter cannot exceed 2000 characters'),
+  contextNode: z
+    .string()
+    .max(50, 'contextNode cannot exceed 50 characters')
+    .optional(),
+  workflowCommand: z.string().max(50).optional(),
+  provider: z.string().max(50).optional(),
+  imageUrl: z
+    .string()
+    .max(MAX_IMAGE_BASE64_LENGTH, 'Image base64 payload exceeds 2MB limit')
+    .refine(
+      (val) => {
+        if (!val) return true;
+        return /^data:image\/(jpeg|png|webp);base64,/i.test(val);
+      },
+      {
+        message: 'Invalid image format. Only image/jpeg, image/png, and image/webp are allowed',
+      }
+    )
+    .optional()
+    .nullable(),
+});
+
 function isHighDemandError(err: any): boolean {
   const status = err?.status || err?.statusCode || err?.code;
   if (status === 503 || status === 429) return true;
@@ -428,15 +546,52 @@ async function classifyTaskComplexity(
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { query, contextNode, workflowCommand, provider, imageUrl } = body;
-
-    if (!query || typeof query !== 'string') {
+    // 1. Rate Limiting Check (5 requests per minute per IP)
+    const rateLimit = await verifyRateLimit(req);
+    if (!rateLimit.success) {
       return NextResponse.json(
-        { error: 'Query parameter is required' },
+        {
+          error: 'System overheated. Please wait a minute.',
+          text: 'System overheated. Please wait a minute.',
+        },
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            'Retry-After': String(rateLimit.reset || 60),
+          },
+        }
+      );
+    }
+
+    // 2. Strict Input Validation (Zod)
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: 'Bad Request', details: 'Malformed JSON payload', text: 'Validation error: Malformed JSON payload' },
         { status: 400, headers: CORS_HEADERS }
       );
     }
+
+    const validation = ChatRequestSchema.safeParse(body);
+    if (!validation.success) {
+      const errorMsg = validation.error.issues
+        .map((issue) => `${issue.path.join('.') || 'payload'}: ${issue.message}`)
+        .join('; ');
+      return NextResponse.json(
+        {
+          error: 'Bad Request',
+          details: errorMsg,
+          text: `Validation error: ${errorMsg}`,
+        },
+        { status: 400, headers: CORS_HEADERS }
+      );
+    }
+
+    const { query, contextNode, workflowCommand, provider } = validation.data;
+    const imageUrl = validation.data.imageUrl || undefined;
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
     const nvidiaApiKey =

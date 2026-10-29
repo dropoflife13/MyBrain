@@ -144,9 +144,25 @@ export default function Home() {
   const chatBottomRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB payload cap
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type.toLowerCase())) {
+      alert(`Invalid file type "${file.type || 'unknown'}". Only JPEG, PNG, and WebP images are supported.`);
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      alert(`File size exceeds the 2MB limit (${(file.size / (1024 * 1024)).toFixed(2)} MB). Please select a smaller image.`);
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -417,8 +433,14 @@ export default function Home() {
     );
     const lower = candidate.toLowerCase();
     if (
+      lower.includes('system overheated') ||
+      lower.includes('overheated') ||
+      lower.includes('429')
+    ) {
+      return 'System overheated. Please wait a minute.';
+    }
+    if (
       lower.includes('503') ||
-      lower.includes('429') ||
       lower.includes('high demand') ||
       lower.includes('overloaded') ||
       lower.includes('service unavailable') ||
@@ -460,7 +482,7 @@ export default function Home() {
         body: JSON.stringify({
           query,
           imageUrl: imageToSend || undefined,
-          contextNode: selectedNode.id === 'hub' ? 'hub' : selectedNode,
+          contextNode: selectedNode.id ? String(selectedNode.id) : 'hub',
         }),
       });
 
@@ -1135,7 +1157,7 @@ export default function Home() {
               <input
                 type="file"
                 ref={fileInputRef}
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={handleImageSelect}
               />
