@@ -21,6 +21,48 @@ export interface Brain3DProps {
   focusIds?: Set<string> | null;
 }
 
+/**
+ * Generates quadratic Bézier curved line coordinates for galactic synaptic links.
+ * Curvature gives links a swooping, orbital trajectory instead of rigid sticks.
+ */
+function buildCurvedLineCoords(
+  p1: THREE.Vector3,
+  p2: THREE.Vector3,
+  curvature = 0.24,
+  segments = 10
+): number[] {
+  const v = new THREE.Vector3().subVectors(p2, p1);
+  const d = v.length();
+  if (d < 0.5) return [p1.x, p1.y, p1.z, p2.x, p2.y, p2.z];
+  const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+  let normal = new THREE.Vector3().crossVectors(v, new THREE.Vector3(0, 0, 1));
+  if (normal.lengthSq() < 0.0001) {
+    normal = new THREE.Vector3().crossVectors(v, new THREE.Vector3(0, 1, 0));
+  }
+  if (normal.lengthSq() < 0.0001) {
+    normal = new THREE.Vector3().crossVectors(v, new THREE.Vector3(1, 0, 0));
+  }
+  normal.normalize();
+  if (normal.dot(mid) < 0) normal.negate();
+  const ctrl = mid.clone().addScaledVector(normal, d * curvature);
+  const coords: number[] = [];
+  let prevX = p1.x;
+  let prevY = p1.y;
+  let prevZ = p1.z;
+  for (let i = 1; i <= segments; i++) {
+    const t = i / segments;
+    const invT = 1 - t;
+    const currX = invT * invT * p1.x + 2 * invT * t * ctrl.x + t * t * p2.x;
+    const currY = invT * invT * p1.y + 2 * invT * t * ctrl.y + t * t * p2.y;
+    const currZ = invT * invT * p1.z + 2 * invT * t * ctrl.z + t * t * p2.z;
+    coords.push(prevX, prevY, prevZ, currX, currY, currZ);
+    prevX = currX;
+    prevY = currY;
+    prevZ = currZ;
+  }
+  return coords;
+}
+
 export default function Brain3D({
   data,
   selectedNode,
@@ -58,6 +100,7 @@ export default function Brain3D({
 
   // Highlight & theme update callback refs (avoid destroying WebGLRenderer on theme switch)
   const isLightRef = useRef<boolean>(isLight);
+  const meshByIdRef = useRef<Map<string, THREE.Mesh>>(new Map());
   const applyVisualStateRef = useRef<((hoverId: string | null, selectId: string | null) => void) | null>(
     null
   );
@@ -104,10 +147,16 @@ export default function Brain3D({
     selectedNodeRef.current = selectedNode || null;
 
     if (selectedNode && selectedNode.id !== 'hub') {
-      const nx = selectedNode.fx ?? selectedNode.x ?? 0;
-      const ny = selectedNode.fy ?? selectedNode.y ?? 0;
-      const nz = selectedNode.fz ?? selectedNode.z ?? 0;
-      const nodeVec = new THREE.Vector3(nx, ny, nz);
+      const mesh = meshByIdRef.current.get(String(selectedNode.id));
+      const nodeVec = new THREE.Vector3();
+      if (mesh) {
+        mesh.getWorldPosition(nodeVec);
+      } else {
+        const nx = selectedNode.fx ?? selectedNode.x ?? 0;
+        const ny = selectedNode.fy ?? selectedNode.y ?? 0;
+        const nz = selectedNode.fz ?? selectedNode.z ?? 0;
+        nodeVec.set(nx, ny, nz);
+      }
       const dir = nodeVec.clone().normalize();
       if (dir.lengthSq() < 0.001) dir.set(0, 0.2, 1).normalize();
 
@@ -181,30 +230,45 @@ export default function Brain3D({
     const environmentGroup = new THREE.Group();
     scene.add(environmentGroup);
 
-    // Subtle radial orbital rings around the brain cortex
-    const ringGeo1 = new THREE.RingGeometry(78, 78.35, 96);
+    // Subtle radial concentric orbital rings around the galaxy cortex
+    // Ring 1 (Core / Engineering Ring ~28)
+    const ringGeo1 = new THREE.RingGeometry(27.8, 28.25, 128);
     ringGeo1.rotateX(Math.PI / 2);
     const ringMat1 = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x94a3b8 : 0x1e3a8a,
+      color: isLight ? 0x0284c7 : 0x00ffff,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: isLight ? 0.35 : 0.28,
+      opacity: isLight ? 0.38 : 0.30,
     });
     const ring1 = new THREE.Mesh(ringGeo1, ringMat1);
     ring1.position.y = -32;
     environmentGroup.add(ring1);
 
-    const ringGeo2 = new THREE.RingGeometry(102, 102.25, 128);
+    // Ring 2 (Humanities Ring ~80)
+    const ringGeo2 = new THREE.RingGeometry(79.7, 80.3, 160);
     ringGeo2.rotateX(Math.PI / 2);
     const ringMat2 = new THREE.MeshBasicMaterial({
-      color: isLight ? 0x0284c7 : 0x00ffff,
+      color: isLight ? 0x9333ea : 0xd946ef,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: isLight ? 0.22 : 0.12,
+      opacity: isLight ? 0.32 : 0.24,
     });
     const ring2 = new THREE.Mesh(ringGeo2, ringMat2);
     ring2.position.y = -32;
     environmentGroup.add(ring2);
+
+    // Ring 3 (World Ring ~140)
+    const ringGeo3 = new THREE.RingGeometry(139.5, 140.4, 192);
+    ringGeo3.rotateX(Math.PI / 2);
+    const ringMat3 = new THREE.MeshBasicMaterial({
+      color: isLight ? 0x059669 : 0x10b981,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: isLight ? 0.26 : 0.18,
+    });
+    const ring3 = new THREE.Mesh(ringGeo3, ringMat3);
+    ring3.position.y = -32;
+    environmentGroup.add(ring3);
 
     // Polar crosshairs on the tactical floor plane
     const gridHelper = new THREE.GridHelper(
@@ -246,13 +310,27 @@ export default function Brain3D({
 
     const nodeById = new Map<string, BrainDocNode>();
     const meshById = new Map<string, THREE.Mesh>();
+    meshByIdRef.current = meshById;
     const haloById = new Map<string, THREE.Mesh>();
     const pickableMeshes: THREE.Mesh[] = [];
 
-    const agentCoreGeo = new THREE.SphereGeometry(2.1, 20, 20);
-    const agentHaloGeo = new THREE.SphereGeometry(3.8, 20, 20);
-    const ruleCoreGeo = new THREE.SphereGeometry(0.68, 12, 12);
-    const ruleHaloGeo = new THREE.SphereGeometry(2.1, 14, 14);
+    // Tiered geometries: Core Agents large (2.6), Domain Agents medium (1.7), Rules tiny (0.65)
+    const coreAgentGeo = new THREE.SphereGeometry(2.6, 24, 24);
+    const coreHaloGeo = new THREE.SphereGeometry(4.8, 24, 24);
+    const domainAgentGeo = new THREE.SphereGeometry(1.7, 18, 18);
+    const domainHaloGeo = new THREE.SphereGeometry(3.2, 18, 18);
+    const ruleCoreGeo = new THREE.SphereGeometry(0.65, 12, 12);
+    const ruleHaloGeo = new THREE.SphereGeometry(1.8, 12, 12);
+
+    const getNodeTier = (node: BrainDocNode): 'core' | 'domain' | 'rule' => {
+      if ((node.val && node.val >= 20) || (node.group === 1 && node.cluster === 'Engineering')) {
+        return 'core';
+      }
+      if ((node.val && node.val >= 10) || node.category === 'agent' || node.category === 'domain') {
+        return 'domain';
+      }
+      return 'rule';
+    };
 
     const getClusterColor = (cluster?: string, light = isLight): number => {
       if (cluster === 'Humanities') {
@@ -273,20 +351,28 @@ export default function Brain3D({
       const nx = node.fx ?? node.x ?? 0;
       const ny = node.fy ?? node.y ?? 0;
       const nz = node.fz ?? node.z ?? 0;
-      const isAgent = node.group === 1;
+      const tier = getNodeTier(node);
+      const isCore = tier === 'core';
+      const isDomain = tier === 'domain';
+      const isAnchor = isCore || isDomain;
+
+      const coreGeo = isCore ? coreAgentGeo : isDomain ? domainAgentGeo : ruleCoreGeo;
+      const haloGeo = isCore ? coreHaloGeo : isDomain ? domainHaloGeo : ruleHaloGeo;
+      const hitRadius = isCore ? 6.0 : isDomain ? 4.2 : 2.8;
+
       const nodeColor = getClusterColor(node.cluster, isLight);
 
       const coreMat = new THREE.MeshBasicMaterial({
-        color: isAgent ? nodeColor : ruleColor,
+        color: isAnchor ? nodeColor : ruleColor,
       });
-      const mesh = new THREE.Mesh(isAgent ? agentCoreGeo : ruleCoreGeo, coreMat);
+      const mesh = new THREE.Mesh(coreGeo, coreMat);
       mesh.position.set(nx, ny, nz);
       mesh.userData = { node };
       brainGroup.add(mesh);
       meshById.set(String(node.id), mesh);
 
       // Generous invisible hit target so mouse hover & click register reliably
-      const hitTargetGeo = new THREE.SphereGeometry(isAgent ? 5.2 : 3.6, 12, 12);
+      const hitTargetGeo = new THREE.SphereGeometry(hitRadius, 12, 12);
       const hitTargetMat = new THREE.MeshBasicMaterial({ visible: false });
       const hitMesh = new THREE.Mesh(hitTargetGeo, hitTargetMat);
       hitMesh.position.set(nx, ny, nz);
@@ -294,21 +380,30 @@ export default function Brain3D({
       brainGroup.add(hitMesh);
       pickableMeshes.push(hitMesh);
 
-      // Outer glow halo (visible by default for Group 1 Agents, and shown on hover/select for Group 2)
+      // Outer glow halo (visible by default for Anchors, and shown on hover/select for Rules)
       const haloMat = new THREE.MeshBasicMaterial({
         color: nodeColor,
         transparent: true,
-        opacity: isAgent ? (isLight ? 0.35 : 0.28) : 0.0,
+        opacity: isCore
+          ? (isLight ? 0.38 : 0.30)
+          : isDomain
+          ? (isLight ? 0.30 : 0.22)
+          : 0.0,
         depthWrite: false,
       });
-      const halo = new THREE.Mesh(isAgent ? agentHaloGeo : ruleHaloGeo, haloMat);
+      const halo = new THREE.Mesh(haloGeo, haloMat);
       halo.position.set(nx, ny, nz);
       brainGroup.add(halo);
       haloById.set(String(node.id), halo);
     });
 
-    // Build Base Synaptic Links (#1E3A8A) + Highlight Overlay Links (#00ffff)
-    const validLinks: Array<{ src: BrainDocNode; tgt: BrainDocNode }> = [];
+    // Build Base Synaptic Curved Links + Highlight Overlay Curved Links (Curvature 0.24)
+    const validLinks: Array<{
+      src: BrainDocNode;
+      tgt: BrainDocNode;
+      curveCoords: number[];
+      isLongRange: boolean;
+    }> = [];
     const baseLineCoords: number[] = [];
 
     graphData.links.forEach((link) => {
@@ -319,20 +414,17 @@ export default function Brain3D({
       const a = nodeById.get(String(srcId));
       const b = nodeById.get(String(tgtId));
       if (a && b) {
-        validLinks.push({ src: a, tgt: b });
-        // Keep the resting cortical wireframe clean by omitting long-range agent-to-synapse spokes at rest
-        // (they still illuminate in glowing cyan via validLinks when hovering or selecting either node!)
-        const isLongRangeAgentToSynapse =
+        const p1 = new THREE.Vector3(a.fx ?? a.x ?? 0, a.fy ?? a.y ?? 0, a.fz ?? a.z ?? 0);
+        const p2 = new THREE.Vector3(b.fx ?? b.x ?? 0, b.fy ?? b.y ?? 0, b.fz ?? b.z ?? 0);
+        const curveCoords = buildCurvedLineCoords(p1, p2, 0.24, 10);
+        const isLongRange =
           (a.group === 1 && b.category === 'synapse') || (b.group === 1 && a.category === 'synapse');
-        if (!isLongRangeAgentToSynapse) {
-          baseLineCoords.push(
-            a.fx ?? a.x ?? 0,
-            a.fy ?? a.y ?? 0,
-            a.fz ?? a.z ?? 0,
-            b.fx ?? b.x ?? 0,
-            b.fy ?? b.y ?? 0,
-            b.fz ?? b.z ?? 0
-          );
+
+        validLinks.push({ src: a, tgt: b, curveCoords, isLongRange });
+        if (!isLongRange) {
+          for (let i = 0; i < curveCoords.length; i++) {
+            baseLineCoords.push(curveCoords[i]);
+          }
         }
       }
     });
@@ -347,7 +439,7 @@ export default function Brain3D({
     const baseLineSegments = new THREE.LineSegments(baseLineGeo, baseLineMat);
     brainGroup.add(baseLineSegments);
 
-    // Dynamic highlighted links connected to hovered/selected node
+    // Dynamic highlighted curved links connected to hovered/selected node
     const highlightLineGeo = new THREE.BufferGeometry();
     const highlightLineMat = new THREE.LineBasicMaterial({
       color: isLightRef.current ? 0x0284c7 : 0x00ffff,
@@ -365,7 +457,10 @@ export default function Brain3D({
 
       meshById.forEach((mesh, id) => {
         const node = mesh.userData.node as BrainDocNode;
-        const isAgent = node.group === 1;
+        const tier = getNodeTier(node);
+        const isCore = tier === 'core';
+        const isDomain = tier === 'domain';
+        const isAnchor = isCore || isDomain;
         const isHovered = id === hoverId;
         const isSelected = id === selectId;
         const isActive = isHovered || isSelected;
@@ -377,19 +472,23 @@ export default function Brain3D({
 
         if (isActive) {
           mat.color.setHex(nodeColor);
-          mesh.scale.setScalar(isAgent ? 1.45 : 1.9);
+          mesh.scale.setScalar(isCore ? 1.4 : isDomain ? 1.6 : 2.0);
           if (halo && haloMat) {
             haloMat.color.setHex(nodeColor);
             halo.scale.setScalar(1.35);
             haloMat.opacity = light ? 0.55 : 0.45;
           }
         } else {
-          mat.color.setHex(isAgent ? nodeColor : curRuleColor);
+          mat.color.setHex(isAnchor ? nodeColor : curRuleColor);
           mesh.scale.setScalar(1.0);
           if (halo && haloMat) {
             haloMat.color.setHex(nodeColor);
             halo.scale.setScalar(1.0);
-            haloMat.opacity = isAgent ? (light ? 0.28 : 0.22) : 0.0;
+            haloMat.opacity = isCore
+              ? (light ? 0.38 : 0.30)
+              : isDomain
+              ? (light ? 0.30 : 0.22)
+              : 0.0;
           }
         }
       });
@@ -418,16 +517,11 @@ export default function Brain3D({
       }
 
       const activeCoords: number[] = [];
-      validLinks.forEach(({ src, tgt }) => {
+      validLinks.forEach(({ src, tgt, curveCoords }) => {
         if (String(src.id) === activeId || String(tgt.id) === activeId) {
-          activeCoords.push(
-            src.fx ?? src.x ?? 0,
-            src.fy ?? src.y ?? 0,
-            src.fz ?? src.z ?? 0,
-            tgt.fx ?? tgt.x ?? 0,
-            tgt.fy ?? tgt.y ?? 0,
-            tgt.fz ?? tgt.z ?? 0
-          );
+          for (let i = 0; i < curveCoords.length; i++) {
+            activeCoords.push(curveCoords[i]);
+          }
         }
       });
       highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute(activeCoords, 3));
@@ -440,10 +534,12 @@ export default function Brain3D({
       const nextBg = lightMode ? 0xf8fafc : 0x050505;
       scene.background = new THREE.Color(nextBg);
       scene.fog = new THREE.FogExp2(nextBg, lightMode ? 0.0016 : 0.0022);
-      ringMat1.color.setHex(lightMode ? 0x94a3b8 : 0x1e3a8a);
-      ringMat1.opacity = lightMode ? 0.35 : 0.28;
-      ringMat2.color.setHex(lightMode ? 0x0284c7 : 0x00ffff);
-      ringMat2.opacity = lightMode ? 0.22 : 0.12;
+      ringMat1.color.setHex(lightMode ? 0x0284c7 : 0x00ffff);
+      ringMat1.opacity = lightMode ? 0.38 : 0.30;
+      ringMat2.color.setHex(lightMode ? 0x9333ea : 0xd946ef);
+      ringMat2.opacity = lightMode ? 0.32 : 0.24;
+      ringMat3.color.setHex(lightMode ? 0x059669 : 0x10b981);
+      ringMat3.opacity = lightMode ? 0.26 : 0.18;
       (gridHelper.material as THREE.Material).opacity = lightMode ? 0.35 : 0.25;
       starMat.color.setHex(lightMode ? 0x64748b : 0x38bdf8);
       starMat.size = lightMode ? 0.95 : 0.85;
@@ -560,9 +656,14 @@ export default function Brain3D({
 
       controls.update();
 
-      // Subtle counter-rotation of the ambient starfield and tactical ring
-      starField.rotation.y += 0.0004;
-      ring2.rotation.z -= 0.001;
+      // Continuous subtle rotation so the entire galaxy slowly revolves in space
+      if (!isLockedOnNode) {
+        brainGroup.rotation.y += 0.0006;
+      }
+      starField.rotation.y += 0.0003;
+      ring1.rotation.z += 0.0008;
+      ring2.rotation.z -= 0.0006;
+      ring3.rotation.z += 0.0004;
 
       renderer.render(scene, camera);
 
@@ -612,6 +713,7 @@ export default function Brain3D({
         renderer.domElement.removeEventListener('dblclick', handleDblClick);
       }
       cancelAnimationFrame(animId);
+      meshByIdRef.current.clear();
       applyThemeRef.current = null;
       applyVisualStateRef.current = null;
       controls.dispose();

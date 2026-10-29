@@ -1,6 +1,7 @@
 import { buildBrainGraph } from './brainGraph';
 import {
   forceSimulation,
+  forceRadial,
   forceX,
   forceY,
   forceZ,
@@ -315,9 +316,12 @@ export function parseMarkdownNode(
 
   const coreAgentCode = SEVEN_CORE_AGENTS[id];
   const isResearchAgent = id === 'researchagent';
-  const isAnchorAgent = Boolean(coreAgentCode || isResearchAgent || category === 'agent');
+  const is7Core = Boolean(coreAgentCode && !isResearchAgent);
+  const isDomainAgent = Boolean(!is7Core && (isResearchAgent || category === 'agent' || category === 'domain'));
+  const isAnchorAgent = Boolean(is7Core || isDomainAgent);
   const resolvedOwner = resolveAgentOwner(id);
   const cluster = resolveNodeCluster(id);
+  const val = is7Core ? 25 : isDomainAgent ? 15 : 3;
 
   return {
     id,
@@ -328,10 +332,10 @@ export function parseMarkdownNode(
       ? 'RS'
       : (coreAgentCode ?? (resolvedOwner.agentCode as any)),
     cluster,
-    category: isAnchorAgent ? 'agent' : category,
+    category: is7Core ? 'agent' : isDomainAgent ? 'domain' : category,
     content: contentWithoutFrontmatter.trim(),
     rules,
-    val: isAnchorAgent ? 3.2 : 1.0,
+    val,
   };
 }
 
@@ -846,7 +850,7 @@ export function getBrainData(options?: {
         description: 'Blank-slate vault (0 personal rules). Run Launcher L-01 to assess yourself.',
         group: 2,
         category: 'hub',
-        val: 2.0,
+        val: 28,
         fx: 0,
         fy: 0,
         fz: 0,
@@ -935,7 +939,7 @@ export function getBrainData(options?: {
     description: 'Central procedural judgment engine & 7-Agent execution gatekeeper.',
     group: 2,
     category: 'hub',
-    val: 2.0,
+    val: 28,
     fx: 0,
     fy: 0,
     fz: 0,
@@ -946,10 +950,16 @@ export function getBrainData(options?: {
     if (index < docNodes.length) {
       const doc = docNodes[index];
       const owner = resolveAgentOwner(doc.id);
+      const is7Core = Boolean(SEVEN_CORE_AGENTS[doc.id] && doc.id !== 'researchagent');
+      const isDomainAgent = Boolean(
+        !is7Core && (doc.id === 'researchagent' || doc.category === 'agent' || doc.category === 'domain')
+      );
+      const val = is7Core ? 25 : isDomainAgent ? 15 : (doc.val ?? 15);
       nodes.push({
         ...doc,
         agentCode: doc.agentCode ?? owner.agentCode,
         cluster: doc.cluster ?? resolveNodeCluster(doc.id),
+        val,
         fx: doc.fx ?? pNode.ax,
         fy: doc.fy ?? pNode.ay,
         fz: doc.fz ?? pNode.az,
@@ -978,7 +988,7 @@ export function getBrainData(options?: {
         cluster,
         category: 'synapse',
         content: ruleEntry.parentContent,
-        val: 1.0,
+        val: 3,
         fx: pNode.ax,
         fy: pNode.ay,
         fz: pNode.az,
@@ -1021,8 +1031,25 @@ export function getBrainData(options?: {
     }
   });
 
-  // 3D Force-Directed Physics Simulation with Cluster Lobes
-  // Pulls Engineering to the left (x < 0), Humanities to the right (x > 0), and World to the bottom (y < 0)
+  // 3D Force-Directed Galaxy Cortex Physics (Concentric Orbital Rings)
+  // Pulls Engineering / 7 Core Agents tightly into the center (radius 0-30),
+  // Humanities into a middle ring (radius ~80), and World into an outer ring (radius ~140).
+  const getGalaxyRadius = (d: any): number => {
+    if (d.id === 'hub') return 0;
+    const isCore = d.group === 1 || (d.val && d.val >= 20);
+    const isDomain = d.category === 'agent' || d.category === 'domain' || (d.val && d.val >= 10);
+    if (d.cluster === 'Engineering') {
+      return isCore ? 18 : 28;
+    }
+    if (d.cluster === 'Humanities') {
+      return isDomain ? 78 : 84;
+    }
+    if (d.cluster === 'World') {
+      return isDomain ? 136 : 142;
+    }
+    return 28;
+  };
+
   const simNodes = nodes.map((n) => ({
     id: n.id,
     cluster: n.cluster ?? resolveNodeCluster(n.id),
@@ -1032,6 +1059,9 @@ export function getBrainData(options?: {
     x: n.fx !== undefined ? n.fx : (n.x ?? (Math.random() - 0.5) * 20),
     y: n.fy !== undefined ? n.fy : (n.y ?? (Math.random() - 0.5) * 20),
     z: n.fz !== undefined ? n.fz : (n.z ?? (Math.random() - 0.5) * 20),
+    group: n.group,
+    val: n.val,
+    category: n.category,
   }));
 
   const simLinks = links.map((l) => ({
@@ -1041,34 +1071,21 @@ export function getBrainData(options?: {
 
   const simulation = forceSimulation(simNodes, 3)
     .force(
-      'x',
-      forceX((d: any) => {
-        if (d.id === 'hub') return 0;
-        if (d.cluster === 'Engineering') return -48;
-        if (d.cluster === 'Humanities') return 48;
-        return 0; // World is centered horizontally
-      }).strength(0.24)
+      'radial',
+      forceRadial(getGalaxyRadius, 0, 0, 0).strength((d: any) => (d.id === 'hub' ? 1.0 : 0.65))
     )
+    .force('charge', forceManyBody().strength(-5))
+    .force('z', forceZ(0).strength(0.35))
     .force(
-      'y',
-      forceY((d: any) => {
-        if (d.id === 'hub') return 0;
-        if (d.cluster === 'World') return -36;
-        return 14; // Engineering and Humanities on upper lobes
-      }).strength(0.24)
-    )
-    .force(
-      'z',
-      forceZ((d: any) => {
-        if (d.id === 'hub') return 0;
-        return 0;
-      }).strength(0.08)
-    )
-    .force('charge', forceManyBody().strength(-12))
-    .force('link', forceLink(simLinks).id((d: any) => d.id).distance(18).strength(0.1));
+      'link',
+      forceLink(simLinks)
+        .id((d: any) => d.id)
+        .distance(14)
+        .strength(0.08)
+    );
 
-  // Run 60 simulation ticks so nodes settle into distinct cluster lobes
-  for (let i = 0; i < 60; i++) {
+  // Run 80 simulation ticks so nodes settle into distinct concentric orbital rings
+  for (let i = 0; i < 80; i++) {
     simulation.tick();
   }
 
