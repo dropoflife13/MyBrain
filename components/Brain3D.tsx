@@ -254,7 +254,16 @@ export default function Brain3D({
     const ruleCoreGeo = new THREE.SphereGeometry(0.68, 12, 12);
     const ruleHaloGeo = new THREE.SphereGeometry(2.1, 14, 14);
 
-    const agentColor = isLight ? 0x0284c7 : 0x00ffff;
+    const getClusterColor = (cluster?: string, light = isLight): number => {
+      if (cluster === 'Humanities') {
+        return light ? 0x9333ea : 0xd946ef; // Purple / Magenta
+      }
+      if (cluster === 'World') {
+        return light ? 0x059669 : 0x10b981; // Emerald Green
+      }
+      return light ? 0x0284c7 : 0x00ffff; // Electric Cyan (Engineering)
+    };
+
     const ruleColor = isLight ? 0x1e3a8a : 0xffffff;
 
     graphData.nodes.forEach((node) => {
@@ -265,9 +274,10 @@ export default function Brain3D({
       const ny = node.fy ?? node.y ?? 0;
       const nz = node.fz ?? node.z ?? 0;
       const isAgent = node.group === 1;
+      const nodeColor = getClusterColor(node.cluster, isLight);
 
       const coreMat = new THREE.MeshBasicMaterial({
-        color: isAgent ? agentColor : ruleColor,
+        color: isAgent ? nodeColor : ruleColor,
       });
       const mesh = new THREE.Mesh(isAgent ? agentCoreGeo : ruleCoreGeo, coreMat);
       mesh.position.set(nx, ny, nz);
@@ -286,9 +296,9 @@ export default function Brain3D({
 
       // Outer glow halo (visible by default for Group 1 Agents, and shown on hover/select for Group 2)
       const haloMat = new THREE.MeshBasicMaterial({
-        color: agentColor,
+        color: nodeColor,
         transparent: true,
-        opacity: isAgent ? (isLight ? 0.3 : 0.24) : 0.0,
+        opacity: isAgent ? (isLight ? 0.35 : 0.28) : 0.0,
         depthWrite: false,
       });
       const halo = new THREE.Mesh(isAgent ? agentHaloGeo : ruleHaloGeo, haloMat);
@@ -351,7 +361,6 @@ export default function Brain3D({
     const applyVisualState = (hoverId: string | null, selectId: string | null) => {
       const activeId = hoverId || selectId;
       const light = isLightRef.current;
-      const curAgentColor = light ? 0x0284c7 : 0x00ffff;
       const curRuleColor = light ? 0x1e3a8a : 0xffffff;
 
       meshById.forEach((mesh, id) => {
@@ -360,24 +369,25 @@ export default function Brain3D({
         const isHovered = id === hoverId;
         const isSelected = id === selectId;
         const isActive = isHovered || isSelected;
+        const nodeColor = getClusterColor(node.cluster, light);
 
         const mat = mesh.material as THREE.MeshBasicMaterial;
         const halo = haloById.get(id);
         const haloMat = halo?.material as THREE.MeshBasicMaterial | undefined;
 
         if (isActive) {
-          mat.color.setHex(curAgentColor);
+          mat.color.setHex(nodeColor);
           mesh.scale.setScalar(isAgent ? 1.45 : 1.9);
           if (halo && haloMat) {
-            haloMat.color.setHex(curAgentColor);
+            haloMat.color.setHex(nodeColor);
             halo.scale.setScalar(1.35);
             haloMat.opacity = light ? 0.55 : 0.45;
           }
         } else {
-          mat.color.setHex(isAgent ? curAgentColor : curRuleColor);
+          mat.color.setHex(isAgent ? nodeColor : curRuleColor);
           mesh.scale.setScalar(1.0);
           if (halo && haloMat) {
-            haloMat.color.setHex(curAgentColor);
+            haloMat.color.setHex(nodeColor);
             halo.scale.setScalar(1.0);
             haloMat.opacity = isAgent ? (light ? 0.28 : 0.22) : 0.0;
           }
@@ -400,6 +410,11 @@ export default function Brain3D({
       if (!activeId) {
         highlightLineGeo.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
         return;
+      }
+
+      const activeNode = nodeById.get(activeId);
+      if (activeNode) {
+        highlightLineMat.color.setHex(getClusterColor(activeNode.cluster, light));
       }
 
       const activeCoords: number[] = [];

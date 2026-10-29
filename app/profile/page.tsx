@@ -11,14 +11,19 @@ import {
   BookOpen,
   Brain,
   CheckCircle2,
+  Coins,
+  Compass,
   Cpu,
   Database,
   ExternalLink,
+  FileCheck,
   Flame,
   GitFork,
+  Globe,
   HelpCircle,
   Layers,
   Lock,
+  MessageSquare,
   RefreshCw,
   Search,
   Shield,
@@ -65,6 +70,7 @@ interface CognitiveStat {
 interface AgentMastery {
   agent: string;
   code: string;
+  cluster?: 'Engineering' | 'Humanities' | 'World';
   file: string;
   count: number;
   weightedScore?: number;
@@ -110,6 +116,7 @@ interface StatsPayload {
 }
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
+  // Engineering
   SEC: <Lock className="w-4 h-4 text-rose-500 dark:text-rose-400" />,
   SD: <Layers className="w-4 h-4 text-cyan-500 dark:text-[#00ffff]" />,
   DB: <Database className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
@@ -117,7 +124,37 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   UX: <Users className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
   IR: <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
   GR: <TrendingUp className="w-4 h-4 text-blue-500 dark:text-blue-400" />,
+  // Humanities
+  PSY: <Brain className="w-4 h-4 text-pink-500 dark:text-pink-400" />,
+  PHI: <Compass className="w-4 h-4 text-violet-500 dark:text-violet-400" />,
+  RHE: <MessageSquare className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
+  // World
+  ECO: <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
+  GEO: <Globe className="w-4 h-4 text-sky-500 dark:text-sky-400" />,
+  HLT: <Activity className="w-4 h-4 text-red-500 dark:text-red-400" />,
+  RS: <FileCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
 };
+
+const PROFILE_CLUSTERS = [
+  {
+    id: 'Engineering',
+    name: 'Engineering Cluster',
+    subtitle: 'The 7 Core Agents: Architecture, Security, Database, UI/UX, and Systems Integration (Rule BN-00)',
+    badge: '7 Agents',
+  },
+  {
+    id: 'Humanities',
+    name: 'Humanities Cluster',
+    subtitle: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric',
+    badge: '3 Domains',
+  },
+  {
+    id: 'World',
+    name: 'World Cluster',
+    subtitle: 'Macroeconomics, global geopolitics, biological health, and rigorous research verification',
+    badge: '4 Domains',
+  },
+] as const;
 
 export default function ProfilePage() {
   const [stats, setStats] = useState<StatsPayload | null>(null);
@@ -315,11 +352,11 @@ export default function ProfilePage() {
                   </h2>
                 </div>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-700 dark:text-[#00ffff] border border-cyan-500/20 font-semibold">
-                  5 Core Stats
+                  3 Core Clusters
                 </span>
               </div>
               <p className="text-xs text-slate-600 dark:text-zinc-400 mb-2">
-                Hexagonal mastery polygon visualizes relative strength across the 5 core cognitive dimensions:
+                Triangular mastery polygon visualizes relative strength across the 3 core cognitive clusters: Engineering, Humanities, and World:
               </p>
             </div>
 
@@ -589,111 +626,146 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Detailed 7 Agent Gatekeepers Breakdown */}
-        <div className="space-y-4">
+        {/* Detailed Multi-Cluster Agents & Domains Breakdown */}
+        <div className="space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-black/10 dark:border-white/10 pb-3">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-cyan-600 dark:text-[#00ffff]" />
-                <span>The 7 Agent Gatekeepers Mastery Breakdown</span>
+                <span>Multi-Cluster Knowledge & Agent Mastery Breakdown</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Weighted confidence scoring (Target: 60 weighted points per Agent; conf 1–5):
+                Confidence-weighted scoring across 3 Clusters (Target: 60 weighted points per Agent/Domain; conf 1–5):
               </p>
             </div>
             <span className="text-xs font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
-              Rule BN-00 Active
+              3 Clusters Active
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stats?.agentMastery.map((agent) => {
-              const weightedScore = agent.weightedScore ?? agent.count;
-              const isHighConfidence =
-                agent.isHighConfidence ?? agent.isOverclocked ?? weightedScore > agent.target;
-              const isUnverified =
-                agent.isUnverified ?? (agent.count >= 10 && (agent.avgConfidence ?? 1) < 2.0);
-              const displayScore =
-                agent.displayScore ?? agent.displayCount ?? Math.min(weightedScore, agent.target);
-              const percentageText =
-                agent.percentageText || (isHighConfidence ? '100%+' : `${agent.percentage}%`);
+          {PROFILE_CLUSTERS.map((cluster) => {
+            const clusterAgents =
+              stats?.agentMastery.filter(
+                (a) => (a.cluster || 'Engineering') === cluster.id
+              ) || [];
+            if (clusterAgents.length === 0) return null;
 
-              return (
-                <div
-                  key={agent.code}
-                  className={`p-5 rounded-xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-xl border transition-all shadow-md space-y-3 ${
-                    isHighConfidence
-                      ? 'border-purple-500/35 hover:border-purple-500/65 shadow-[0_0_12px_rgba(168,85,247,0.12)]'
-                      : isUnverified
-                      ? 'border-amber-500/40 hover:border-amber-500/70 shadow-[0_0_12px_rgba(245,158,11,0.1)]'
-                      : 'border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40'
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
-                        {AGENT_ICONS[agent.code] || <Shield className="w-4 h-4 text-cyan-500" />}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
-                          <span>{agent.agent}</span>
-                          {isHighConfidence && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
-                              High Confidence
-                            </span>
-                          )}
-                          {isUnverified && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
-                              ⚠️ Unverified
-                            </span>
-                          )}
-                        </h3>
-                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">
-                          {agent.code} • {agent.file}
-                        </div>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs font-mono font-bold shrink-0 ${
-                        isHighConfidence
-                          ? 'text-purple-600 dark:text-purple-400'
-                          : isUnverified
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-cyan-600 dark:text-[#00ffff]'
-                      }`}
-                    >
-                      {percentageText}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          isHighConfidence
-                            ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
-                            : isUnverified
-                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-                            : 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_8px_rgba(0,255,255,0.6)]'
+            return (
+              <div key={cluster.id} className="space-y-3.5">
+                <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-2">
+                  <div className="space-y-0.5">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          cluster.id === 'Engineering'
+                            ? 'bg-cyan-500 shadow-[0_0_8px_#00ffff]'
+                            : cluster.id === 'Humanities'
+                            ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
+                            : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
                         }`}
-                        style={{ width: `${agent.percentage}%` }}
                       />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                      <span>
-                        {displayScore} / {agent.target} pts ({agent.count} rules)
-                      </span>
-                      <span>Avg Conf: {Number(agent.avgConfidence ?? 1).toFixed(1)}</span>
-                    </div>
+                      <span>{cluster.name}</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+                      {cluster.subtitle}
+                    </p>
                   </div>
-
-                  <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-snug">
-                    {agent.description}
-                  </p>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-slate-600 dark:text-zinc-300 font-semibold border border-black/5 dark:border-white/10">
+                    {cluster.badge}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {clusterAgents.map((agent) => {
+                    const weightedScore = agent.weightedScore ?? agent.count;
+                    const isHighConfidence =
+                      agent.isHighConfidence ?? agent.isOverclocked ?? weightedScore > agent.target;
+                    const isUnverified =
+                      agent.isUnverified ?? (agent.count >= 10 && (agent.avgConfidence ?? 1) < 2.0);
+                    const displayScore =
+                      agent.displayScore ?? agent.displayCount ?? Math.min(weightedScore, agent.target);
+                    const percentageText =
+                      agent.percentageText || (isHighConfidence ? '100%+' : `${agent.percentage}%`);
+
+                    return (
+                      <div
+                        key={agent.code}
+                        className={`p-5 rounded-xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-xl border transition-all shadow-md space-y-3 ${
+                          isHighConfidence
+                            ? 'border-purple-500/35 hover:border-purple-500/65 shadow-[0_0_12px_rgba(168,85,247,0.12)]'
+                            : isUnverified
+                            ? 'border-amber-500/40 hover:border-amber-500/70 shadow-[0_0_12px_rgba(245,158,11,0.1)]'
+                            : 'border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="p-2 rounded-lg bg-slate-100 dark:bg-white/5 border border-black/5 dark:border-white/10 shrink-0">
+                              {AGENT_ICONS[agent.code] || <Shield className="w-4 h-4 text-cyan-500" />}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
+                                <span>{agent.agent}</span>
+                                {isHighConfidence && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
+                                    High Confidence
+                                  </span>
+                                )}
+                                {isUnverified && (
+                                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
+                                    ⚠️ Unverified
+                                  </span>
+                                )}
+                              </h4>
+                              <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono truncate">
+                                {agent.code} • {agent.file}
+                              </div>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-xs font-mono font-bold shrink-0 ${
+                              isHighConfidence
+                                ? 'text-purple-600 dark:text-purple-400'
+                                : isUnverified
+                                ? 'text-amber-600 dark:text-amber-400'
+                                : 'text-cyan-600 dark:text-[#00ffff]'
+                            }`}
+                          >
+                            {percentageText}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="w-full h-2 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isHighConfidence
+                                  ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]'
+                                  : isUnverified
+                                  ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                                  : 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_8px_rgba(0,255,255,0.6)]'
+                              }`}
+                              style={{ width: `${agent.percentage}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                            <span>
+                              {displayScore} / {agent.target} pts ({agent.count} rules)
+                            </span>
+                            <span>Avg Conf: {Number(agent.avgConfidence ?? 1).toFixed(1)}</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-600 dark:text-zinc-400 leading-snug">
+                          {agent.description}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Action Callouts Footer */}

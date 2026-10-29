@@ -62,6 +62,13 @@ const FILE_MAP: Record<string, string> = {
   DIGEST: 'brain/07-meta/DIGEST.md',
   'SIX-COMMANDS': 'brain/08-workflows/SIX-COMMANDS.md',
   'six-commands': 'brain/08-workflows/SIX-COMMANDS.md',
+  researchagent: 'agents/researchagent.md',
+  psychology: 'brain/02-domains/psychology.md',
+  philosophy: 'brain/02-domains/philosophy.md',
+  rhetoric: 'brain/02-domains/rhetoric.md',
+  economy: 'brain/02-domains/economy.md',
+  geopolitics: 'brain/02-domains/geopolitics.md',
+  health: 'brain/02-domains/health.md',
 };
 
 const PREFIX_TO_AGENT_FILE: Record<string, string> = {
@@ -81,6 +88,13 @@ const PREFIX_TO_AGENT_FILE: Record<string, string> = {
   H: 'brain/03-heuristics/HEURISTICS.md',
   P: 'brain/03-heuristics/PATTERNS.md',
   GR: 'agents/growthagent.md',
+  RS: 'agents/researchagent.md',
+  PSY: 'brain/02-domains/psychology.md',
+  PHI: 'brain/02-domains/philosophy.md',
+  RHE: 'brain/02-domains/rhetoric.md',
+  ECO: 'brain/02-domains/economy.md',
+  GEO: 'brain/02-domains/geopolitics.md',
+  HLT: 'brain/02-domains/health.md',
 };
 
 function getFileContentForNode(contextNode: any): string {
@@ -190,6 +204,13 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
     agents: ['agents/securityagent.md', 'agents/systemsdesignagent.md'],
     instruction:
       'You are executing the /review step of the Golden Path SDLC. Run a strict architectural and security code review against Rule BN-00 invariants, STRIDE threat boundaries, RLS bypass vectors, and systems integrity.',
+  },
+  research: {
+    cmd: '/research',
+    name: 'Epistemic Rigor & Source Verification',
+    agents: ['agents/researchagent.md'],
+    instruction:
+      'You are executing the /research step of the Cortex Pipeline. You strictly enforce Research Agent rules (RS-01 to RS-04). Verify factual claims with primary sources, distinguish consensus from theory/speculation, triangulate cross-domain statements, and explicitly state "I do not know" whenever empirical evidence or verified vault data is missing or contradictory. You MUST never fabricate facts, statistics, or citations.',
   },
 };
 

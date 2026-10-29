@@ -94,6 +94,7 @@ export async function GET() {
     const cognitiveStats = cortexStats.dimensions.map((d) => ({
       subject: d.subject || d.label,
       key: d.key,
+      cluster: d.cluster,
       value: d.percentage,
       count: d.count,
       weightedScore: d.weightedScore,
@@ -114,6 +115,7 @@ export async function GET() {
     const agentMastery = cortexStats.agentList.map((a) => ({
       agent: a.agent || a.fullName,
       code: a.code || '',
+      cluster: a.cluster || 'Engineering',
       file: a.file || '',
       count: a.count,
       weightedScore: a.weightedScore,

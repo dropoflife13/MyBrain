@@ -16,4 +16,5 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
 4. **/to-tickets**: Read `productmanageragent.md`. Decompose the specification into 5 sequential, atomic implementation tickets. Enforce that coding does not begin prematurely.
 5. **/implement**: Read `dbaagent.md`, `securityagent.md`, and `integrationagent.md`. Write the production-ready code for Ticket 1 adhering strictly to append-only ledgers and RLS defaults.
 6. **/review**: Read `securityagent.md` and `systemsdesignagent.md`. Execute a rigorous STRIDE security review, invariant verification, and check against BN-00 rules.
+7. **/research**: Read `agents/researchagent.md`. Verify factual claims, triangulate across primary sources, distinguish consensus from hypothesis, and explicitly state "I do not know" whenever empirical evidence is absent or contradictory to prevent hallucinations.
 

@@ -121,6 +121,13 @@ export async function GET() {
       { id: 'RED-FLAGS', relPath: 'brain/03-heuristics/RED-FLAGS.md', category: 'heuristic' },
       { id: 'DIGEST', relPath: 'brain/07-meta/DIGEST.md', category: 'identity' },
       { id: 'SIX-COMMANDS', relPath: 'brain/08-workflows/SIX-COMMANDS.md', category: 'workflow' },
+      { id: 'researchagent', relPath: 'agents/researchagent.md', category: 'agent' },
+      { id: 'psychology', relPath: 'brain/02-domains/psychology.md', category: 'domain' },
+      { id: 'philosophy', relPath: 'brain/02-domains/philosophy.md', category: 'domain' },
+      { id: 'rhetoric', relPath: 'brain/02-domains/rhetoric.md', category: 'domain' },
+      { id: 'economy', relPath: 'brain/02-domains/economy.md', category: 'domain' },
+      { id: 'geopolitics', relPath: 'brain/02-domains/geopolitics.md', category: 'domain' },
+      { id: 'health', relPath: 'brain/02-domains/health.md', category: 'domain' },
     ];
 
     const liveById = new Map<string, BrainDocNode>();

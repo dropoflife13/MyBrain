@@ -8,9 +8,12 @@ import type { BrainDocNode } from './brain-parser';
 export const TARGET_WEIGHTED_SCORE_PER_AGENT = 60;
 export const TARGET_RULES_PER_AGENT = TARGET_WEIGHTED_SCORE_PER_AGENT;
 
+export type ClusterId = 'Engineering' | 'Humanities' | 'World';
+
 export interface AgentStatConfig {
   id: string;
-  code: 'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR';
+  code: string;
+  cluster: ClusterId;
   label: string;
   fullName: string;
   file: string;
@@ -19,9 +22,11 @@ export interface AgentStatConfig {
 }
 
 export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
+  // --- Cluster 1: Engineering (The 7 Core Agents) ---
   {
     id: 'dbaagent',
     code: 'DB',
+    cluster: 'Engineering',
     label: 'Database',
     fullName: 'Database Agent',
     file: 'agents/dbaagent.md',
@@ -31,15 +36,17 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
   {
     id: 'securityagent',
     code: 'SEC',
+    cluster: 'Engineering',
     label: 'Security',
     fullName: 'Security Agent',
     file: 'agents/securityagent.md',
     prefixes: ['SEC', 'CS'],
-    description: 'Offensive & defensive security, RLS bypass suites, secret isolation.',
+    description: 'Offensive & defensive security, RLS bypass suites, secret isolation, rate limits.',
   },
   {
     id: 'uiuxagent',
     code: 'UX',
+    cluster: 'Engineering',
     label: 'UI / UX',
     fullName: 'UI/UX Agent',
     file: 'agents/uiuxagent.md',
@@ -49,6 +56,7 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
   {
     id: 'productmanageragent',
     code: 'PM',
+    cluster: 'Engineering',
     label: 'Product',
     fullName: 'Product Manager Agent',
     file: 'agents/productmanageragent.md',
@@ -58,6 +66,7 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
   {
     id: 'systemsdesignagent',
     code: 'SD',
+    cluster: 'Engineering',
     label: 'Systems',
     fullName: 'Systems Design Agent',
     file: 'agents/systemsdesignagent.md',
@@ -67,6 +76,7 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
   {
     id: 'integrationagent',
     code: 'IR',
+    cluster: 'Engineering',
     label: 'Integration',
     fullName: 'Integration Agent',
     file: 'agents/integrationagent.md',
@@ -76,11 +86,86 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
   {
     id: 'growthagent',
     code: 'GR',
+    cluster: 'Engineering',
     label: 'Growth',
     fullName: 'Growth Agent',
     file: 'agents/growthagent.md',
     prefixes: ['GR'],
     description: 'Value synthesis, executive pitches, activation loops, viral mechanics.',
+  },
+
+  // --- Cluster 2: Humanities ---
+  {
+    id: 'psychology',
+    code: 'PSY',
+    cluster: 'Humanities',
+    label: 'Psychology',
+    fullName: 'Psychology Domain',
+    file: 'brain/02-domains/psychology.md',
+    prefixes: ['PSY'],
+    description: 'Behavioral economics, cognitive biases, mental models, emotional resonance.',
+  },
+  {
+    id: 'philosophy',
+    code: 'PHI',
+    cluster: 'Humanities',
+    label: 'Philosophy',
+    fullName: 'Philosophy Domain',
+    file: 'brain/02-domains/philosophy.md',
+    prefixes: ['PHI'],
+    description: 'Epistemology, ethical frameworks, dialectics, first-principles inquiry.',
+  },
+  {
+    id: 'rhetoric',
+    code: 'RHE',
+    cluster: 'Humanities',
+    label: 'Rhetoric',
+    fullName: 'Rhetoric Domain',
+    file: 'brain/02-domains/rhetoric.md',
+    prefixes: ['RHE'],
+    description: 'Persuasion, narrative framing, classical argumentation, voice and tone.',
+  },
+
+  // --- Cluster 3: World ---
+  {
+    id: 'economy',
+    code: 'ECO',
+    cluster: 'World',
+    label: 'Economy',
+    fullName: 'Economy Domain',
+    file: 'brain/02-domains/economy.md',
+    prefixes: ['ECO'],
+    description: 'Market incentives, macroeconomic cycles, monetary dynamics, capital allocation.',
+  },
+  {
+    id: 'geopolitics',
+    code: 'GEO',
+    cluster: 'World',
+    label: 'Geopolitics',
+    fullName: 'Geopolitics Domain',
+    file: 'brain/02-domains/geopolitics.md',
+    prefixes: ['GEO'],
+    description: 'Global resource flows, international trade, sovereignty, statecraft.',
+  },
+  {
+    id: 'health',
+    code: 'HLT',
+    cluster: 'World',
+    label: 'Health',
+    fullName: 'Health Domain',
+    file: 'brain/02-domains/health.md',
+    prefixes: ['HLT'],
+    description: 'Biological longevity, metabolic health, cognitive endurance, somatic baselines.',
+  },
+  {
+    id: 'researchagent',
+    code: 'RS',
+    cluster: 'World',
+    label: 'Research',
+    fullName: 'Research Agent',
+    file: 'agents/researchagent.md',
+    prefixes: ['RS'],
+    description: 'Epistemic rigor, source verification, triangulation, anti-hallucination gates.',
   },
 ];
 
@@ -88,57 +173,43 @@ export interface DimensionConfig {
   key: string;
   subject: string;
   label: string;
+  cluster: ClusterId;
   prefixes: string[];
-  agentCodes: Array<'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR'>;
+  agentCodes: string[];
   agentCount: number;
   description: string;
 }
 
 export const DIMENSION_CONFIGS: DimensionConfig[] = [
   {
-    key: 'security',
-    subject: 'Security',
-    label: 'Security',
-    prefixes: ['SEC', 'CS'],
-    agentCodes: ['SEC'],
-    agentCount: 1, // 1 * 60 = 60 pts
-    description: 'STRIDE threat modeling, RLS default-deny, privileged secret isolation, tamper-proof audit trails.',
-  },
-  {
-    key: 'systems',
-    subject: 'Systems',
-    label: 'Systems',
-    prefixes: ['SD', 'SO', 'DB'],
-    agentCodes: ['SD', 'DB'],
-    agentCount: 2, // 2 * 60 = 120 pts
-    description: 'Append-only schema architecture, distributed queues, failure modes, data contracts.',
-  },
-  {
-    key: 'empathy',
-    subject: 'Empathy',
-    label: 'Empathy',
-    prefixes: ['PM', 'BA', 'OP', 'EP', 'UX', 'UI', 'TA'],
-    agentCodes: ['PM', 'UX'],
-    agentCount: 2, // 2 * 60 = 120 pts
-    description: 'Problem edge-case interrogation, UI state hygiene, persona empathy, cognitive friction reduction.',
-  },
-  {
-    key: 'execution',
-    subject: 'Execution',
-    label: 'Execution',
-    prefixes: ['IR', 'RF', 'H', 'P', 'GR'],
-    agentCodes: ['IR', 'GR'],
-    agentCount: 2, // 2 * 60 = 120 pts
-    description: 'Webhook verification, atomic ticket delivery, telemetry loops, viral growth mechanics.',
-  },
-  {
-    key: 'capacity',
-    subject: 'Capacity',
-    label: 'Capacity',
-    prefixes: ['ALL'],
+    key: 'engineering',
+    subject: 'Engineering',
+    label: 'Engineering Cluster',
+    cluster: 'Engineering',
+    prefixes: ['DB', 'SEC', 'CS', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'EP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
     agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR'],
     agentCount: 7, // 7 * 60 = 420 pts
-    description: 'Total confidence-weighted procedural heuristics and gatekeeper invariants in the vault.',
+    description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
+  },
+  {
+    key: 'humanities',
+    subject: 'Humanities',
+    label: 'Humanities Cluster',
+    cluster: 'Humanities',
+    prefixes: ['PSY', 'PHI', 'RHE'],
+    agentCodes: ['PSY', 'PHI', 'RHE'],
+    agentCount: 3, // 3 * 60 = 180 pts
+    description: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
+  },
+  {
+    key: 'world',
+    subject: 'World',
+    label: 'World Cluster',
+    cluster: 'World',
+    prefixes: ['ECO', 'GEO', 'HLT', 'RS'],
+    agentCodes: ['ECO', 'GEO', 'HLT', 'RS'],
+    agentCount: 4, // 4 * 60 = 240 pts
+    description: 'Macroeconomics, global geopolitical dynamics, biological health, and rigorous research verification.',
   },
 ];
 
@@ -148,6 +219,7 @@ export interface StatMetric {
   agent?: string;
   fullName?: string;
   label: string;
+  cluster?: ClusterId;
   subject?: string;
   file?: string;
   prefixes: string[];
@@ -179,6 +251,14 @@ export interface BlindSpotMetric {
   file: string;
 }
 
+export interface ClusterGroup {
+  id: ClusterId;
+  name: string;
+  description: string;
+  agents: StatMetric[];
+  dimension: StatMetric;
+}
+
 export interface CortexStatsResult {
   level: {
     levelNumber: number;
@@ -193,6 +273,8 @@ export interface CortexStatsResult {
   agents: Record<string, StatMetric>;
   agentList: StatMetric[];
   dimensions: StatMetric[];
+  clusters: Record<ClusterId, ClusterGroup>;
+  clusterList: ClusterGroup[];
   blindSpots: BlindSpotMetric[];
   prefixCounts: Record<string, number>;
   prefixWeights: Record<string, number>;
@@ -437,6 +519,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       agent: cfg.fullName,
       fullName: cfg.fullName,
       label: cfg.label,
+      cluster: cfg.cluster,
       file: cfg.file,
       prefixes: cfg.prefixes,
       count,
@@ -460,7 +543,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     agentList.push(metric);
   }
 
-  // 2. Calculate stats for the 5 Grouped Cognitive Dimensions
+  // 2. Calculate stats for the 3 Grouped Cognitive Dimensions (Engineering, Humanities, World)
   const dimensions: StatMetric[] = [];
 
   for (const dim of DIMENSION_CONFIGS) {
@@ -468,10 +551,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     let weightedScore = 0;
     const target = dim.agentCount * TARGET_WEIGHTED_SCORE_PER_AGENT;
 
-    if (dim.key === 'capacity') {
-      count = totalUniqueRules;
-      weightedScore = totalWeightedScore;
-    } else if (ruleMap.size > 0) {
+    if (ruleMap.size > 0) {
       ruleMap.forEach((val) => {
         if (dim.prefixes.includes(val.prefix)) {
           count += 1;
@@ -497,6 +577,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       key: dim.key,
       subject: dim.subject,
       label: dim.label,
+      cluster: dim.cluster,
       prefixes: dim.prefixes,
       count,
       weightedScore,
@@ -516,19 +597,45 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     });
   }
 
+  // 2b. Cluster Aggregates
+  const clusters: Record<ClusterId, ClusterGroup> = {
+    Engineering: {
+      id: 'Engineering',
+      name: 'Engineering',
+      description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
+      agents: agentList.filter((a) => a.cluster === 'Engineering'),
+      dimension: dimensions.find((d) => d.key === 'engineering')!,
+    },
+    Humanities: {
+      id: 'Humanities',
+      name: 'Humanities',
+      description: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
+      agents: agentList.filter((a) => a.cluster === 'Humanities'),
+      dimension: dimensions.find((d) => d.key === 'humanities')!,
+    },
+    World: {
+      id: 'World',
+      name: 'World',
+      description: 'Macroeconomics, global geopolitical dynamics, biological health, and rigorous research verification.',
+      agents: agentList.filter((a) => a.cluster === 'World'),
+      dimension: dimensions.find((d) => d.key === 'world')!,
+    },
+  };
+  const clusterList: ClusterGroup[] = Object.values(clusters);
+
   // 3. Operator Level & Title calculation (Weighted Quality Grade)
   let levelNumber = 1;
   let levelTitle = 'Level 1 Initiate';
   let levelSubtitle = 'Novice External Memory';
 
-  if (totalWeightedScore >= 360) {
+  if (totalWeightedScore >= 420) {
     levelNumber = 5;
     levelTitle = 'Level 5 Autonomous Mastermind';
-    levelSubtitle = 'Comprehensive Proven Invariant Singularity';
+    levelSubtitle = 'Global Second Brain Singularity & Multi-Cluster Mastery';
   } else if (totalWeightedScore >= 240) {
     levelNumber = 4;
-    levelTitle = 'Level 4 Principal Gatekeeper';
-    levelSubtitle = 'High-Confidence Institutional Memory & Strict SDLC Governance';
+    levelTitle = 'Level 4 Principal Architect';
+    levelSubtitle = 'High-Confidence Institutional Memory Across Clusters';
   } else if (totalWeightedScore >= 120) {
     levelNumber = 3;
     levelTitle = 'Level 3 Systems Architect';
@@ -558,72 +665,46 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     }
   }
 
-  // 4b. Low Mastery Diagnostics (< 30% of 60pt target)
+  // 4b. Low Mastery Diagnostics (< 30% of target) for Clusters
   const dimMap = new Map(dimensions.map((d) => [d.key, d]));
-  const secDim = dimMap.get('security');
-  const sysDim = dimMap.get('systems');
-  const empDim = dimMap.get('empathy');
-  const execDim = dimMap.get('execution');
-  const capDim = dimMap.get('capacity');
+  const engDim = dimMap.get('engineering');
+  const humDim = dimMap.get('humanities');
+  const worldDim = dimMap.get('world');
 
-  if (secDim && secDim.percentage < 30) {
+  if (engDim && engDim.percentage < 30) {
     blindSpots.push({
       type: 'low_mastery',
-      stat: 'Security',
-      percentage: secDim.percentage,
-      avgConfidence: secDim.avgConfidence,
-      ruleCount: secDim.count,
-      label: 'Low Security Invariants',
-      advice: 'Add defensive rules, STRIDE threat boundaries, or proven RLS bypass evidence (conf: 3–5) to securityagent.md and cybersec.md.',
-      file: 'agents/securityagent.md',
-    });
-  }
-  if (sysDim && sysDim.percentage < 30) {
-    blindSpots.push({
-      type: 'low_mastery',
-      stat: 'Systems',
-      percentage: sysDim.percentage,
-      avgConfidence: sysDim.avgConfidence,
-      ruleCount: sysDim.count,
-      label: 'Low Systems Design',
-      advice: 'Add architecture schemas, failure recovery modes, or database constraints with project evidence to systemsdesignagent.md and dbaagent.md.',
+      stat: 'Engineering',
+      percentage: engDim.percentage,
+      avgConfidence: engDim.avgConfidence,
+      ruleCount: engDim.count,
+      label: 'Low Engineering Mastery',
+      advice: 'Add core engineering rules across Architecture, Security, Database, UI/UX, and Systems Integration to meet the 420-point cluster target.',
       file: 'agents/systemsdesignagent.md',
     });
   }
-  if (empDim && empDim.percentage < 30) {
+  if (humDim && humDim.percentage < 30) {
     blindSpots.push({
       type: 'low_mastery',
-      stat: 'Empathy',
-      percentage: empDim.percentage,
-      avgConfidence: empDim.avgConfidence,
-      ruleCount: empDim.count,
-      label: 'Low User Empathy',
-      advice: 'Add user constraints, cognitive friction limits, or interrogation criteria with session evidence to uiuxagent.md and productmanageragent.md.',
-      file: 'agents/uiuxagent.md',
+      stat: 'Humanities',
+      percentage: humDim.percentage,
+      avgConfidence: humDim.avgConfidence,
+      ruleCount: humDim.count,
+      label: 'Humanities Gap',
+      advice: 'Elicit and add verified rules in Psychology (PSY), Philosophy (PHI), and Rhetoric (RHE) to build mental model depth.',
+      file: 'brain/02-domains/psychology.md',
     });
   }
-  if (execDim && execDim.percentage < 30) {
+  if (worldDim && worldDim.percentage < 30) {
     blindSpots.push({
       type: 'low_mastery',
-      stat: 'Execution',
-      percentage: execDim.percentage,
-      avgConfidence: execDim.avgConfidence,
-      ruleCount: execDim.count,
-      label: 'Low Execution & Delivery',
-      advice: 'Add webhook verification, retry semantics, or delivery specifications to integrationagent.md and growthagent.md.',
-      file: 'agents/integrationagent.md',
-    });
-  }
-  if (capDim && capDim.percentage < 30) {
-    blindSpots.push({
-      type: 'low_mastery',
-      stat: 'Capacity',
-      percentage: capDim.percentage,
-      avgConfidence: capDim.avgConfidence,
-      ruleCount: capDim.count,
-      label: 'Low Weighted Rule Capacity',
-      advice: 'Your external memory vault needs higher-confidence rules. Extract tacit heuristics using /assess and link real project evidence (ev:).',
-      file: 'brain/03-heuristics/HEURISTICS.md',
+      stat: 'World',
+      percentage: worldDim.percentage,
+      avgConfidence: worldDim.avgConfidence,
+      ruleCount: worldDim.count,
+      label: 'World Knowledge Gap',
+      advice: 'Expand rules in Economics (ECO), Geopolitics (GEO), Health (HLT), and Research (RS) to anchor real-world governance.',
+      file: 'brain/02-domains/economy.md',
     });
   }
 
@@ -657,6 +738,8 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     agents,
     agentList,
     dimensions,
+    clusters,
+    clusterList,
     blindSpots,
     prefixCounts,
     prefixWeights,

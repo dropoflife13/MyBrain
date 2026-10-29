@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   ArrowLeft,
   Check,
+  ChevronDown,
+  ChevronRight,
   Copy,
   Cpu,
   Download,
@@ -47,20 +49,41 @@ import { calculateCortexStats } from '../../lib/stats';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 
+const SIDEBAR_CLUSTERS = [
+  { id: 'Engineering', name: 'Engineering', badge: '7 Gates' },
+  { id: 'Humanities', name: 'Humanities', badge: '3 Domains' },
+  { id: 'World', name: 'World', badge: '4 Domains' },
+] as const;
+
+type ClusterKey = (typeof SIDEBAR_CLUSTERS)[number]['id'];
+
 const AGENT_DOCK: Array<{
   id: string;
   code: string;
+  cluster: ClusterKey;
   label: string;
   fullName: string;
   prefixes: string[];
 }> = [
-  { id: 'dbaagent', code: 'DB', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
-  { id: 'securityagent', code: 'SEC', label: 'Security', fullName: 'Security Agent', prefixes: ['SEC', 'CS'] },
-  { id: 'uiuxagent', code: 'UX', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UX', 'UI', 'TA'] },
-  { id: 'productmanageragent', code: 'PM', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP'] },
-  { id: 'systemsdesignagent', code: 'SD', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SD', 'SO'] },
-  { id: 'integrationagent', code: 'IR', label: 'Integration', fullName: 'Integration Agent', prefixes: ['IR', 'RF', 'H', 'P'] },
-  { id: 'growthagent', code: 'GR', label: 'Growth', fullName: 'Growth Agent', prefixes: ['GR'] },
+  // --- Cluster 1: Engineering (The 7 Core Agents) ---
+  { id: 'dbaagent', code: 'DB', cluster: 'Engineering', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
+  { id: 'securityagent', code: 'SEC', cluster: 'Engineering', label: 'Security', fullName: 'Security Agent', prefixes: ['SEC', 'CS'] },
+  { id: 'uiuxagent', code: 'UX', cluster: 'Engineering', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UX', 'UI', 'TA'] },
+  { id: 'productmanageragent', code: 'PM', cluster: 'Engineering', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP', 'EP'] },
+  { id: 'systemsdesignagent', code: 'SD', cluster: 'Engineering', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SD', 'SO'] },
+  { id: 'integrationagent', code: 'IR', cluster: 'Engineering', label: 'Integration', fullName: 'Integration Agent', prefixes: ['IR', 'RF', 'H', 'P'] },
+  { id: 'growthagent', code: 'GR', cluster: 'Engineering', label: 'Growth', fullName: 'Growth Agent', prefixes: ['GR'] },
+
+  // --- Cluster 2: Humanities ---
+  { id: 'psychology', code: 'PSY', cluster: 'Humanities', label: 'Psychology', fullName: 'Psychology Domain', prefixes: ['PSY'] },
+  { id: 'philosophy', code: 'PHI', cluster: 'Humanities', label: 'Philosophy', fullName: 'Philosophy Domain', prefixes: ['PHI'] },
+  { id: 'rhetoric', code: 'RHE', cluster: 'Humanities', label: 'Rhetoric', fullName: 'Rhetoric Domain', prefixes: ['RHE'] },
+
+  // --- Cluster 3: World ---
+  { id: 'economy', code: 'ECO', cluster: 'World', label: 'Economy', fullName: 'Economy Domain', prefixes: ['ECO'] },
+  { id: 'geopolitics', code: 'GEO', cluster: 'World', label: 'Geopolitics', fullName: 'Geopolitics Domain', prefixes: ['GEO'] },
+  { id: 'health', code: 'HLT', cluster: 'World', label: 'Health', fullName: 'Health Domain', prefixes: ['HLT'] },
+  { id: 'researchagent', code: 'RS', cluster: 'World', label: 'Research', fullName: 'Research Agent', prefixes: ['RS'] },
 ];
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
@@ -108,6 +131,13 @@ const WORKFLOW_PILLS = [
     prompt: '/review: Run a comprehensive security and systems audit against Rule BN-00 invariants and STRIDE boundaries.',
     agent: 'SEC',
   },
+  {
+    cmd: '/research',
+    label: 'Research (RS)',
+    desc: 'Fact-check, triangulate sources, and prevent hallucinations (RS)',
+    prompt: '/research: Investigate and fact-check this claim or topic. Cite primary sources, distinguish consensus from hypothesis, and explicitly state "I do not know" if verifiable evidence is missing.',
+    agent: 'RS',
+  },
 ];
 
 export default function Home() {
@@ -125,6 +155,18 @@ export default function Home() {
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [activeGate, setActiveGate] = useState<string | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [collapsedClusters, setCollapsedClusters] = useState<Record<string, boolean>>({
+    Engineering: false,
+    Humanities: false,
+    World: false,
+  });
+
+  const toggleCluster = (clusterId: string) => {
+    setCollapsedClusters((prev) => ({
+      ...prev,
+      [clusterId]: !prev[clusterId],
+    }));
+  };
 
   // Sliding AI Neural Chat Panel State (Framer Motion right sidebar)
   const [chatMessages, setChatMessages] = useState<
@@ -853,94 +895,128 @@ export default function Home() {
 
             <div className="my-1 border-t border-slate-200 dark:border-white/5" />
 
-            {/* 7 Core Agents with Dynamic Knowledge Bars */}
-            {AGENT_DOCK.map((agent) => {
-              const isActive = activeGate === agent.code;
-              const stat = cortexStats.agents[agent.code] || {
-                count: 0,
-                weightedScore: 0,
-                displayScore: 0,
-                displayCount: 0,
-                target: 60,
-                percentage: 0,
-                avgConfidence: 0,
-                isHighConfidence: false,
-                isOverclocked: false,
-                isUnverified: false,
-                percentageText: '0%',
-              };
-              const statusSuffix = stat.isHighConfidence
-                ? ' • High Confidence'
-                : stat.isUnverified
-                ? ' • ⚠️ Unverified'
-                : '';
-              const tooltipContent = `${agent.fullName} • ${stat.displayScore} / ${stat.target} pts (${stat.count} rules, avg conf ${stat.avgConfidence.toFixed(1)} • ${stat.percentageText}${statusSuffix})`;
+            {/* Collapsible Clusters: Engineering, Humanities, World */}
+            {SIDEBAR_CLUSTERS.map((cluster) => {
+              const isCollapsed = !!collapsedClusters[cluster.id];
+              const clusterAgents = AGENT_DOCK.filter((a) => a.cluster === cluster.id);
+              const clusterStat = cortexStats.clusters?.[cluster.id];
 
               return (
-                <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
+                <div key={cluster.id} className="space-y-1 pt-1 first:pt-0">
+                  {/* Cluster Accordion Header */}
                   <button
                     type="button"
-                    onClick={() => setActiveGate(isActive ? null : agent.code)}
-                    aria-pressed={isActive}
-                    className={`w-full px-3 py-2 rounded-lg flex flex-col gap-1.5 text-xs transition-all cursor-pointer border group ${
-                      isActive
-                        ? stat.isHighConfidence
-                          ? 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/50 text-purple-700 dark:text-purple-300 font-semibold shadow-[0_0_14px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/30'
-                          : 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
-                        : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
-                    }`}
+                    onClick={() => toggleCluster(cluster.id)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
                   >
-                    {/* Top Row: Indicator dot + Code + Label + Percentage Text */}
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            stat.isHighConfidence
-                              ? isActive
-                                ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
-                                : 'bg-purple-400 group-hover:bg-purple-300'
-                              : stat.isUnverified
-                              ? 'bg-amber-400 group-hover:bg-amber-300'
-                              : isActive
-                              ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
-                              : 'bg-cyan-500/70 group-hover:bg-cyan-400'
-                          }`}
-                        />
-                        <span className="font-bold tracking-wider text-left">{agent.code}</span>
-                        <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate font-normal">
-                          {agent.label}
-                        </span>
-                      </div>
-                      <span
-                        className={`text-[10px] font-mono font-semibold transition-colors shrink-0 ${
-                          stat.isHighConfidence
-                            ? 'text-purple-600 dark:text-purple-400 group-hover:text-purple-500 dark:group-hover:text-purple-300 font-bold'
-                            : stat.isUnverified
-                            ? 'text-amber-600 dark:text-amber-400 font-bold'
-                            : 'text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
-                        }`}
-                      >
-                        {stat.isUnverified ? `⚠️ ${stat.percentageText}` : stat.percentageText}
-                      </span>
+                    <div className="flex items-center gap-1.5">
+                      {isCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                      )}
+                      <span>{cluster.name}</span>
                     </div>
-
-                    {/* Knowledge Bar (Mastery Progress) */}
-                    <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${
-                          stat.isHighConfidence
-                            ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
-                            : stat.isUnverified
-                            ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]'
-                            : isActive
-                            ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]'
-                            : 'bg-cyan-500/80 dark:bg-[#00ffff]/70 group-hover:bg-cyan-400 group-hover:shadow-[0_0_8px_rgba(0,255,255,0.8)]'
-                        }`}
-                        style={{ width: `${stat.percentage}%` }}
-                      />
-                    </div>
+                    <span className="text-[10px] font-mono font-normal text-slate-400 dark:text-zinc-500">
+                      {clusterStat ? `${clusterStat.dimension.displayScore}/${clusterStat.dimension.target} pts` : cluster.badge}
+                    </span>
                   </button>
-                </Tooltip>
+
+                  {/* Cluster Agents with Knowledge Bars */}
+                  {!isCollapsed && (
+                    <div className="space-y-1">
+                      {clusterAgents.map((agent) => {
+                        const isActive = activeGate === agent.code;
+                        const stat = cortexStats.agents[agent.code] || {
+                          count: 0,
+                          weightedScore: 0,
+                          displayScore: 0,
+                          displayCount: 0,
+                          target: 60,
+                          percentage: 0,
+                          avgConfidence: 0,
+                          isHighConfidence: false,
+                          isOverclocked: false,
+                          isUnverified: false,
+                          percentageText: '0%',
+                        };
+                        const statusSuffix = stat.isHighConfidence
+                          ? ' • High Confidence'
+                          : stat.isUnverified
+                          ? ' • ⚠️ Unverified'
+                          : '';
+                        const tooltipContent = `${agent.fullName} • ${stat.displayScore} / ${stat.target} pts (${stat.count} rules, avg conf ${stat.avgConfidence.toFixed(1)} • ${stat.percentageText}${statusSuffix})`;
+
+                        return (
+                          <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
+                            <button
+                              type="button"
+                              onClick={() => setActiveGate(isActive ? null : agent.code)}
+                              aria-pressed={isActive}
+                              className={`w-full px-2.5 py-1.5 rounded-lg flex flex-col gap-1 text-xs transition-all cursor-pointer border group ${
+                                isActive
+                                  ? stat.isHighConfidence
+                                    ? 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/50 text-purple-700 dark:text-purple-300 font-semibold shadow-[0_0_14px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/30'
+                                    : 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
+                                  : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
+                              }`}
+                            >
+                              {/* Top Row: Indicator dot + Code + Label + Percentage Text */}
+                              <div className="flex items-center justify-between w-full">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <span
+                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                      stat.isHighConfidence
+                                        ? isActive
+                                          ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
+                                          : 'bg-purple-400 group-hover:bg-purple-300'
+                                        : stat.isUnverified
+                                        ? 'bg-amber-400 group-hover:bg-amber-300'
+                                        : isActive
+                                        ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
+                                        : 'bg-cyan-500/70 group-hover:bg-cyan-400'
+                                    }`}
+                                  />
+                                  <span className="font-bold tracking-wider text-left">{agent.code}</span>
+                                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                                    {agent.label}
+                                  </span>
+                                </div>
+                                <span
+                                  className={`text-[10px] font-mono font-semibold transition-colors shrink-0 ${
+                                    stat.isHighConfidence
+                                      ? 'text-purple-600 dark:text-purple-400 group-hover:text-purple-500 dark:group-hover:text-purple-300 font-bold'
+                                      : stat.isUnverified
+                                      ? 'text-amber-600 dark:text-amber-400 font-bold'
+                                      : 'text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
+                                  }`}
+                                >
+                                  {stat.isUnverified ? `⚠️ ${stat.percentageText}` : stat.percentageText}
+                                </span>
+                              </div>
+
+                              {/* Knowledge Bar (Mastery Progress) */}
+                              <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full transition-all duration-500 ${
+                                    stat.isHighConfidence
+                                      ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
+                                      : stat.isUnverified
+                                      ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]'
+                                      : isActive
+                                      ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_6px_#00ffff]'
+                                      : 'bg-cyan-500/80 dark:bg-[#00ffff]/70 group-hover:bg-cyan-400 group-hover:shadow-[0_0_8px_rgba(0,255,255,0.8)]'
+                                  }`}
+                                  style={{ width: `${stat.percentage}%` }}
+                                />
+                              </div>
+                            </button>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>

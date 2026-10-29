@@ -1,11 +1,36 @@
 import { buildBrainGraph } from './brainGraph';
+import {
+  forceSimulation,
+  forceX,
+  forceY,
+  forceZ,
+  forceManyBody,
+  forceLink,
+} from 'd3-force-3d';
+
+export type ClusterId = 'Engineering' | 'Humanities' | 'World';
 
 export interface BrainDocNode {
   id: string;
   name: string;
   description: string;
-  group: 1 | 2; // 1 = The 7 Core Agents (Cyan #00ffff), 2 = Rule & Domain Nodes (Tiny White #ffffff)
-  agentCode?: 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC';
+  group: 1 | 2; // 1 = The Core Agents / Domain Anchors, 2 = Rule & Domain Nodes
+  agentCode?:
+    | 'PM'
+    | 'UX'
+    | 'GR'
+    | 'SD'
+    | 'IR'
+    | 'DB'
+    | 'SEC'
+    | 'PSY'
+    | 'PHI'
+    | 'RHE'
+    | 'ECO'
+    | 'GEO'
+    | 'HLT'
+    | 'RS';
+  cluster?: ClusterId;
   category: 'hub' | 'agent' | 'domain' | 'heuristic' | 'identity' | 'synapse' | 'workflow';
   content?: string;
   rules?: string[];
@@ -191,8 +216,48 @@ export function resolveAgentOwner(idOrPrefix: string): {
 }
 
 /**
+ * Deterministic mapping of any document ID, agent, or rule prefix to its 3D Cluster lobe.
+ * Engineering: Left (x < 0)
+ * Humanities: Right (x > 0)
+ * World: Bottom (y < 0)
+ */
+export function resolveNodeCluster(idOrPrefix: string): ClusterId {
+  const clean = idOrPrefix.split('::')[0].trim();
+  const prefix = clean.split('-')[0].toUpperCase();
+
+  // Humanities Cluster (PSY, PHI, RHE)
+  if (
+    clean === 'psychology' ||
+    clean === 'philosophy' ||
+    clean === 'rhetoric' ||
+    prefix === 'PSY' ||
+    prefix === 'PHI' ||
+    prefix === 'RHE'
+  ) {
+    return 'Humanities';
+  }
+
+  // World Cluster (ECO, GEO, HLT, RS)
+  if (
+    clean === 'economy' ||
+    clean === 'geopolitics' ||
+    clean === 'health' ||
+    clean === 'researchagent' ||
+    prefix === 'ECO' ||
+    prefix === 'GEO' ||
+    prefix === 'HLT' ||
+    prefix === 'RS'
+  ) {
+    return 'World';
+  }
+
+  // Engineering Cluster (7 Core Agents + Engineering domains)
+  return 'Engineering';
+}
+
+/**
  * Extracts `name` (from `# Title`), `description` (from the first `- ` rule line),
- * and assigns `group: 1` to the 7 core agents (PM, UX, GR, SD, IR, DB, SEC) and `group: 2` to all other rule nodes.
+ * and assigns `group: 1` to core agents / anchor gates and `group: 2` to rule and synapse nodes.
  */
 export function parseMarkdownNode(
   id: string,
@@ -249,19 +314,24 @@ export function parseMarkdownNode(
   }
 
   const coreAgentCode = SEVEN_CORE_AGENTS[id];
-  const isCoreAgent = Boolean(coreAgentCode || category === 'agent');
+  const isResearchAgent = id === 'researchagent';
+  const isAnchorAgent = Boolean(coreAgentCode || isResearchAgent || category === 'agent');
   const resolvedOwner = resolveAgentOwner(id);
+  const cluster = resolveNodeCluster(id);
 
   return {
     id,
     name,
     description,
-    group: isCoreAgent ? 1 : 2,
-    agentCode: coreAgentCode ?? resolvedOwner.agentCode,
-    category: isCoreAgent ? 'agent' : category,
+    group: isAnchorAgent ? 1 : 2,
+    agentCode: isResearchAgent
+      ? 'RS'
+      : (coreAgentCode ?? (resolvedOwner.agentCode as any)),
+    cluster,
+    category: isAnchorAgent ? 'agent' : category,
     content: contentWithoutFrontmatter.trim(),
     rules,
-    val: isCoreAgent ? 3.2 : 1.0,
+    val: isAnchorAgent ? 3.2 : 1.0,
   };
 }
 
@@ -568,7 +638,60 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
 - **/to-spec**: Read systemsdesignagent.md. Transform the idea into a technical PRD with As-Is/To-Be architectures and strict non-goals.
 - **/to-tickets**: Read productmanageragent.md. Decompose specification into 5 sequential atomic implementation tickets. Do not start coding.
 - **/implement**: Read dbaagent.md, securityagent.md, and integrationagent.md. Write production-ready code for Ticket 1 adhering strictly to append-only ledgers and RLS defaults.
-- **/review**: Read securityagent.md and systemsdesignagent.md. Execute a rigorous STRIDE security review, invariant verification, and check against BN-00 rules.`,
+- **/review**: Read securityagent.md and systemsdesignagent.md. Execute a rigorous STRIDE security review, invariant verification, and check against BN-00 rules.
+- **/research**: Read researchagent.md. Fact-check claims, triangulate across primary sources, distinguish consensus from hypothesis, and state "I do not know" when evidence is absent.`,
+  },
+  {
+    id: 'researchagent',
+    category: 'agent',
+    anchor: [0, -28, 30],
+    markdown: `# [RS] Research Agent — The Fact-Checker & Synthesizer
+- **RS-01** Verification: WHEN making factual claims, citing historical events, scientific consensus, or technical specifications → DO link or cite primary, verifiable sources. Never state unverified assumptions as facts. | conf: 4
+- **RS-02** Distinction: WHEN presenting knowledge, models, or solutions → DO clearly distinguish between empirical facts, expert consensus, theoretical frameworks, and personal hypotheses/heuristics. | conf: 4
+- **RS-03** "I Don't Know" Rule: WHEN queried about facts, citations, or data outside the vault's verified bounds or where evidence is contradictory/unavailable → DO explicitly state "I do not know" or acknowledge the exact boundary of knowledge rather than fabricating plausible answers or guessing. | conf: 4
+- **RS-04** Triangulation: WHEN incorporating high-impact claims or novel paradigms into the Cortex → DO require validation across at least two independent, reputable sources before promoting them to active rules or models. | conf: 4`,
+  },
+  {
+    id: 'psychology',
+    category: 'domain',
+    anchor: [44, 16, 20],
+    markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
+- **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
+  },
+  {
+    id: 'philosophy',
+    category: 'domain',
+    anchor: [48, 8, 38],
+    markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
+- **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
+  },
+  {
+    id: 'rhetoric',
+    category: 'domain',
+    anchor: [42, 22, -16],
+    markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
+- **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
+  },
+  {
+    id: 'economy',
+    category: 'domain',
+    anchor: [-20, -32, 20],
+    markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
+- **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
+  },
+  {
+    id: 'geopolitics',
+    category: 'domain',
+    anchor: [20, -32, 20],
+    markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
+- **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
+  },
+  {
+    id: 'health',
+    category: 'domain',
+    anchor: [0, -36, -20],
+    markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
+- **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
   },
 ];
 
@@ -634,6 +757,48 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
     anchor: [-16, 18, 30],
     markdown: `# UI & Frontend Specialist — How I Think (status: draft • 0 Rules)
 - **EMPTY-UI** _None yet (0 active rules)._ Rate your Self-Map (0–3) and run the Visceral Cringe Test in 05-elicitation/THE-TEST.md to earn UI-nn rules.`,
+  },
+  {
+    id: 'psychology',
+    category: 'domain',
+    anchor: [44, 16, 20],
+    markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
+- **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
+  },
+  {
+    id: 'philosophy',
+    category: 'domain',
+    anchor: [48, 8, 38],
+    markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
+- **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
+  },
+  {
+    id: 'rhetoric',
+    category: 'domain',
+    anchor: [42, 22, -16],
+    markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
+- **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
+  },
+  {
+    id: 'economy',
+    category: 'domain',
+    anchor: [-20, -32, 20],
+    markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
+- **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
+  },
+  {
+    id: 'geopolitics',
+    category: 'domain',
+    anchor: [20, -32, 20],
+    markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
+- **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
+  },
+  {
+    id: 'health',
+    category: 'domain',
+    anchor: [0, -36, -20],
+    markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
+- **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
   },
   {
     id: 'HEURISTICS',
@@ -779,6 +944,7 @@ export function getBrainData(options?: {
       nodes.push({
         ...doc,
         agentCode: doc.agentCode ?? owner.agentCode,
+        cluster: doc.cluster ?? resolveNodeCluster(doc.id),
         fx: doc.fx ?? pNode.ax,
         fy: doc.fy ?? pNode.ay,
         fz: doc.fz ?? pNode.az,
@@ -797,12 +963,14 @@ export function getBrainData(options?: {
       const ruleEntry = allRulesCatalog[index % allRulesCatalog.length];
       const nodeId = `${ruleEntry.ruleId}::${pNode.id}`;
       const owner = resolveAgentOwner(ruleEntry.ruleId);
+      const cluster = resolveNodeCluster(ruleEntry.ruleId);
       nodes.push({
         id: nodeId,
         name: `${ruleEntry.ruleId} — ${ruleEntry.parentName.replace(/^\[[A-Z]+\]\s*/, '').split('—')[0].trim()}`,
         description: ruleEntry.description,
         group: 2,
         agentCode: owner.agentCode,
+        cluster,
         category: 'synapse',
         content: ruleEntry.parentContent,
         val: 1.0,
@@ -845,6 +1013,78 @@ export function getBrainData(options?: {
         source: sourceId,
         target: targetId,
       });
+    }
+  });
+
+  // 3D Force-Directed Physics Simulation with Cluster Lobes
+  // Pulls Engineering to the left (x < 0), Humanities to the right (x > 0), and World to the bottom (y < 0)
+  const simNodes = nodes.map((n) => ({
+    id: n.id,
+    cluster: n.cluster ?? resolveNodeCluster(n.id),
+    fx: n.id === 'hub' ? 0 : undefined,
+    fy: n.id === 'hub' ? 0 : undefined,
+    fz: n.id === 'hub' ? 0 : undefined,
+    x: n.fx !== undefined ? n.fx : (n.x ?? (Math.random() - 0.5) * 20),
+    y: n.fy !== undefined ? n.fy : (n.y ?? (Math.random() - 0.5) * 20),
+    z: n.fz !== undefined ? n.fz : (n.z ?? (Math.random() - 0.5) * 20),
+  }));
+
+  const simLinks = links.map((l) => ({
+    source: typeof l.source === 'object' ? (l.source as any).id : l.source,
+    target: typeof l.target === 'object' ? (l.target as any).id : l.target,
+  }));
+
+  const simulation = forceSimulation(simNodes, 3)
+    .force(
+      'x',
+      forceX((d: any) => {
+        if (d.id === 'hub') return 0;
+        if (d.cluster === 'Engineering') return -48;
+        if (d.cluster === 'Humanities') return 48;
+        return 0; // World is centered horizontally
+      }).strength(0.24)
+    )
+    .force(
+      'y',
+      forceY((d: any) => {
+        if (d.id === 'hub') return 0;
+        if (d.cluster === 'World') return -36;
+        return 14; // Engineering and Humanities on upper lobes
+      }).strength(0.24)
+    )
+    .force(
+      'z',
+      forceZ((d: any) => {
+        if (d.id === 'hub') return 0;
+        return 0;
+      }).strength(0.08)
+    )
+    .force('charge', forceManyBody().strength(-12))
+    .force('link', forceLink(simLinks).id((d: any) => d.id).distance(18).strength(0.1));
+
+  // Run 60 simulation ticks so nodes settle into distinct cluster lobes
+  for (let i = 0; i < 60; i++) {
+    simulation.tick();
+  }
+
+  // Assign settled physics coordinates back to nodes
+  simNodes.forEach((sNode, idx) => {
+    if (nodes[idx]) {
+      if (nodes[idx].id === 'hub') {
+        nodes[idx].fx = 0;
+        nodes[idx].fy = 0;
+        nodes[idx].fz = 0;
+        nodes[idx].x = 0;
+        nodes[idx].y = 0;
+        nodes[idx].z = 0;
+      } else {
+        nodes[idx].x = sNode.x;
+        nodes[idx].y = sNode.y;
+        nodes[idx].z = sNode.z;
+        nodes[idx].fx = sNode.x;
+        nodes[idx].fy = sNode.y;
+        nodes[idx].fz = sNode.z;
+      }
     }
   });
 
