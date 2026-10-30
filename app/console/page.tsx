@@ -50,43 +50,6 @@ import { calculateCortexStats } from '../../lib/stats';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 
-const SIDEBAR_CLUSTERS = [
-  { id: 'Engineering', name: 'Engineering', badge: '7 Gates' },
-  { id: 'Humanities', name: 'Humanities', badge: '3 Domains' },
-  { id: 'World', name: 'World', badge: '4 Domains' },
-] as const;
-
-type ClusterKey = (typeof SIDEBAR_CLUSTERS)[number]['id'];
-
-const AGENT_DOCK: Array<{
-  id: string;
-  code: string;
-  cluster: ClusterKey;
-  label: string;
-  fullName: string;
-  prefixes: string[];
-}> = [
-  // --- Cluster 1: Engineering (The 7 Core Agents) ---
-  { id: 'dbaagent', code: 'DB', cluster: 'Engineering', label: 'Database', fullName: 'Database Agent', prefixes: ['DB'] },
-  { id: 'securityagent', code: 'SEC', cluster: 'Engineering', label: 'Security', fullName: 'Security Agent', prefixes: ['SEC', 'CS', 'AUTH'] },
-  { id: 'uiuxagent', code: 'UX', cluster: 'Engineering', label: 'UI / UX', fullName: 'UI/UX Agent', prefixes: ['UX', 'UI', 'TA'] },
-  { id: 'productmanageragent', code: 'PM', cluster: 'Engineering', label: 'Product', fullName: 'Product Manager Agent', prefixes: ['PM', 'BA', 'OP'] },
-  { id: 'systemsdesignagent', code: 'SD', cluster: 'Engineering', label: 'Systems', fullName: 'Systems Design Agent', prefixes: ['SD', 'SO'] },
-  { id: 'integrationagent', code: 'IR', cluster: 'Engineering', label: 'Integration', fullName: 'Integration Agent', prefixes: ['IR', 'RF', 'H', 'P'] },
-  { id: 'growthagent', code: 'GR', cluster: 'Engineering', label: 'Growth', fullName: 'Growth Agent', prefixes: ['GR'] },
-
-  // --- Cluster 2: Humanities ---
-  { id: 'psychology', code: 'PSY', cluster: 'Humanities', label: 'Psychology', fullName: 'Psychology Domain', prefixes: ['PSY'] },
-  { id: 'philosophy', code: 'PHI', cluster: 'Humanities', label: 'Philosophy', fullName: 'Philosophy Domain', prefixes: ['PHI'] },
-  { id: 'rhetoric', code: 'RHE', cluster: 'Humanities', label: 'Rhetoric', fullName: 'Rhetoric Domain', prefixes: ['RHE'] },
-
-  // --- Cluster 3: World ---
-  { id: 'economy', code: 'ECO', cluster: 'World', label: 'Economy', fullName: 'Economy Domain', prefixes: ['ECO'] },
-  { id: 'geopolitics', code: 'GEO', cluster: 'World', label: 'Geopolitics', fullName: 'Geopolitics Domain', prefixes: ['GEO'] },
-  { id: 'health', code: 'HLT', cluster: 'World', label: 'Health', fullName: 'Health Domain', prefixes: ['HLT'] },
-  { id: 'researchagent', code: 'RS', cluster: 'World', label: 'Research', fullName: 'Research Agent', prefixes: ['RS'] },
-];
-
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
 const WORKFLOW_PILLS = [
@@ -255,18 +218,24 @@ export default function Home() {
   );
   const [isCheckingGate, setIsCheckingGate] = useState<boolean>(false);
 
+  // Centralized Dynamic Knowledge Mastery stats via lib/stats.ts (target = 20 rules/agent)
+  const cortexStats = useMemo(() => {
+    return calculateCortexStats(graphData.nodes);
+  }, [graphData]);
+
   // Nodes belonging to the active gate: the agent, its linked nodes, and its rule prefixes
   const focusIds = useMemo<Set<string> | null>(() => {
     if (!activeGate) return null;
-    const agent = AGENT_DOCK.find((a) => a.code === activeGate);
+    const agent = cortexStats.agentList.find((a) => a.code === activeGate);
     if (!agent) return null;
-    const ids = new Set<string>([agent.id]);
+    const agentId = agent.id || agent.key;
+    const ids = new Set<string>([agentId]);
     const clean = (v: unknown) => String(typeof v === 'object' && v ? (v as { id: string }).id : v).split('::')[0];
     graphData.links.forEach((l) => {
       const s = clean(l.source);
       const t = clean(l.target);
-      if (s === agent.id) ids.add(t);
-      if (t === agent.id) ids.add(s);
+      if (s === agentId) ids.add(t);
+      if (t === agentId) ids.add(s);
     });
     graphData.nodes.forEach((n) => {
       const cid = String(n.id).split('::')[0];
@@ -275,12 +244,7 @@ export default function Home() {
     });
     ids.delete('hub');
     return ids;
-  }, [activeGate, graphData]);
-
-  // Centralized Dynamic Knowledge Mastery stats via lib/stats.ts (target = 20 rules/agent)
-  const cortexStats = useMemo(() => {
-    return calculateCortexStats(graphData.nodes);
-  }, [graphData]);
+  }, [activeGate, graphData, cortexStats.agentList]);
 
   // Master Hub Node representation for general 8-Agent AI queries
   const hubNode = useMemo<BrainDocNode>(() => {
@@ -905,23 +869,25 @@ export default function Home() {
               }`}
             >
               <span>Show All</span>
-              <span className="text-[10px] text-slate-500 dark:text-zinc-500">{AGENT_DOCK.length} gates</span>
+              <span className="text-[10px] text-slate-500 dark:text-zinc-500">
+                {cortexStats.totalAgents || cortexStats.agentList.length} gates
+              </span>
             </button>
 
             <div className="my-1 border-t border-slate-200 dark:border-white/5" />
 
-            {/* Collapsible Clusters: Engineering, Humanities, World */}
-            {SIDEBAR_CLUSTERS.map((cluster) => {
-              const isCollapsed = !!collapsedClusters[cluster.id];
-              const clusterAgents = AGENT_DOCK.filter((a) => a.cluster === cluster.id);
-              const clusterStat = cortexStats.clusters?.[cluster.id];
+            {/* Collapsible Clusters: Dynamically mapped from cortexStats.clusters */}
+            {Object.entries(cortexStats.clusters).map(([clusterId, cluster]) => {
+              const isCollapsed = !!collapsedClusters[clusterId];
+              const clusterAgents = cluster.agents;
+              const clusterStat = cluster;
 
               return (
-                <div key={cluster.id} className="space-y-1 pt-1 first:pt-0">
+                <div key={clusterId} className="space-y-1 pt-1 first:pt-0">
                   {/* Cluster Accordion Header */}
                   <button
                     type="button"
-                    onClick={() => toggleCluster(cluster.id)}
+                    onClick={() => toggleCluster(clusterId)}
                     className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5">
@@ -930,10 +896,10 @@ export default function Home() {
                       ) : (
                         <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
                       )}
-                      <span>{cluster.name}</span>
+                      <span>{cluster.name || clusterId}</span>
                     </div>
                     <span className="text-[10px] font-mono font-normal text-slate-400 dark:text-zinc-500">
-                      {clusterStat ? `${clusterStat.dimension.displayScore}/${clusterStat.dimension.target} pts` : cluster.badge}
+                      {clusterStat?.dimension ? `${clusterStat.dimension.displayScore}/${clusterStat.dimension.target} pts` : `${clusterAgents.length} gates`}
                     </span>
                   </button>
 
@@ -942,31 +908,19 @@ export default function Home() {
                     <div className="space-y-1">
                       {clusterAgents.map((agent) => {
                         const isActive = activeGate === agent.code;
-                        const stat = cortexStats.agents[agent.code] || {
-                          count: 0,
-                          weightedScore: 0,
-                          displayScore: 0,
-                          displayCount: 0,
-                          target: 60,
-                          percentage: 0,
-                          avgConfidence: 0,
-                          isHighConfidence: false,
-                          isOverclocked: false,
-                          isUnverified: false,
-                          percentageText: '0%',
-                        };
+                        const stat = agent;
                         const statusSuffix = stat.isHighConfidence
                           ? ' • High Confidence'
                           : stat.isUnverified
                           ? ' • ⚠️ Unverified'
                           : '';
-                        const tooltipContent = `${agent.fullName} • ${stat.displayScore} / ${stat.target} pts (${stat.count} rules, avg conf ${stat.avgConfidence.toFixed(1)} • ${stat.percentageText}${statusSuffix})`;
+                        const tooltipContent = `${agent.fullName || agent.label} • ${stat.displayScore} / ${stat.target} pts (${stat.count} rules, avg conf ${stat.avgConfidence.toFixed(1)} • ${stat.percentageText}${statusSuffix})`;
 
                         return (
-                          <Tooltip key={agent.id} content={tooltipContent} side="right" className="w-full">
+                          <Tooltip key={agent.id || agent.code} content={tooltipContent} side="right" className="w-full">
                             <button
                               type="button"
-                              onClick={() => setActiveGate(isActive ? null : agent.code)}
+                              onClick={() => setActiveGate(isActive ? null : (agent.code || null))}
                               aria-pressed={isActive}
                               className={`w-full px-2.5 py-1.5 rounded-lg flex flex-col gap-1 text-xs transition-all cursor-pointer border group ${
                                 isActive

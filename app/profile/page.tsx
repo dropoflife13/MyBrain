@@ -69,8 +69,11 @@ interface CognitiveStat {
 
 interface AgentMastery {
   agent: string;
+  fullName?: string;
+  label?: string;
+  id?: string;
   code: string;
-  cluster?: 'Engineering' | 'Humanities' | 'World';
+  cluster?: 'Engineering' | 'Humanities' | 'World' | string;
   file: string;
   count: number;
   weightedScore?: number;
@@ -107,8 +110,22 @@ interface StatsPayload {
     totalWeightedScore?: number;
     avgConfidence?: number;
   };
+  totalAgents?: number;
+  totalRules?: number;
+  totalClusters?: number;
   cognitiveStats: CognitiveStat[];
   agentMastery: AgentMastery[];
+  clusters?: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      description: string;
+      agents: AgentMastery[];
+      dimension?: CognitiveStat;
+    }
+  >;
+  clusterList?: any[];
   blindSpots: BlindSpot[];
   prefixCounts: Record<string, number>;
   scannedFilesCount: number;
@@ -134,27 +151,6 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   HLT: <Activity className="w-4 h-4 text-red-500 dark:text-red-400" />,
   RS: <FileCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
 };
-
-const PROFILE_CLUSTERS = [
-  {
-    id: 'Engineering',
-    name: 'Engineering Cluster',
-    subtitle: 'The Autonomous Gatekeepers: Architecture, Security, Database, UI/UX, and Systems Integration (Rule BN-00)',
-    badge: '8 Agents',
-  },
-  {
-    id: 'Humanities',
-    name: 'Humanities Cluster',
-    subtitle: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric',
-    badge: '3 Domains',
-  },
-  {
-    id: 'World',
-    name: 'World Cluster',
-    subtitle: 'Macroeconomics, global geopolitics, biological health, and rigorous research verification',
-    badge: '4 Domains',
-  },
-] as const;
 
 export default function ProfilePage() {
   const [stats, setStats] = useState<StatsPayload | null>(null);
@@ -311,7 +307,7 @@ export default function ProfilePage() {
                   Gatekeepers
                 </div>
                 <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  7 / 7
+                  {stats?.totalAgents ?? '--'} / {stats?.totalAgents ?? '--'}
                 </div>
                 <div className="text-[10px] text-slate-400 dark:text-zinc-500">BN-00 Enforced</div>
               </div>
@@ -361,10 +357,10 @@ export default function ProfilePage() {
             </div>
 
             {/* The Radar Chart with Cyan Glow and Dark Grid */}
-            <div className="w-full h-80 my-2 flex items-center justify-center relative">
+            <div className="w-full h-[350px] min-h-[350px] my-2 flex items-center justify-center relative">
               {isMounted && radarData.length > 0 ? (
                 <div
-                  className="w-full h-full"
+                  className="w-full h-[350px] min-h-[350px]"
                   style={{
                     filter: 'drop-shadow(0 0 16px rgba(0, 255, 255, 0.28))',
                   }}
@@ -635,43 +631,40 @@ export default function ProfilePage() {
                 <span>Multi-Cluster Knowledge & Agent Mastery Breakdown</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400">
-                Confidence-weighted scoring across 3 Clusters (Target: 60 weighted points per Agent/Domain; conf 1–5):
+                Confidence-weighted scoring across {stats?.totalClusters ?? (stats?.clusters ? Object.keys(stats.clusters).length : '3')} Clusters (Target: 60 weighted points per Agent/Domain; conf 1–5):
               </p>
             </div>
             <span className="text-xs font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
-              3 Clusters Active
+              {stats?.totalClusters ?? (stats?.clusters ? Object.keys(stats.clusters).length : '3')} Clusters Active
             </span>
           </div>
 
-          {PROFILE_CLUSTERS.map((cluster) => {
-            const clusterAgents =
-              stats?.agentMastery.filter(
-                (a) => (a.cluster || 'Engineering') === cluster.id
-              ) || [];
+          {Object.entries(stats?.clusters || {}).map(([clusterId, clusterData]) => {
+            const clusterAgents = clusterData.agents || [];
             if (clusterAgents.length === 0) return null;
 
             return (
-              <div key={cluster.id} className="space-y-3.5">
+              <div key={clusterId} className="space-y-3.5">
                 <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-2">
                   <div className="space-y-0.5">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <span
                         className={`w-2.5 h-2.5 rounded-full ${
-                          cluster.id === 'Engineering'
+                          clusterId === 'Engineering'
                             ? 'bg-cyan-500 shadow-[0_0_8px_#00ffff]'
-                            : cluster.id === 'Humanities'
+                            : clusterId === 'Humanities'
                             ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
                             : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
                         }`}
                       />
-                      <span>{cluster.name}</span>
+                      <span>{clusterData.name || `${clusterId} Cluster`}</span>
                     </h3>
                     <p className="text-[11px] text-slate-500 dark:text-zinc-400">
-                      {cluster.subtitle}
+                      {clusterData.description || `${clusterId} Cognitive Domain Cluster`}
                     </p>
                   </div>
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-slate-600 dark:text-zinc-300 font-semibold border border-black/5 dark:border-white/10">
-                    {cluster.badge}
+                    {clusterAgents.length} {clusterId === 'Engineering' ? 'Agents' : 'Domains'}
                   </span>
                 </div>
 
@@ -705,7 +698,7 @@ export default function ProfilePage() {
                             </div>
                             <div className="min-w-0">
                               <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 flex-wrap">
-                                <span>{agent.agent}</span>
+                                <span>{agent.agent || agent.fullName || agent.label}</span>
                                 {isHighConfidence && (
                                   <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
                                     High Confidence

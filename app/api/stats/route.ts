@@ -124,7 +124,10 @@ export async function GET() {
     }));
 
     const agentMastery = cortexStats.agentList.map((a) => ({
+      id: a.id,
       agent: a.agent || a.fullName,
+      fullName: a.fullName,
+      label: a.label,
       code: a.code || '',
       cluster: a.cluster || 'Engineering',
       file: a.file || '',
@@ -147,6 +150,9 @@ export async function GET() {
     return NextResponse.json(
       {
         level: cortexStats.level,
+        totalAgents: cortexStats.totalAgents,
+        totalRules: cortexStats.totalRules,
+        totalClusters: cortexStats.totalClusters,
         targetRulesPerAgent: cortexStats.targetRulesPerAgent,
         targetWeightedScorePerAgent: cortexStats.targetWeightedScorePerAgent,
         cognitiveStats,

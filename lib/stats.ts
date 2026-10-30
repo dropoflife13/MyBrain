@@ -1,4 +1,4 @@
-import type { BrainDocNode } from './brain-parser';
+import { type BrainDocNode, getBrainData } from './brain-parser';
 
 /**
  * Mastery Target per Agent in the Weighted Scoring Engine (v2).
@@ -8,7 +8,7 @@ import type { BrainDocNode } from './brain-parser';
 export const TARGET_WEIGHTED_SCORE_PER_AGENT = 60;
 export const TARGET_RULES_PER_AGENT = TARGET_WEIGHTED_SCORE_PER_AGENT;
 
-export type ClusterId = 'Engineering' | 'Humanities' | 'World';
+export type ClusterId = 'Engineering' | 'Humanities' | 'World' | string;
 
 export interface AgentStatConfig {
   id: string;
@@ -214,6 +214,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
 ];
 
 export interface StatMetric {
+  id?: string;
   key: string;
   code?: string;
   agent?: string;
@@ -268,12 +269,15 @@ export interface CortexStatsResult {
     totalWeightedScore: number;
     avgConfidence: number;
   };
+  totalAgents: number;
+  totalRules: number;
+  totalClusters: number;
   targetRulesPerAgent: number;
   targetWeightedScorePerAgent: number;
   agents: Record<string, StatMetric>;
   agentList: StatMetric[];
   dimensions: StatMetric[];
-  clusters: Record<ClusterId, ClusterGroup>;
+  clusters: Record<ClusterId | string, ClusterGroup>;
   clusterList: ClusterGroup[];
   blindSpots: BlindSpotMetric[];
   prefixCounts: Record<string, number>;
@@ -519,6 +523,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     const displayScore = Math.min(weightedScore, target);
 
     const metric: StatMetric = {
+      id: cfg.id,
       key: cfg.code.toLowerCase(),
       code: cfg.code,
       agent: cfg.fullName,
@@ -548,42 +553,54 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     agentList.push(metric);
   }
 
-  // 2. Calculate stats for the 3 Grouped Cognitive Dimensions (Engineering, Humanities, World)
-  const dimensions: StatMetric[] = [];
+  // 2. Dynamically group agents into Clusters & calculate Cognitive Dimensions
+  const CLUSTER_DESCRIPTIONS: Record<string, string> = {
+    Engineering:
+      'Architecture, security, database immutability, UI/UX polish, and systems integration (The Autonomous Gatekeepers).',
+    Humanities:
+      'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
+    World:
+      'Macroeconomics, global geopolitics, biological health, and rigorous research verification.',
+  };
 
-  for (const dim of DIMENSION_CONFIGS) {
+  // Dynamically identify all clusters present in agentList
+  const uniqueClusterIds: string[] = [];
+  for (const a of agentList) {
+    const c = a.cluster || 'Engineering';
+    if (!uniqueClusterIds.includes(c)) {
+      uniqueClusterIds.push(c);
+    }
+  }
+
+  const dimensions: StatMetric[] = [];
+  const clusters: Record<string, ClusterGroup> = {};
+
+  for (const clusterId of uniqueClusterIds) {
+    const clusterAgents = agentList.filter((a) => (a.cluster || 'Engineering') === clusterId);
+    const clusterPrefixes = Array.from(new Set(clusterAgents.flatMap((a) => a.prefixes)));
+    const target = clusterAgents.length * TARGET_WEIGHTED_SCORE_PER_AGENT;
+
     let count = 0;
     let weightedScore = 0;
-    const target = dim.agentCount * TARGET_WEIGHTED_SCORE_PER_AGENT;
 
-    if (ruleMap.size > 0) {
-      ruleMap.forEach((val) => {
-        if (dim.prefixes.includes(val.prefix)) {
-          count += 1;
-          weightedScore += val.weight;
-        }
-      });
-    } else {
-      count = dim.prefixes.reduce((sum, p) => sum + (prefixCounts[p] || 0), 0);
-      weightedScore = dim.prefixes.reduce(
-        (sum, p) => sum + (prefixWeights[p] ?? prefixCounts[p] ?? 0),
-        0
-      );
+    for (const a of clusterAgents) {
+      count += a.count;
+      weightedScore += a.weightedScore;
     }
 
-    const percentage = Math.min(100, Math.round((weightedScore / target) * 100));
-    const rawPercentage = Math.round((weightedScore / target) * 100);
+    const percentage = target > 0 ? Math.min(100, Math.round((weightedScore / target) * 100)) : 0;
+    const rawPercentage = target > 0 ? Math.round((weightedScore / target) * 100) : 0;
     const avgConfidence = count > 0 ? Number((weightedScore / count).toFixed(2)) : 0;
     const isHighConfidence = weightedScore > target;
     const isUnverified = count >= 10 && avgConfidence < 2.0;
     const displayScore = Math.min(weightedScore, target);
 
-    dimensions.push({
-      key: dim.key,
-      subject: dim.subject,
-      label: dim.label,
-      cluster: dim.cluster,
-      prefixes: dim.prefixes,
+    const clusterDim: StatMetric = {
+      key: clusterId.toLowerCase(),
+      subject: clusterId,
+      label: `${clusterId} Cluster`,
+      cluster: clusterId as ClusterId,
+      prefixes: clusterPrefixes,
       count,
       weightedScore,
       displayScore,
@@ -598,34 +615,20 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       percentageText: isHighConfidence ? '100%+' : `${percentage}%`,
       fractionText: `${displayScore} / ${target} pts`,
       rawFractionText: `${weightedScore} / ${target} pts`,
-      description: dim.description,
-    });
+      description: CLUSTER_DESCRIPTIONS[clusterId] || `${clusterId} multi-agent cognitive cluster.`,
+    };
+
+    dimensions.push(clusterDim);
+
+    clusters[clusterId] = {
+      id: clusterId as ClusterId,
+      name: clusterId,
+      description: clusterDim.description,
+      agents: clusterAgents,
+      dimension: clusterDim,
+    };
   }
 
-  // 2b. Cluster Aggregates
-  const clusters: Record<ClusterId, ClusterGroup> = {
-    Engineering: {
-      id: 'Engineering',
-      name: 'Engineering',
-      description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
-      agents: agentList.filter((a) => a.cluster === 'Engineering'),
-      dimension: dimensions.find((d) => d.key === 'engineering')!,
-    },
-    Humanities: {
-      id: 'Humanities',
-      name: 'Humanities',
-      description: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
-      agents: agentList.filter((a) => a.cluster === 'Humanities'),
-      dimension: dimensions.find((d) => d.key === 'humanities')!,
-    },
-    World: {
-      id: 'World',
-      name: 'World',
-      description: 'Macroeconomics, global geopolitical dynamics, biological health, and rigorous research verification.',
-      agents: agentList.filter((a) => a.cluster === 'World'),
-      dimension: dimensions.find((d) => d.key === 'world')!,
-    },
-  };
   const clusterList: ClusterGroup[] = Object.values(clusters);
 
   // 3. Operator Level & Title calculation (Weighted Quality Grade)
@@ -671,46 +674,19 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
   }
 
   // 4b. Low Mastery Diagnostics (< 30% of target) for Clusters
-  const dimMap = new Map(dimensions.map((d) => [d.key, d]));
-  const engDim = dimMap.get('engineering');
-  const humDim = dimMap.get('humanities');
-  const worldDim = dimMap.get('world');
-
-  if (engDim && engDim.percentage < 30) {
-    blindSpots.push({
-      type: 'low_mastery',
-      stat: 'Engineering',
-      percentage: engDim.percentage,
-      avgConfidence: engDim.avgConfidence,
-      ruleCount: engDim.count,
-      label: 'Low Engineering Mastery',
-      advice: 'Add core engineering rules across Architecture, Security, Database, UI/UX, and Systems Integration to meet the 420-point cluster target.',
-      file: 'agents/systemsdesignagent.md',
-    });
-  }
-  if (humDim && humDim.percentage < 30) {
-    blindSpots.push({
-      type: 'low_mastery',
-      stat: 'Humanities',
-      percentage: humDim.percentage,
-      avgConfidence: humDim.avgConfidence,
-      ruleCount: humDim.count,
-      label: 'Humanities Gap',
-      advice: 'Elicit and add verified rules in Psychology (PSY), Philosophy (PHI), and Rhetoric (RHE) to build mental model depth.',
-      file: 'brain/02-domains/psychology.md',
-    });
-  }
-  if (worldDim && worldDim.percentage < 30) {
-    blindSpots.push({
-      type: 'low_mastery',
-      stat: 'World',
-      percentage: worldDim.percentage,
-      avgConfidence: worldDim.avgConfidence,
-      ruleCount: worldDim.count,
-      label: 'World Knowledge Gap',
-      advice: 'Expand rules in Economics (ECO), Geopolitics (GEO), Health (HLT), and Research (RS) to anchor real-world governance.',
-      file: 'brain/02-domains/economy.md',
-    });
+  for (const dim of dimensions) {
+    if (dim.percentage < 30) {
+      blindSpots.push({
+        type: 'low_mastery',
+        stat: dim.subject || dim.label,
+        percentage: dim.percentage,
+        avgConfidence: dim.avgConfidence,
+        ruleCount: dim.count,
+        label: `Low ${dim.subject || dim.label} Mastery`,
+        advice: `Add verified rules across ${dim.subject || dim.label} to meet the ${dim.target}-point cluster target.`,
+        file: dim.prefixes[0] ? `agents/` : 'brain/',
+      });
+    }
   }
 
   // Also check individual agents below 30% that weren't already flagged as unverified
@@ -738,6 +714,9 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       totalWeightedScore,
       avgConfidence: overallAvgConfidence,
     },
+    totalAgents: agentList.length,
+    totalRules: totalUniqueRules,
+    totalClusters: Object.keys(clusters).length,
     targetRulesPerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,
     targetWeightedScorePerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,
     agents,
@@ -751,4 +730,20 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     totalUniqueRules,
     totalWeightedScore,
   };
+}
+
+/**
+ * Master API to retrieve comprehensive cognitive stats.
+ * Returns TOTAL counts (totalAgents, totalRules, totalClusters) and dynamic cluster groupings.
+ */
+export function getCognitiveStats(input?: StatsCalculationInput): CortexStatsResult {
+  if (!input) {
+    try {
+      const brainData = getBrainData({ mode: 'assessed' });
+      return calculateCortexStats(brainData.nodes);
+    } catch {
+      return calculateCortexStats([]);
+    }
+  }
+  return calculateCortexStats(input);
 }
