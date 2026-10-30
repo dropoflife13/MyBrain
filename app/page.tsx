@@ -32,7 +32,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { BrainDocNode, getBrainData } from '../lib/brain-parser';
 
-const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
+const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
 interface FaqItem {
   question: string;
@@ -370,7 +370,7 @@ export default function LandingPage() {
                   </Link>
                 </div>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  14 specialized domains across Engineering (7 Agents), Humanities (3), and World (4). They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
+                  14 specialized domains across Engineering (8 Agents), Humanities (3), and World (4). They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
                   <code className="text-red-500 font-mono font-bold">GATE: FAIL</code> on violations.
                 </p>
               </div>
@@ -868,19 +868,19 @@ export default function LandingPage() {
                 </Button>
               </div>
 
-              {/* Strict Pre-Flight Gate Warning (BN-00: 7 Agents Required) */}
+              {/* Strict Pre-Flight Gate Warning (BN-00: 8 Agents Required) */}
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 text-xs font-mono text-red-200 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-red-300 uppercase tracking-wider">
                     ⚠ STRICT CLONE RULE (GATE: BN-00)
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-200 border border-red-400/30">
-                    7 AGENTS REQUIRED
+                    8 AGENTS REQUIRED
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">
                   You <strong className="text-white">cannot start</strong> or assess a Brain Vault unless all{' '}
-                  <span className="text-[#00ffff]">7 Core Agents (PM, UX, GR, SD, IR, DB, SEC)</span> are present in{' '}
+                  <span className="text-[#00ffff]">8 Core Agents (PM, UX, GR, SD, IR, DB, SEC, RS)</span> are present in{' '}
                   <code className="text-white">/agents</code>. Deleting any agent triggers{' '}
                   <code className="text-red-300">GATE: FAIL BN-00</code> and halts initialization.
                 </p>

@@ -129,7 +129,7 @@ function getFileContentForNode(contextNode: any): string {
     if (sections.length > 0) {
       return sections.join('\n\n---\n\n');
     }
-    return 'Cortex Hub: The procedural master coordinator governing the 7 Agent Gatekeepers: PM, UX, GR, SD, IR, DB, and SEC.';
+    return 'Cortex Hub: The procedural master coordinator governing the 8 Agent Gatekeepers: PM, UX, GR, SD, IR, DB, SEC, and RS.';
   }
 
   // 1. Direct match in FILE_MAP
@@ -432,7 +432,7 @@ async function queryNvidiaNim(
       {
         role: 'system',
         content:
-          'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown. When inspecting diagrams, mockups, or schemas, audit them against our 7 gatekeepers (DB, SEC, UX, PM, SD, IR, GR).',
+          'You are Cortex AI, the procedural judgment engine and 8-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown. When inspecting diagrams, mockups, or schemas, audit them against our 8 gatekeepers (DB, SEC, UX, PM, SD, IR, GR, RS).',
       },
       {
         role: 'user',
@@ -509,7 +509,7 @@ async function queryOpenRouter(
         {
           role: 'system',
           content:
-            'You are Cortex AI, the procedural judgment engine and 7-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
+            'You are Cortex AI, the procedural judgment engine and 8-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
         },
         {
           role: 'user',

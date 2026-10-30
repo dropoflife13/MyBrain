@@ -84,7 +84,7 @@ const RESOLVED_CONTRADICTIONS: ContradictionItem[] = [
     ruleB: 'Authentic Personal Judgment (BN-01)',
     conflict: 'Cloning someone else’s filled vault transfers unearned assumptions instead of genuine human judgment.',
     resolutionRule: 'SO-07 / P-05',
-    razor: 'Ship all 7 Agent Gatekeepers intact so BN-00 passes, but start personal rules at 0 in blank-slate mode; adopters earn rules via THE-TEST.md.',
+    razor: 'Ship all 8 Agent Gatekeepers intact so BN-00 passes, but start personal rules at 0 in blank-slate mode; adopters earn rules via THE-TEST.md.',
     status: 'resolved',
   },
 ];
@@ -274,7 +274,7 @@ export default function AuditInspector({
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Brain ↔ 7 Agent Matrix</span>
+              <span>Brain ↔ 8 Agent Matrix</span>
             </button>
 
             <button
@@ -493,7 +493,7 @@ export default function AuditInspector({
                   <div className="text-slate-400">&gt;&gt;&gt; Scanning 44 canonical vault files in /brain...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying grammar: status: active, breaks:, ev: tags (CV-02)...</div>
                   <div className="text-slate-400">&gt;&gt;&gt; Verifying block ID anchors ^[prefix]-[nn] (CV-08)...</div>
-                  <div className="text-slate-400">&gt;&gt;&gt; Verifying 7 Core Agent files in /agents (BN-00) + Research Agent (RS)...</div>
+                  <div className="text-slate-400">&gt;&gt;&gt; Verifying 8 Agent files in /agents (BN-00 Core Agents + RS)...</div>
                   <div className="text-emerald-400 font-semibold">
                     &gt;&gt;&gt; AUDIT COMPLETE: 44 files | 0 errors | 0 warnings | {auditReport?.totalRules ?? 175} verified rules.
                   </div>

@@ -177,7 +177,7 @@ export default function StartPage() {
               </div>
 
               <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-zinc-900/70 border border-slate-200 dark:border-white/5 text-xs text-slate-600 dark:text-zinc-400 leading-relaxed font-mono">
-                ✓ Unzipping gives you the complete ready-to-run folder with the 7 Agent Gatekeepers, 14 domains, and all 3D engine assets.
+                ✓ Unzipping gives you the complete ready-to-run folder with the 8 Agent Gatekeepers, 14 domains, and all 3D engine assets.
               </div>
             </div>
           </motion.div>

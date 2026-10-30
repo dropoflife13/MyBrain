@@ -119,8 +119,8 @@ export default function CommandPalette({
 
     items.push({
       id: 'nav-agents',
-      title: '7-Agent Execution Suite Directory',
-      subtitle: 'Specification directory for PM, UX, GR, SD, IR, DB, SEC',
+      title: '8-Agent Execution Suite Directory',
+      subtitle: 'Specification directory for PM, UX, GR, SD, IR, DB, SEC, RS',
       category: 'navigation',
       badge: 'NAV • AGENTS',
       icon: <FolderGit2 className="w-4 h-4 text-cyan-400" />,

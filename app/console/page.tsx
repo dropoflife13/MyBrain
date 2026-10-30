@@ -86,7 +86,7 @@ const AGENT_DOCK: Array<{
   { id: 'researchagent', code: 'RS', cluster: 'World', label: 'Research', fullName: 'Research Agent', prefixes: ['RS'] },
 ];
 
-const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 7 Core Agent files (PM, UX, GR, SD, IR, DB, SEC) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 7 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
+const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
 const WORKFLOW_PILLS = [
   {
@@ -279,13 +279,13 @@ export default function Home() {
     return calculateCortexStats(graphData.nodes);
   }, [graphData]);
 
-  // Master Hub Node representation for general 7-Agent AI queries
+  // Master Hub Node representation for general 8-Agent AI queries
   const hubNode = useMemo<BrainDocNode>(() => {
     return (
       graphData.nodes.find((n) => n.id === 'hub') || {
         id: 'hub',
         name: 'Cortex Master Hub',
-        description: 'Central procedural judgment engine & 7-Agent execution gatekeeper.',
+        description: 'Central procedural judgment engine & 8-Agent execution gatekeeper.',
         group: 2,
         category: 'hub',
       }
@@ -451,7 +451,7 @@ export default function Home() {
           id: 'welcome',
           role: 'assistant',
           text: isHub
-            ? 'Neural connection established with Cortex Master Hub. Ask any question about the 7-Agent Suite (PM, UX, GR, SD, IR, DB, SEC) or attach an architecture diagram/wireframe for multimodal verification:'
+            ? 'Neural connection established with Cortex Master Hub. Ask any question about the 8-Agent Suite (PM, UX, GR, SD, IR, DB, SEC, RS) or attach an architecture diagram/wireframe for multimodal verification:'
             : `Neural connection established with ${selectedNode.name} [${cleanId}]. Query this rule, agent specification, or attach an image to evaluate:`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
@@ -506,7 +506,7 @@ export default function Home() {
     const query =
       chatInput.trim() ||
       (attachedImage
-        ? 'Please evaluate and audit this attached architecture diagram / wireframe / schema against our 7 Agent Gatekeepers and procedural invariants.'
+        ? 'Please evaluate and audit this attached architecture diagram / wireframe / schema against our 8 Agent Gatekeepers and procedural invariants.'
         : '');
     if (!query || isChatLoading || !selectedNode) return;
 
@@ -753,7 +753,7 @@ export default function Home() {
 
         {/* Right: Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
-          <Tooltip content="Brain ↔ 7 Agent matrix & resolved contradictions" side="bottom">
+          <Tooltip content="Brain ↔ 8 Agent matrix & resolved contradictions" side="bottom">
             <button
               type="button"
               onClick={() => setIsMatrixOpen(true)}
@@ -1045,7 +1045,7 @@ export default function Home() {
           >
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
             <span className="text-amber-200">
-              BLANK-SLATE FORK PREVIEW: <strong className="text-white">0 Personal Rules</strong> (Only the 7 Agent Gatekeepers + Empty Slots). You must assess yourself to grow your Cortex.
+              BLANK-SLATE FORK PREVIEW: <strong className="text-white">0 Personal Rules</strong> (Only the 8 Agent Gatekeepers + Empty Slots). You must assess yourself to grow your Cortex.
             </span>
             <Link
               href="/assess"
@@ -1114,7 +1114,7 @@ export default function Home() {
                   </span>
                 </div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
-                  {selectedNode.id === 'hub' ? 'Cortex Master Hub (7-Agent Suite)' : selectedNode.name}
+                  {selectedNode.id === 'hub' ? 'Cortex Master Hub (8-Agent Suite)' : selectedNode.name}
                 </h2>
                 <div className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5 truncate">
                   NODE ID: <span className="font-semibold text-cyan-600 dark:text-[#00ffff]">{selectedNode.id === 'hub' ? 'HUB • GLOBAL' : selectedIdClean}</span>
@@ -1285,7 +1285,7 @@ export default function Home() {
         className="fixed bottom-6 right-6 z-30 flex flex-col items-end gap-2.5"
       >
         {/* Floating AI Chat Trigger (Ask Cortex AI) */}
-        <Tooltip content="Ask Cortex AI (General 7-Agent Hub)" side="left">
+        <Tooltip content="Ask Cortex AI (General 8-Agent Hub)" side="left">
           <Button
             type="button"
             onClick={handleOpenGeneralChat}
@@ -1360,19 +1360,19 @@ export default function Home() {
                 </Button>
               </div>
 
-              {/* Strict Pre-Flight Gate Warning (BN-00: 7 Agents Required) */}
+              {/* Strict Pre-Flight Gate Warning (BN-00: 8 Agents Required) */}
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 text-xs font-mono text-red-200 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-red-300 uppercase tracking-wider">
                     ⚠ STRICT CLONE RULE (GATE: BN-00)
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-200 border border-red-400/30">
-                    7 AGENTS REQUIRED
+                    8 AGENTS REQUIRED
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-300 leading-relaxed">
                   You <strong className="text-white">cannot start</strong> or assess a Brain Vault unless all{' '}
-                  <span className="text-[#00ffff]">7 Core Agents (PM, UX, GR, SD, IR, DB, SEC)</span> are present in{' '}
+                  <span className="text-[#00ffff]">8 Core Agents (PM, UX, GR, SD, IR, DB, SEC, RS)</span> are present in{' '}
                   <code className="text-white">/agents</code>. Deleting any agent triggers{' '}
                   <code className="text-red-300">GATE: FAIL BN-00</code> and halts initialization.
                 </p>
@@ -1489,7 +1489,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* 8. Sci-Fi System Crash Overlay (GATE: FAIL BN-00 Hard Stop if any of the 7 Agents are missing) */}
+      {/* 8. Sci-Fi System Crash Overlay (GATE: FAIL BN-00 Hard Stop if any of the 8 Agents are missing) */}
       <AnimatePresence>
         {!agentGate.passed && (
           <motion.div
@@ -1580,7 +1580,7 @@ export default function Home() {
               {/* Terminal Diagnostics Telemetry */}
               <div className="text-[11px] leading-relaxed text-red-300/80 space-y-1">
                 <div>&gt;&gt;&gt; INITIATING PROCEDURAL KERNEL PRE-FLIGHT DIAGNOSTIC...</div>
-                <div>&gt;&gt;&gt; VERIFYING 7-AGENT EXECUTION GATE SUITE (/agents)...</div>
+                <div>&gt;&gt;&gt; VERIFYING 8-AGENT EXECUTION GATE SUITE (/agents)...</div>
                 <div className="text-red-400 font-semibold">
                   &gt;&gt;&gt; [FATAL] INVARIANT BREACH: RULE BN-00 FORBIDS HEADLESS OR UNGOVERNED OPERATION.
                 </div>
@@ -1622,7 +1622,7 @@ export default function Home() {
                   // Architectural Invariant Explained:
                 </div>
                 <p>
-                  A <strong className="text-white">Procedural Brain</strong> (<code className="text-[#00ffff]">/brain</code>) stores tacit human judgment and trade-offs. The <strong className="text-white">7-Agent Suite</strong> (<code className="text-[#00ffff]">/agents</code>) enforces those rules as hard engineering gates (<code className="text-white">PM, UX, GR, SD, IR, DB, SEC</code>).
+                  A <strong className="text-white">Procedural Brain</strong> (<code className="text-[#00ffff]">/brain</code>) stores tacit human judgment and trade-offs. The <strong className="text-white">8-Agent Suite</strong> (<code className="text-[#00ffff]">/agents</code>) enforces those rules as hard engineering gates (<code className="text-white">PM, UX, GR, SD, IR, DB, SEC, RS</code>).
                 </p>
                 <p className="text-zinc-400">
                   If an agent is deleted or unmapped, all rule promotion, 3D synaptic matrix rendering, and AI queries are hard-locked to prevent unverified actions.

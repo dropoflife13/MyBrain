@@ -127,13 +127,13 @@ const AGENTS: AgentInfo[] = [
   {
     code: 'RS',
     name: 'Research Agent',
-    role: 'The Fact-Checker & Synthesizer',
+    role: 'The Epistemologist',
     icon: FileCheck,
     description:
-      'Governs epistemic rigor across the Global Second Brain: enforces primary source citations, separates facts from predictions, and blocks hallucinations.',
-    ruleCode: 'RS-01',
+      'Enforces anti-hallucination (RS-03), requires source triangulation (RS-04), and separates fact from opinion (RS-02).',
+    ruleCode: 'RS-03',
     ruleSnippet:
-      'WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context.',
+      'RS-03: "I don\'t know" rule blocks hallucination.',
     file: 'agents/researchagent.md',
     accent: 'text-teal-400 border-teal-400/30 bg-teal-400/10',
   },
@@ -168,7 +168,7 @@ export default function AgentsPage() {
         {/* Center Title Pill */}
         <div className="hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/85 border border-slate-300 dark:border-white/10 text-xs font-mono shadow-xl backdrop-blur-xl">
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-          <span className="font-bold text-slate-900 dark:text-white">THE 7-AGENT SUITE</span>
+          <span className="font-bold text-slate-900 dark:text-white">THE 8-AGENT SUITE</span>
           <span className="text-slate-400 dark:text-zinc-500">•</span>
           <span className="text-slate-500 dark:text-zinc-400">RULE BN-00 GOVERNANCE</span>
         </div>
@@ -201,7 +201,7 @@ export default function AgentsPage() {
           </Badge>
 
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-950 dark:text-white drop-shadow-sm dark:drop-shadow-[0_0_30px_rgba(0,255,255,0.2)]">
-            The 7 Autonomous Gatekeepers
+            The Autonomous Gatekeepers
           </h1>
 
           <p className="text-base md:text-lg text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
@@ -211,7 +211,7 @@ export default function AgentsPage() {
           </p>
         </div>
 
-        {/* 7 Agents Grid */}
+        {/* 8 Agents Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {AGENTS.map((agent, idx) => {
             const Icon = agent.icon;
@@ -284,7 +284,7 @@ export default function AgentsPage() {
           </div>
           <p className="text-xs md:text-sm text-slate-700 dark:text-zinc-300 leading-relaxed font-sans max-w-4xl">
             A Procedural Brain (<code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">/brain</code>) stores tacit
-            human judgment, trade-offs, and boundary conditions. The 7-Agent Suite (<code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">/agents</code>)
+            human judgment, trade-offs, and boundary conditions. The 8-Agent Suite (<code className="font-mono text-cyan-600 dark:text-cyan-400 font-bold">/agents</code>)
             enforces those rules in automated Gate Mode. If any agent file is deleted or unmapped, the procedural kernel hard-halts
             with <code className="font-mono text-red-500 font-bold">GATE: FAIL BN-00</code> to prevent headless, unverified execution.
           </p>
@@ -314,7 +314,7 @@ export default function AgentsPage() {
       <footer className="border-t border-slate-200 dark:border-white/10 py-12 px-6 max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-slate-500 dark:text-zinc-500">
         <div className="flex items-center gap-2.5">
           <img src="/cortex-logo-cyan.svg" alt="Cortex" className="w-4 h-4 object-contain" />
-          <span>CORTEX RUNTIME // 7-AGENT SUITE DIRECTORY</span>
+          <span>CORTEX RUNTIME // 8-AGENT SUITE DIRECTORY</span>
         </div>
         <Link href="/" className="hover:text-cyan-500 dark:hover:text-cyan-400 transition-colors">
           Return to Overview

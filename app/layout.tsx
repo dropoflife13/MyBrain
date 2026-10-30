@@ -22,7 +22,7 @@ export const metadata: Metadata = {
       : 'https://cortex-brain.vercel.app'
   ),
   title: "Cortex — Synaptic Constellation & Brain Vault",
-  description: "3D Synaptic Constellation Brain, 7-Agent Gate Suite & Procedural Judgment Vault",
+  description: "3D Synaptic Constellation Brain, 8-Agent Gate Suite & Procedural Judgment Vault",
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
@@ -34,13 +34,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Cortex — Synaptic Constellation & Brain Vault",
-    description: "3D Synaptic Constellation Brain, 7-Agent Gate Suite & Procedural Judgment Vault",
+    description: "3D Synaptic Constellation Brain, 8-Agent Gate Suite & Procedural Judgment Vault",
     images: [{ url: "/social-preview.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cortex — Synaptic Constellation & Brain Vault",
-    description: "3D Synaptic Constellation Brain, 7-Agent Gate Suite & Procedural Judgment Vault",
+    description: "3D Synaptic Constellation Brain, 8-Agent Gate Suite & Procedural Judgment Vault",
     images: ["/social-preview.png"],
   },
 };

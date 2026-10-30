@@ -139,8 +139,8 @@ const PROFILE_CLUSTERS = [
   {
     id: 'Engineering',
     name: 'Engineering Cluster',
-    subtitle: 'The 7 Core Agents: Architecture, Security, Database, UI/UX, and Systems Integration (Rule BN-00)',
-    badge: '7 Agents',
+    subtitle: 'The Autonomous Gatekeepers: Architecture, Security, Database, UI/UX, and Systems Integration (Rule BN-00)',
+    badge: '8 Agents',
   },
   {
     id: 'Humanities',

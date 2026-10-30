@@ -79,12 +79,12 @@ export async function GET() {
     if (missingAgents.length === REQUIRED_SEVEN_AGENTS.length) {
       const inMemoryGate = verifySevenAgentsGate(getBrainData({ nodeCount: 1 }).nodes);
       if (inMemoryGate.passed) {
-        // Vault is intact with all 7 agents in bundle — clear false-positive
+        // Vault is intact with all core agents in bundle — clear false-positive
         missingAgents.length = 0;
       }
     }
 
-    // Strict Architectural Halt (CS-07): If any of the 7 Agents are genuinely missing, vanish 3D nodes and return failure
+    // Strict Architectural Halt (CS-07): If any of the Core Agents are genuinely missing, vanish 3D nodes and return failure
     if (missingAgents.length > 0) {
       return NextResponse.json(
         {
@@ -202,7 +202,7 @@ export async function POST() {
   if (missingAgents.length > 0) {
     return NextResponse.json(
       {
-        error: 'GATE: FAIL BN-00 — Execution Halted. Missing 7-Agent Suite.',
+        error: 'GATE: FAIL BN-00 — Execution Halted. Missing 8-Agent Suite.',
         missingAgents: missingAgents.map((f) => `[ERROR: AGENT_NOT_FOUND: ${f}]`),
       },
       { status: 422, headers: CORS_HEADERS }
