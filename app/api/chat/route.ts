@@ -199,7 +199,7 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
     name: 'Production-Grade Implementation',
     agents: ['agents/dbaagent.md', 'agents/securityagent.md', 'agents/integrationagent.md'],
     instruction:
-      'You are executing the /implement step of the Golden Path SDLC. Write production-ready code for Ticket 1. You must strictly obey DB rules (append-only, RLS default deny, indexes), Security rules (STRIDE, client never sees service_role, no raw input trust), and Integration rules. Fail closed if any rule is violated.',
+      'You are executing the /implement step of the Golden Path SDLC (Layer 6 Sandbox Execution). Write production-ready, runnable code for the requested feature or Ticket. Strictly obey DB rules (DB-13 atomic conditionals, append-only, RLS default deny), Security rules (SEC-14 server-side redaction, STRIDE, client never sees service_role), and Integration rules. Provide complete, runnable code in markdown code blocks (e.g. ```typescript or ```javascript or ```python) including a self-contained execution test or main driver with console outputs, so the operator can immediately run it in the Cortex Code Sandbox.',
   },
   review: {
     cmd: '/review',

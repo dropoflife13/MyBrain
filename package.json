@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@e2b/code-interpreter": "^2.9.0",
     "@google/generative-ai": "^0.24.1",
     "@types/three": "^0.186.0",
     "@upstash/ratelimit": "^2.2.0",
     "@upstash/redis": "^1.40.0",
+    "@webcontainer/api": "^1.6.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^14.7.0",

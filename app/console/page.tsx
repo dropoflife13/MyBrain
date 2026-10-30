@@ -39,6 +39,7 @@ import CommandPalette from '../../components/CommandPalette';
 import NeuralLoader from '../../components/NeuralLoader';
 import { Tooltip } from '../../components/Tooltip';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import ChatMessageContent from '../../components/ChatMessageContent';
 import {
   BrainDocNode,
   BrainGraphData,
@@ -119,9 +120,9 @@ const WORKFLOW_PILLS = [
   },
   {
     cmd: '/implement',
-    label: 'Implement (DB+SEC)',
-    desc: 'Write production code for Ticket 1 enforcing DB/SEC gates',
-    prompt: '/implement: Write production-ready code for Ticket 1 adhering strictly to append-only ledgers and security RLS defaults.',
+    label: 'Implement (Sandbox)',
+    desc: 'Generate & execute production code in Cortex Code Sandbox (Layer 6)',
+    prompt: '/implement: Write production-ready runnable code for Ticket 1 with self-contained execution tests.',
     agent: 'DB',
   },
   {
@@ -185,6 +186,7 @@ export default function Home() {
       model?: string;
       provider?: string;
       timestamp: string;
+      isImplementCommand?: boolean;
     }>
   >([]);
   const [chatInput, setChatInput] = useState<string>('');
@@ -537,6 +539,7 @@ export default function Home() {
 
       const data = await res.json().catch(() => null);
       const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
+      const isImplement = query.toLowerCase().startsWith('/implement') || query.toLowerCase().includes('/implement');
 
       setChatMessages((prev) => [
         ...prev,
@@ -547,6 +550,7 @@ export default function Home() {
           model: data?.model,
           provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isImplementCommand: isImplement,
         },
       ]);
     } catch (err: any) {
@@ -598,6 +602,7 @@ export default function Home() {
 
       const data = await res.json().catch(() => null);
       const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
+      const isImplement = pill.cmd === '/implement' || userPrompt.toLowerCase().includes('/implement');
 
       setChatMessages((prev) => [
         ...prev,
@@ -608,6 +613,7 @@ export default function Home() {
           model: data?.model,
           provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isImplementCommand: isImplement,
         },
       ]);
     } catch (err: any) {
@@ -1139,14 +1145,18 @@ export default function Home() {
                   className={`rounded-xl p-3.5 leading-relaxed ${
                     msg.role === 'user'
                       ? 'bg-cyan-500/10 text-cyan-900 dark:text-cyan-100 border border-cyan-500/20 ml-6'
-                      : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4 whitespace-pre-wrap'
+                      : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4'
                   }`}
                 >
                   <div className="flex items-center justify-between text-[10px] opacity-60 mb-1.5 uppercase font-bold tracking-wider">
                     <span>{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
                     <span>{msg.timestamp}</span>
                   </div>
-                  <div>{msg.text}</div>
+                  <ChatMessageContent
+                    text={msg.text}
+                    role={msg.role}
+                    autoRunFirstCodeBlock={Boolean(msg.isImplementCommand)}
+                  />
                   {msg.imageUrl && (
                     <div className="mt-2.5 overflow-hidden rounded-lg border border-black/10 dark:border-white/15 max-w-[260px] bg-black/10">
                       <img
@@ -1184,7 +1194,7 @@ export default function Home() {
                   SDLC Workflow
                 </span>
                 <span className="text-[9px] font-mono text-cyan-600 dark:text-[#00ffff] font-semibold">
-                  8-Command Pipeline
+                  8-Command Pipeline • Layer 6 Sandbox
                 </span>
               </div>
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
