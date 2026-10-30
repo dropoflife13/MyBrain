@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@xenova/transformers', 'onnxruntime-node'],
   outputFileTracingIncludes: {
-    '/**': ['./agents/**/*', './brain/**/*', './public/**/*'],
-    '/api/**/*': ['./agents/**/*', './brain/**/*', './public/**/*'],
-    '/api/brain': ['./agents/**/*', './brain/**/*', './public/**/*'],
-    '/api/chat': ['./agents/**/*', './brain/**/*', './public/**/*'],
+    '/**': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
+    '/api/**/*': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
+    '/api/brain': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
+    '/api/chat': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
   },
   turbopack: {
     root: __dirname,

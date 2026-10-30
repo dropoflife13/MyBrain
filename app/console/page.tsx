@@ -187,6 +187,7 @@ export default function Home() {
       provider?: string;
       timestamp: string;
       isImplementCommand?: boolean;
+      topRules?: Array<{ ruleId: string; file: string; score: number }>;
     }>
   >([]);
   const [chatInput, setChatInput] = useState<string>('');
@@ -551,6 +552,7 @@ export default function Home() {
           provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isImplementCommand: isImplement,
+          topRules: Array.isArray(data?.topRules) ? data.topRules : undefined,
         },
       ]);
     } catch (err: any) {
@@ -614,6 +616,7 @@ export default function Home() {
           provider: data?.provider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isImplementCommand: isImplement,
+          topRules: Array.isArray(data?.topRules) ? data.topRules : undefined,
         },
       ]);
     } catch (err: any) {
@@ -1165,6 +1168,28 @@ export default function Home() {
                         className="w-full h-auto max-h-48 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => window.open(msg.imageUrl, '_blank')}
                       />
+                    </div>
+                  )}
+                  {msg.topRules && msg.topRules.length > 0 && (
+                    <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10">
+                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-600 dark:text-cyan-400 mb-1.5">
+                        <Sparkles className="w-3 h-3 text-cyan-500 dark:text-[#00ffff]" />
+                        <span className="font-semibold uppercase tracking-wider text-[9px]">
+                          Semantic Vector RAG Invariants:
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {msg.topRules.map((r) => (
+                          <span
+                            key={r.ruleId}
+                            title={`${r.file} • Cosine: ${r.score.toFixed(3)}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/20 dark:border-cyan-400/30 text-[10px] text-cyan-700 dark:text-[#00ffff] font-mono"
+                          >
+                            <span className="font-bold">{r.ruleId}</span>
+                            <span className="text-[8px] opacity-60 font-sans">({(r.score * 100).toFixed(0)}%)</span>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {msg.role === 'assistant' && (msg.model || msg.provider) && (

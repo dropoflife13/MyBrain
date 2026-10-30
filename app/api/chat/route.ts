@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { getBrainData } from '../../../lib/brain-parser';
+import { findTopRules, type ScoredRuleMatch } from '../../../lib/embedder';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { z } from 'zod';
@@ -679,6 +680,28 @@ export async function POST(req: Request) {
     );
 
     let prompt: string;
+    // 0. Semantic Vector RAG Retrieval (@xenova/transformers all-MiniLM-L6-v2)
+    let topRules: ScoredRuleMatch[] = [];
+    let topRulesPrompt = '';
+    try {
+      topRules = await findTopRules(query, 3);
+      if (topRules.length > 0) {
+        topRulesPrompt = topRules
+          .map(
+            (r, i) =>
+              `### Rule ${i + 1}: [${r.ruleId}] (Cosine Similarity: ${r.score.toFixed(3)})\nSource: \`${r.file}\`\n${r.text}`
+          )
+          .join('\n\n');
+        console.log(
+          `[Cortex Chat API] Vector RAG retrieved top ${topRules.length} rules: ${topRules
+            .map((r) => `${r.ruleId} (${r.score.toFixed(3)})`)
+            .join(', ')}`
+        );
+      }
+    } catch (err: any) {
+      console.warn('[Cortex Chat API] Vector RAG retrieval failed, falling back:', err?.message);
+    }
+
     if (workflow) {
       const workflowDoc = readAgentOrDoc('brain/08-workflows/SIX-COMMANDS.md', 'SIX-COMMANDS');
       const agentDocs = workflow.agents.map((p) => {
@@ -698,13 +721,23 @@ ${workflowDoc}
 MANDATORY ENFORCED AGENT GATEKEEPERS:
 ${agentDocs.join('\n\n---\n\n')}
 
-USER REQUEST / PROBLEM DESCRIPTION:
+${topRulesPrompt ? `TOP RELEVANT INVARIANTS (VECTOR RAG RETRIEVAL):\n${topRulesPrompt}\n\n` : ''}USER REQUEST / PROBLEM DESCRIPTION:
 ${query}
 
 Respond in clean, highly structured GitHub-flavored markdown with strict engineering rigor.`;
     } else {
-      const fileContent = getFileContentForNode(contextNode);
-      prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
+      if (topRulesPrompt) {
+        prompt = `You are Cortex AI, the procedural judgment engine and multi-agent supervisor.
+Answer the user's question with strict engineering rigor, adhering to these top 3 mathematically triangulated rules retrieved via Semantic Vector RAG (all-MiniLM-L6-v2):
+
+${topRulesPrompt}
+
+User Question:
+${query}`;
+      } else {
+        const fileContent = getFileContentForNode(contextNode);
+        prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
+      }
     }
 
     let succeededText = '';
@@ -718,7 +751,12 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
         console.log(`[Cortex Chat API] Executing direct NVIDIA NIM request ${hasImage ? '(Multimodal Vision)' : ''}...`);
         const nimRes = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
         return NextResponse.json(
-          { text: nimRes.text, model: nimRes.model, provider: 'nvidia' },
+          {
+            text: nimRes.text,
+            model: nimRes.model,
+            provider: 'nvidia',
+            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
+          },
           { headers: CORS_HEADERS }
         );
       } catch (err: any) {
@@ -736,7 +774,12 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
         console.log(`[Cortex Chat API] Executing direct OpenRouter request ${hasImage ? '(Multimodal Vision)' : ''}...`);
         const orRes = await queryOpenRouter(prompt, openrouterApiKey, undefined, imageUrl);
         return NextResponse.json(
-          { text: orRes.text, model: orRes.model, provider: 'openrouter' },
+          {
+            text: orRes.text,
+            model: orRes.model,
+            provider: 'openrouter',
+            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
+          },
           { headers: CORS_HEADERS }
         );
       } catch (err: any) {
@@ -862,6 +905,7 @@ Respond in clean, highly structured GitHub-flavored markdown with strict enginee
         text: succeededText,
         model: succeededModel,
         provider: succeededProvider,
+        topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
       },
       { headers: CORS_HEADERS }
     );
