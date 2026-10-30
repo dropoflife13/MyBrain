@@ -11,6 +11,7 @@ const AGENTS = [
   { code: 'IR', label: 'Integration' },
   { code: 'DB', label: 'Database' },
   { code: 'SEC', label: 'Security' },
+  { code: 'RS', label: 'Research' },
 ];
 
 export interface NeuralLoaderProps {
@@ -18,7 +19,7 @@ export interface NeuralLoaderProps {
 }
 
 export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
-  // Coordinate geometry for 7 radial agent nodes
+  // Coordinate geometry for 8 radial agent nodes (360 degrees / 8 = 45 degrees)
   const cx = 250;
   const cy = 250;
   const radius = 150;
@@ -115,7 +116,7 @@ export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
               transition={{ duration: 0.6 }}
             />
 
-            {/* 7 Synaptic Lines Drawing Outward From Center to Perimeter Nodes */}
+            {/* 8 Synaptic Lines Drawing Outward From Center to Perimeter Nodes */}
             {agentCoords.map((agent, i) => (
               <g key={`loader-link-${agent.code}`}>
                 {/* Cyan Glow Backline */}
@@ -336,10 +337,10 @@ export default function NeuralLoader({ className = '' }: NeuralLoaderProps) {
         >
           <div className="flex items-center gap-2 text-xs text-[#00ffff] font-semibold tracking-widest uppercase">
             <span className="w-2 h-2 rounded-full bg-[#00ffff] animate-ping" />
-            <span>Wiring 7-Agent Neural Matrix</span>
+            <span>Wiring 8-Agent Neural Matrix</span>
           </div>
           <p className="text-[11px] text-zinc-400">
-            Binding PM • UX • GR • SD • IR • DB • SEC to 3D Coordinates...
+            Binding PM · UX · GR · SD · IR · DB · SEC · RS to 3D Coordinates...
           </p>
         </motion.div>
       </div>
