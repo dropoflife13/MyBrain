@@ -335,10 +335,10 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 2-Column Section: Radar Chart (Left) + Cognitive Dimensions (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Radar Chart (Left: 5 cols) */}
-          <div className="lg:col-span-5 p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl flex flex-col">
+        {/* Row 1: 2-Column Grid: Radar Chart (Left) + Cognitive Dimensions (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          {/* Radar Chart (Left Column) */}
+          <div className="p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl flex flex-col">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -446,180 +446,178 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Cognitive Stats Breakdown & Progress Bars (Right: 7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl space-y-4">
-              <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-cyan-600 dark:text-[#00ffff]" />
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Cognitive Dimension Breakdown (Weighted by Confidence)
-                  </h2>
-                </div>
-                <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                  conf 1–5 Scoring
-                </span>
+          {/* Cognitive Stats Breakdown & Progress Bars (Right Column) */}
+          <div className="p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-cyan-600 dark:text-[#00ffff]" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                  Cognitive Dimension Breakdown (Weighted by Confidence)
+                </h2>
               </div>
+              <span className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
+                conf 1–5 Scoring
+              </span>
+            </div>
 
-              <div className="space-y-4 pt-1">
-                {stats?.cognitiveStats.map((stat) => {
-                  const weightedScore = stat.weightedScore ?? stat.count;
-                  const isHighConfidence =
-                    stat.isHighConfidence ?? stat.isOverclocked ?? weightedScore > stat.target;
-                  const isUnverified =
-                    stat.isUnverified ?? (stat.count >= 10 && (stat.avgConfidence ?? 1) < 2.0);
-                  const displayScore =
-                    stat.displayScore ?? stat.displayCount ?? Math.min(weightedScore, stat.target);
-                  const percentageText =
-                    stat.percentageText || (isHighConfidence ? '100%+' : `${stat.value}%`);
+            <div className="space-y-4 pt-1">
+              {stats?.cognitiveStats.map((stat) => {
+                const weightedScore = stat.weightedScore ?? stat.count;
+                const isHighConfidence =
+                  stat.isHighConfidence ?? stat.isOverclocked ?? weightedScore > stat.target;
+                const isUnverified =
+                  stat.isUnverified ?? (stat.count >= 10 && (stat.avgConfidence ?? 1) < 2.0);
+                const displayScore =
+                  stat.displayScore ?? stat.displayCount ?? Math.min(weightedScore, stat.target);
+                const percentageText =
+                  stat.percentageText || (isHighConfidence ? '100%+' : `${stat.value}%`);
 
-                  return (
-                    <div key={stat.key} className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-slate-900 dark:text-white">
-                            {stat.subject}
+                return (
+                  <div key={stat.key} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {stat.subject}
+                        </span>
+                        <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                          ({stat.prefixes.join(' + ')})
+                        </span>
+                        {isHighConfidence && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
+                            High Confidence
                           </span>
-                          <span className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                            ({stat.prefixes.join(' + ')})
+                        )}
+                        {isUnverified && (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
+                            ⚠️ Unverified
                           </span>
-                          {isHighConfidence && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300 border border-purple-500/30 font-bold uppercase tracking-wider">
-                              High Confidence
-                            </span>
-                          )}
-                          {isUnverified && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/35 font-bold uppercase tracking-wider">
-                              ⚠️ Unverified
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 font-mono">
-                          <span className="text-slate-500 dark:text-zinc-400 text-[11px]">
-                            {displayScore} / {stat.target} pts
-                          </span>
-                          <span
-                            className={`font-bold text-xs ${
-                              isHighConfidence
-                                ? 'text-purple-600 dark:text-purple-400'
-                                : isUnverified
-                                ? 'text-amber-600 dark:text-amber-400'
-                                : stat.value >= 70
-                                ? 'text-cyan-600 dark:text-[#00ffff]'
-                                : stat.value >= 30
-                                ? 'text-amber-600 dark:text-amber-400'
-                                : 'text-rose-600 dark:text-rose-400'
-                            }`}
-                          >
-                            {percentageText}
-                          </span>
-                        </div>
+                        )}
                       </div>
-
-                      {/* Progress Bar with Cyan/Emerald or Purple High Confidence glow */}
-                      <div className="w-full h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${stat.value}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className={`h-full rounded-full transition-all ${
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-slate-500 dark:text-zinc-400 text-[11px]">
+                          {displayScore} / {stat.target} pts
+                        </span>
+                        <span
+                          className={`font-bold text-xs ${
                             isHighConfidence
-                              ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.7)]'
+                              ? 'text-purple-600 dark:text-purple-400'
                               : isUnverified
-                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
-                              : stat.value >= 80
-                              ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_10px_rgba(0,255,255,0.7)]'
-                              : stat.value >= 50
-                              ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : stat.value >= 70
+                              ? 'text-cyan-600 dark:text-[#00ffff]'
                               : stat.value >= 30
-                              ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
-                              : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
+                              ? 'text-amber-600 dark:text-amber-400'
+                              : 'text-rose-600 dark:text-rose-400'
                           }`}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
-                        <span>{stat.description}</span>
-                        <span className="font-mono text-[10px] shrink-0 ml-2">
-                          {stat.count} rules • avg conf {Number(stat.avgConfidence ?? 1).toFixed(1)}
+                        >
+                          {percentageText}
                         </span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
 
-            {/* Gap Analysis: Blind Spots & Unverified Knowledge Section */}
-            <div className="p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl space-y-3">
-              <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
-                <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-amber-500" />
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                    Gap Analysis: Blind Spots & Unverified Knowledge
-                  </h2>
-                </div>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-semibold">
-                  &lt; 30% Mastery or Avg Conf &lt; 2.0
-                </span>
-              </div>
-
-              {stats?.blindSpots && stats.blindSpots.length > 0 ? (
-                <div className="space-y-3 pt-1">
-                  {stats.blindSpots.map((spot, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-xl border flex items-start gap-3 text-xs ${
-                        spot.type === 'unverified'
-                          ? 'bg-amber-500/10 border-amber-500/35'
-                          : 'bg-rose-500/10 border-rose-500/25'
-                      }`}
-                    >
-                      <AlertTriangle
-                        className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          spot.type === 'unverified'
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-rose-600 dark:text-rose-400'
+                    {/* Progress Bar with Cyan/Emerald or Purple High Confidence glow */}
+                    <div className="w-full h-2.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden p-0.5">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${stat.value}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className={`h-full rounded-full transition-all ${
+                          isHighConfidence
+                            ? 'bg-purple-500 dark:bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.7)]'
+                            : isUnverified
+                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                            : stat.value >= 80
+                            ? 'bg-cyan-500 dark:bg-[#00ffff] shadow-[0_0_10px_rgba(0,255,255,0.7)]'
+                            : stat.value >= 50
+                            ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]'
+                            : stat.value >= 30
+                            ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.7)]'
+                            : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.7)]'
                         }`}
                       />
-                      <div className="space-y-1">
-                        <div
-                          className={`font-bold flex items-center gap-2 flex-wrap ${
-                            spot.type === 'unverified'
-                              ? 'text-amber-700 dark:text-amber-300'
-                              : 'text-rose-700 dark:text-rose-300'
-                          }`}
-                        >
-                          <span>⚠️ {spot.label}</span>
-                          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">
-                            {spot.percentage}% Mastery
-                            {spot.avgConfidence !== undefined
-                              ? ` • Avg Conf ${spot.avgConfidence.toFixed(1)}`
-                              : ''}
-                          </span>
-                        </div>
-                        <div className="text-slate-700 dark:text-zinc-300">{spot.advice}</div>
-                        <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
-                          Target file: <code className="text-cyan-600 dark:text-[#00ffff]">{spot.file}</code>
-                        </div>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-3 text-xs">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 leading-tight">
+                      <span>{stat.description}</span>
+                      <span className="font-mono text-[10px] shrink-0 ml-2">
+                        {stat.count} rules • avg conf {Number(stat.avgConfidence ?? 1).toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Middle Section (Full Width): Gap Analysis: Blind Spots & Unverified Knowledge */}
+        <div className="w-full mt-6 p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl space-y-3">
+          <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                Gap Analysis: Blind Spots & Unverified Knowledge
+              </h2>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-semibold">
+              &lt; 30% Mastery or Avg Conf &lt; 2.0
+            </span>
+          </div>
+
+          {stats?.blindSpots && stats.blindSpots.length > 0 ? (
+            <div className="space-y-3 pt-1">
+              {stats.blindSpots.map((spot, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3.5 rounded-xl border flex items-start gap-3 text-xs ${
+                    spot.type === 'unverified'
+                      ? 'bg-amber-500/10 border-amber-500/35'
+                      : 'bg-rose-500/10 border-rose-500/25'
+                  }`}
+                >
+                  <AlertTriangle
+                    className={`w-4 h-4 shrink-0 mt-0.5 ${
+                      spot.type === 'unverified'
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}
+                  />
                   <div className="space-y-1">
-                    <div className="font-bold text-emerald-700 dark:text-emerald-300">
-                      Zero Critical Blind Spots or Unverified Clusters Detected
+                    <div
+                      className={`font-bold flex items-center gap-2 flex-wrap ${
+                        spot.type === 'unverified'
+                          ? 'text-amber-700 dark:text-amber-300'
+                          : 'text-rose-700 dark:text-rose-300'
+                      }`}
+                    >
+                      <span>⚠️ {spot.label}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10">
+                        {spot.percentage}% Mastery
+                        {spot.avgConfidence !== undefined
+                          ? ` • Avg Conf ${spot.avgConfidence.toFixed(1)}`
+                          : ''}
+                      </span>
                     </div>
-                    <div className="text-slate-600 dark:text-zinc-300">
-                      All cognitive dimensions exceed the 30% weighted threshold and maintain verified confidence levels.
+                    <div className="text-slate-700 dark:text-zinc-300">{spot.advice}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-zinc-400 font-mono">
+                      Target file: <code className="text-cyan-600 dark:text-[#00ffff]">{spot.file}</code>
                     </div>
                   </div>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-3 text-xs">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="font-bold text-emerald-700 dark:text-emerald-300">
+                  Zero Critical Blind Spots or Unverified Clusters Detected
+                </div>
+                <div className="text-slate-600 dark:text-zinc-300">
+                  All cognitive dimensions exceed the 30% weighted threshold and maintain verified confidence levels.
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Detailed Multi-Cluster Agents & Domains Breakdown */}
