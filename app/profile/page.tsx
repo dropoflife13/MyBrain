@@ -336,9 +336,9 @@ export default function ProfilePage() {
         </div>
 
         {/* 2-Column Section: Radar Chart (Left) + Cognitive Dimensions (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Radar Chart (Left: 5 cols) */}
-          <div className="lg:col-span-5 p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl flex flex-col justify-between">
+          <div className="lg:col-span-5 p-6 rounded-2xl bg-white/70 dark:bg-[#09090b]/70 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-xl flex flex-col">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
@@ -357,10 +357,10 @@ export default function ProfilePage() {
             </div>
 
             {/* The Radar Chart with Cyan Glow and Dark Grid */}
-            <div className="w-full h-[350px] min-h-[350px] my-2 flex items-center justify-center relative">
+            <div className="w-full h-[400px] min-h-[400px] my-2 flex items-center justify-center relative">
               {isMounted && radarData.length > 0 ? (
                 <div
-                  className="w-full h-[350px] min-h-[350px]"
+                  className="w-full h-[400px] min-h-[400px] flex items-center justify-center"
                   style={{
                     filter: 'drop-shadow(0 0 16px rgba(0, 255, 255, 0.28))',
                   }}
@@ -440,7 +440,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
+            <div className="pt-3 border-t border-black/5 dark:border-white/10 flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono mt-2">
               <span>Target: 60 Weighted Pts/Agent</span>
               <span className="text-purple-600 dark:text-purple-400 font-semibold">High Confidence Enabled</span>
             </div>
