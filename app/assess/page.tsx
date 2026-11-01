@@ -13,8 +13,10 @@ import {
   CheckCircle2,
   Code2,
   Copy,
+  Cpu,
   Download,
   Flame,
+  GraduationCap,
   HelpCircle,
   Play,
   RefreshCw,
@@ -22,6 +24,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Users,
   XCircle,
   Zap,
 } from 'lucide-react';
@@ -31,7 +34,7 @@ import NeuralLoader from '../../components/NeuralLoader';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { BrainDocNode, getBrainData } from '../../lib/brain-parser';
 
-export interface QuizQuestion {
+interface QuizQuestion {
   id: string;
   questionType: 'recall' | 'scenario' | 'advanced';
   title: string;
@@ -45,135 +48,203 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// Default battery matching the elite enterprise hardening and multi-agent standards
+type PersonaLevel = 'student' | 'junior' | 'senior' | 'non-technical';
+
+interface PersonaConfig {
+  id: PersonaLevel;
+  title: string;
+  badge: string;
+  description: string;
+  focus: string;
+  icon: React.ComponentType<{ className?: string }>;
+}
+
+const PERSONA_CONFIGS: PersonaConfig[] = [
+  {
+    id: 'student',
+    title: 'Student / Beginner',
+    badge: 'Foundations',
+    description: 'Focuses on general logic, data privacy, and basic UX.',
+    focus: 'OJT hours tracking, school portals, input validation, UI feedback',
+    icon: GraduationCap,
+  },
+  {
+    id: 'junior',
+    title: 'Junior Developer',
+    badge: 'Core Web',
+    description: 'Focuses on standard security, basic SQL/NoSQL, and React patterns.',
+    focus: 'SQL injection, auth tokens, React state handling, offline recovery',
+    icon: Code2,
+  },
+  {
+    id: 'senior',
+    title: 'Senior Architect',
+    badge: 'Enterprise',
+    description: 'Focuses on high-scale trade-offs, race conditions, multi-tenancy, and authorization.',
+    focus: 'Atomic updates, PDP/ABAC, CDN cache isolation, CAP theorem',
+    icon: Cpu,
+  },
+  {
+    id: 'non-technical',
+    title: 'Non-Technical',
+    badge: 'Stakeholder',
+    description: 'Focuses on process, OJT hours, empathy, and business logic.',
+    focus: 'Pre-mortem questioning, user friction, attendance tracking, MVP scope',
+    icon: Users,
+  },
+];
+
+function getRuleFriendlyName(ruleId: string): string {
+  const map: Record<string, string> = {
+    'AUTH-01': 'Decoupled Authorization Policy',
+    'AUTH-04': 'Multi-Tenant Attribute Access Control',
+    'DB-13': 'Atomic Conditional Updates',
+    'SEC-14': 'Server-Side Commercial Data Sanitization',
+    'SEC-15': 'Edge CDN Private Cache Isolation',
+    'SEC-01': 'Input Validation and SQL Guard',
+    'SEC-02': 'Least Privilege Boundaries',
+    'RS-03': 'Epistemic Anti-Hallucination Halt',
+    'PM-01': 'Pre-Mortem Problem Interrogation',
+    'IR-05': 'Offline-First Queue and Idempotent Sync',
+    'UX-01': 'Optimistic UI with Deterministic Rollback',
+    'SD-01': 'Stateless Services & Horizontal Scaling',
+  };
+  if (map[ruleId]) return map[ruleId];
+  const [prefix] = ruleId.split('-');
+  const prefixMap: Record<string, string> = {
+    AUTH: 'Authorization Policy',
+    SEC: 'Security Hardening',
+    DB: 'Database Reliability',
+    IR: 'Integration & Resilience',
+    PM: 'Product Scope & Discovery',
+    UX: 'User Experience Invariant',
+    SD: 'Systems Architecture',
+    RS: 'Research & Epistemic Rigor',
+  };
+  return prefixMap[prefix] ? `${prefixMap[prefix]} Invariant` : 'Architectural Invariant';
+}
+
+// Default battery matching authentic scenario-based challenges with zero leaked rule IDs
 const INITIAL_FALLBACK_QUESTIONS: QuizQuestion[] = [
   {
     id: 'Q1',
     questionType: 'scenario',
-    title: 'Authorization: Scalable Multi-Tenant Access Control (Cerbos Pattern)',
+    title: 'Multi-Tenant Permissions: Student Assignment Editing',
     context:
-      'You are building a multi-tenant SaaS where a user can only edit their own posts. You currently have if (user.role === \'author\') hardcoded in your API route.',
-    codeSnippet: `// Legacy hardcoded role check in API route:
-if (user.role === 'author') {
-  await updatePost(postId, payload);
-}`,
+      'You are building a university portal where students submit and edit their internship reports. An API route currently contains an insecure check: `if (user.role === \'student\') { await updateReport(reportId, payload); }`. Any student can edit any other student\'s report by guessing the report ID.',
+    codeSnippet: `// Insecure route handler in /api/reports/[id]:\nif (user.role === 'student') {\n  await updateReport(reportId, payload);\n}`,
     codeLanguage: 'typescript',
-    prompt: 'What is the most scalable way to handle this?',
+    prompt: 'What is the most robust and scalable way to prevent students from tampering with other students\' reports?',
     options: [
-      'Add more roles (e.g., post_owner, post_editor) to the database.',
-      'Use Postgres Row-Level Security (RLS) with a user_id = auth.uid() policy.',
-      'Externalize the decision to a PDP using ABAC and Derived Roles (e.g., role: owner if resource.ownerId == principal.id).',
-      'Create a new table for every user.',
+      'Add more hardcoded roles to the database (e.g., student_owner, student_viewer, student_editor).',
+      'Rely on frontend React state to disable the edit button if the report author does not match.',
+      'Externalize permission checks using Attribute-Based Access Control (ABAC) with derived roles (e.g., allow edit if resource.authorId == principal.id).',
+      'Create a completely separate SQL database for each enrolled student.',
     ],
     correctAnswer: 2,
     ruleId: 'AUTH-04',
     explanation:
-      'Matches AUTH-01 and AUTH-04: Static roles cause role explosion. Externalizing authorization to a Policy Decision Point (PDP) using ABAC and derived roles decouples logic from application code.',
+      'Externalizing decision logic to a Policy Decision Point (PDP) using ABAC and derived roles decouples ownership verification from code and prevents role explosion.',
   },
   {
     id: 'Q2',
     questionType: 'scenario',
-    title: 'Race Conditions: Concurrent Stock Decrement (Agrivet Pattern)',
+    title: 'Concurrent Sales: Small Retail POS Stock Decrement',
     context:
-      'Two cashiers buy the last bag of feed at the exact same millisecond. Your code does SELECT stock then UPDATE stock - 1. Both succeed, resulting in -1 inventory.',
-    codeSnippet: `-- Vulnerable non-atomic read-then-write:
-SELECT quantity FROM inventory WHERE product_id = 'prod_1';
-UPDATE inventory SET quantity = quantity - 1 WHERE product_id = 'prod_1';`,
+      'In a local campus supply shop POS, two cashiers ring up the very last uniform badge at the exact same second. Your backend executes a SELECT stock check followed by an UPDATE stock - 1. Both check queries return 1, and both write updates succeed, resulting in negative stock (-1) on the shelf.',
+    codeSnippet: `-- Vulnerable read-then-write sequence:\nSELECT quantity FROM inventory WHERE item_id = 'badge_01';\n-- Both cashier threads see quantity = 1, then proceed:\nUPDATE inventory SET quantity = quantity - 1 WHERE item_id = 'badge_01';`,
     codeLanguage: 'sql',
-    prompt: 'How do you fix this at the database level?',
+    prompt: 'How should the database guarantee stock never dips below zero under concurrent traffic?',
     options: [
-      'Add a UI loading spinner to block the second click.',
-      'Use an atomic conditional update (UPDATE stock SET quantity = quantity - 1 WHERE quantity >= 1).',
-      'Store the stock in a Redis cache.',
-      'Use a cron job to fix negative inventory every hour.',
+      'Add a visual disabled spinner on the checkout button to prevent double-clicks.',
+      'Execute an atomic conditional update directly in SQL: UPDATE inventory SET quantity = quantity - 1 WHERE item_id = ? AND quantity >= 1.',
+      'Temporarily store inventory balances in client-side localStorage before syncing to disk.',
+      'Run an hourly background cleanup job to reset negative inventory values back to zero.',
     ],
     correctAnswer: 1,
     ruleId: 'DB-13',
     explanation:
-      'Matches DB-13: Never calculate stock in application memory. Use an atomic conditional update in the database engine (WHERE quantity >= 1) to guarantee stock never breaches zero without locks.',
+      'Atomic conditional database updates guarantee that counters never breach zero without requiring table-wide locks or fragile application-level checks.',
   },
   {
     id: 'Q3',
     questionType: 'scenario',
-    title: 'Data Privacy: Commercial Margin & Cost Redaction (Agrivet Pattern)',
+    title: 'Data Privacy: Redacting Wholesale Costs in Cashier Terminal',
     context:
-      'A store owner wants their cashiers to use the POS system, but cashiers must NOT see the buyingCost or profitMargin of the products.',
-    codeSnippet: `// Cashier POS query:
-const products = await db.products.findMany();
-// Response contains: { id, name, price, buyingCost, profitMargin }
-return res.json(products);`,
+      'A school cooperative store employs student cashiers on shifts. The cashier terminal must display retail selling prices, but wholesale supplier costs and store profit margins must remain strictly confidential.',
+    codeSnippet: `// Server API endpoint serving POS terminal:\nconst products = await db.products.findMany();\n// products array contains: [{ id, name, retailPrice, wholesaleCost, marginPercent }]\nreturn res.json(products);`,
     codeLanguage: 'typescript',
-    prompt: 'Where should this data redaction be enforced?',
+    prompt: 'Where must the wholesale cost and profit margin fields be stripped from the data?',
     options: [
-      'Hide the UI column using React conditional rendering.',
-      'Use CSS to make the text invisible.',
-      'Sanitize the API response on the server to strip buyingCost before it reaches the client.',
-      'Trust the cashiers not to open DevTools.',
+      'In the React component by conditionally hiding the wholesale cost table column.',
+      'Using CSS opacity: 0 and user-select: none to conceal the margin text.',
+      'On the backend server before sending the HTTP response, using selective field projections or DTO sanitization.',
+      'By instructing student cashiers not to open browser developer tools during their shift.',
     ],
     correctAnswer: 2,
     ruleId: 'SEC-14',
     explanation:
-      'Matches SEC-14: Server-side projection and sanitization must strip confidential commercial fields before payloads leave the server boundary. Never rely on client-side hiding.',
+      'Server-side projection and sanitization must strip confidential commercial fields before payloads cross the server-client network boundary.',
   },
   {
     id: 'Q4',
-    questionType: 'recall',
-    title: 'Anti-Hallucination: Epistemic Rigor (The Research Agent)',
+    questionType: 'scenario',
+    title: 'Intermittent Connectivity: Tracking OJT Hours in the Field',
     context:
-      'A user asks the AI: "What is the current inflation rate in the Philippines today?" You have no local Markdown documents containing current statistics, and real-time web access is unavailable.',
-    codeSnippet: `// User prompt to Cortex:
-"What is the current inflation rate in the Philippines today?"
-// Local Vault: No macroeconomic stats present. Web retrieval: Offline.`,
-    codeLanguage: 'text',
-    prompt: 'What should the AI do if it does not have real-time web access?',
+      'An engineering student is completing an off-campus On-the-Job Training (OJT) shift at a remote construction site with dead cellular reception. They clock out at 5:00 PM, but the app fails to reach the cloud server.',
+    codeSnippet: `async function logClockOut(studentId: string, timestamp: number) {\n  // What happens if navigator.onLine is false or the request times out?\n  await fetch('/api/ojt/clock-out', { method: 'POST', body: JSON.stringify({ studentId, timestamp }) });\n}`,
+    codeLanguage: 'typescript',
+    prompt: 'What architectural pattern guarantees student time records are never lost during field outages?',
     options: [
-      'Guess the number based on the year.',
-      'Say "I don\'t know, but it\'s probably around 4%."',
-      'State: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source."',
-      'Refuse to answer and end the chat.',
+      'Show an alert error stating "No Connection" and clear the student\'s entered time entry.',
+      'Persist the time entry in an offline IndexedDB queue and use a Service Worker background sync to replay it when connectivity returns.',
+      'Block the student from opening the application until an active 5G signal is re-established.',
+      'Store time logs in unencrypted cookies and delete them once the browser tab closes.',
     ],
-    correctAnswer: 2,
-    ruleId: 'RS-03',
+    correctAnswer: 1,
+    ruleId: 'IR-05',
     explanation:
-      'Matches RS-03: When local vault documents do not contain verified data and web retrieval is unavailable, the AI must halt and state the explicit anti-hallucination warning.',
+      'Offline-first resilient integration requires local persistence in IndexedDB with transactional replay queues to prevent data loss during network disruptions.',
   },
   {
     id: 'Q5',
-    questionType: 'recall',
-    title: 'The Golden Path: Problem Interrogation (SDLC)',
+    questionType: 'scenario',
+    title: 'System Discovery: Interrogating Edge Cases Before Specifying',
     context:
-      'You are starting a new project in the Cortex Software Factory. You want to interrogate the problem, uncover edge cases, and challenge assumptions before writing the PRD.',
-    codeSnippet: `# The Cortex Golden Path SDLC Pipeline:
-Step 1: [ ??? ] -> Step 2: /pitch -> Step 3: /to-spec -> Step 4: /to-tickets`,
-    codeLanguage: 'bash',
-    prompt: 'Which pipeline command do you run first?',
-    options: ['/to-spec', '/grill', '/implement', '/harden'],
+      'A university faculty asks your engineering capstone team to build a real-time thesis defense scheduler. Before drafting UI wireframes or writing database schemas, your team needs to identify blind spots, scheduling conflicts, and room double-booking pitfalls.',
+    codeSnippet: `# Software Project Lifecycle:\nPhase 1: [ ??? ] -> Phase 2: Technical Specification -> Phase 3: Ticket Breakdown -> Phase 4: Implementation`,
+    codeLanguage: 'text',
+    prompt: 'What engineering practice should the team execute first before locking in requirements?',
+    options: [
+      'Begin coding the database migration immediately so frontend engineers have mock endpoints.',
+      'Conduct a structured problem pre-mortem and challenge assumptions to reveal failure modes before writing specs.',
+      'Deploy an unauthenticated prototype directly to production to gather user ratings.',
+      'Purchase enterprise cloud infrastructure before confirming student and faculty volume.',
+    ],
     correctAnswer: 1,
     ruleId: 'PM-01',
     explanation:
-      'Matches PM-01 and the Golden Path SDLC: /grill activates Product Manager rules to interrogate assumptions and surface edge cases before any specification or code is produced.',
+      'Thorough pre-mortem problem interrogation surfaces hidden constraints, edge cases, and architectural risks before specifications and code are committed.',
   },
   {
     id: 'Q6',
     questionType: 'advanced',
-    title: 'Enterprise Hardening: CDN Cache Isolation & Tenant Boundaries',
+    title: 'Shared Edge Caching: Preventing Tenant Information Leaks',
     context:
-      'Your API serves tenant-specific data. A global CDN (like Cloudflare) caches the response, and the next user sees the previous user\'s data.',
-    codeSnippet: `HTTP/1.1 200 OK
-Content-Type: application/json
-Cache-Control: public, max-age=3600`,
+      'A school portal deploys a shared CDN edge cache in front of its API. An authenticated student views their private academic transcript. Shortly after, another student on a shared computer requests the same endpoint and views the first student\'s private grades.',
+    codeSnippet: `HTTP/1.1 200 OK\nContent-Type: application/json\nCache-Control: public, max-age=3600`,
     codeLanguage: 'http',
-    prompt: 'What header prevents cross-tenant CDN cache leaks?',
+    prompt: 'Which HTTP Cache-Control header directive prevents intermediate CDNs and shared proxies from caching private student data?',
     options: [
-      'Cache-Control: public, max-age=3600',
+      'Cache-Control: public, max-age=86400',
       'Cache-Control: private, no-store, no-cache, must-revalidate',
       'Access-Control-Allow-Origin: *',
-      'Content-Type: application/json',
+      'X-Forwarded-For: 127.0.0.1',
     ],
     correctAnswer: 1,
     ruleId: 'SEC-15',
     explanation:
-      'Matches SEC-15: Setting Cache-Control: private, no-store, no-cache, must-revalidate on authenticated routes prevents shared proxies, CDNs, and browsers from leaking tenant data.',
+      'Configuring Cache-Control: private, no-store, no-cache, must-revalidate on authenticated user responses ensures downstream CDNs, shared proxies, and browser caches never persist tenant-sensitive records.',
   },
 ];
 
@@ -184,6 +255,7 @@ export default function AssessmentPage() {
 
   // Dynamic Quiz State
   const [questions, setQuestions] = useState<QuizQuestion[]>(INITIAL_FALLBACK_QUESTIONS);
+  const [selectedPersona, setSelectedPersona] = useState<PersonaLevel>('junior');
   const [currentStep, setCurrentStep] = useState<number>(0); // 0 = Intro, 1..N = Scenarios, N+1 = Results
   const [answers, setAnswers] = useState<Record<number, number>>({}); // index (0..5) -> selected option index (0..3)
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
@@ -268,7 +340,7 @@ export default function AssessmentPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentStep, showExplanation, isCmdPaletteOpen, questions.length]);
 
-  // Call the Dynamic Quiz Generation API
+  // Call the Dynamic Quiz Generation API with selected candidate persona
   const handleGenerateAssessment = async () => {
     setIsGenerating(true);
     setGenerationError(null);
@@ -277,6 +349,7 @@ export default function AssessmentPage() {
       const response = await fetch('/api/quiz/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ persona: selectedPersona }),
       });
 
       if (!response.ok) {
@@ -296,7 +369,7 @@ export default function AssessmentPage() {
     } catch (err: any) {
       console.warn('[Assessment] AI generation failed, using standard invariant battery:', err);
       setGenerationError(
-        'AI generation experienced latency or rate limits. Loaded standard high-rigor invariant battery.'
+        'AI generation experienced latency or rate limits. Loaded standard scenario battery.'
       );
       setQuestions(INITIAL_FALLBACK_QUESTIONS);
       setAnswers({});
@@ -553,6 +626,70 @@ export default function AssessmentPage() {
                 </div>
               )}
 
+              {/* Candidate Persona / Difficulty Selector */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-slate-700 dark:text-zinc-300 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-cyan-500" />
+                    <span>Candidate Persona / Assessment Rigor</span>
+                  </label>
+                  <span className="text-[11px] font-mono text-cyan-600 dark:text-[#00ffff]">
+                    Scenario-Adaptive
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {PERSONA_CONFIGS.map((persona) => {
+                    const isSelected = selectedPersona === persona.id;
+                    const Icon = persona.icon;
+                    return (
+                      <button
+                        key={persona.id}
+                        type="button"
+                        onClick={() => setSelectedPersona(persona.id)}
+                        className={`p-4 rounded-2xl border text-left transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                          isSelected
+                            ? 'bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.2)] text-slate-900 dark:text-white'
+                            : 'bg-slate-50 dark:bg-white/[0.03] border-slate-200 dark:border-white/10 text-slate-700 dark:text-zinc-300 hover:border-slate-300 dark:hover:border-white/20'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <div
+                              className={`p-2 rounded-xl ${
+                                isSelected
+                                  ? 'bg-cyan-500 text-black'
+                                  : 'bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <span
+                              className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase font-bold ${
+                                isSelected
+                                  ? 'bg-cyan-500/20 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/30'
+                                  : 'bg-slate-200/60 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400'
+                              }`}
+                            >
+                              {persona.badge}
+                            </span>
+                          </div>
+                          <div className="text-xs font-bold font-mono tracking-tight text-slate-900 dark:text-white">
+                            {persona.title}
+                          </div>
+                          <div className="text-[11px] text-slate-600 dark:text-zinc-400 mt-1 leading-snug">
+                            {persona.description}
+                          </div>
+                        </div>
+                        <div className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-white/5 text-[10px] font-mono text-slate-500 dark:text-zinc-500 leading-tight">
+                          Focus: {persona.focus}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row items-center gap-4">
                 <button
                   type="button"
@@ -560,7 +697,10 @@ export default function AssessmentPage() {
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-sm transition-all shadow-[0_0_25px_rgba(0,255,255,0.35)] cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 fill-black" />
-                  <span>Generate AI Assessment →</span>
+                  <span>
+                    Generate AI Assessment (
+                    {PERSONA_CONFIGS.find((p) => p.id === selectedPersona)?.title}) →
+                  </span>
                 </button>
 
                 <button
@@ -597,14 +737,14 @@ export default function AssessmentPage() {
               transition={{ duration: 0.25 }}
               className="w-full bg-white/90 dark:bg-[#0a0a0c]/90 backdrop-blur-2xl border border-slate-200 dark:border-white/15 rounded-3xl p-6 sm:p-8 shadow-2xl relative"
             >
-              {/* Category Badges */}
+              {/* Category Badges - Rule IDs strictly hidden during active test */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 font-bold uppercase">
                     TYPE: {currentQuestion.questionType.toUpperCase()}
                   </span>
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-white/10">
-                    Rule Target: [{currentQuestion.ruleId}]
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-white/10 font-mono">
+                    LEVEL: {PERSONA_CONFIGS.find((p) => p.id === selectedPersona)?.title.toUpperCase() || 'JUNIOR DEVELOPER'}
                   </span>
                 </div>
                 <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500">
@@ -698,20 +838,23 @@ export default function AssessmentPage() {
                   >
                     {answers[currentStep - 1] === currentQuestion.correctAnswer ? (
                       // CORRECT ANSWER HUD (Emerald)
-                      <div className="p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/30 dark:border-emerald-400/30 text-xs sm:text-sm">
+                      <div className="p-4 sm:p-5 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/30 dark:border-emerald-400/30 text-xs sm:text-sm">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-mono font-bold text-xs uppercase">
                             <CheckCircle2 className="w-4 h-4" />
                             <span>INVARIANT VERIFIED (+1 PT)</span>
                           </div>
-                          {currentFocusedNode && (
-                            <span className="text-[11px] font-mono text-slate-500 dark:text-zinc-400">
-                              Active Node: {currentFocusedNode.id}
-                            </span>
-                          )}
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-mono">
+                            Rule: {currentQuestion.ruleId}
+                          </span>
                         </div>
 
                         <p className="text-slate-700 dark:text-zinc-200 leading-relaxed mb-3">
+                          This scenario tests your understanding of{' '}
+                          <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">
+                            [{currentQuestion.ruleId}]
+                          </strong>{' '}
+                          ({getRuleFriendlyName(currentQuestion.ruleId)}). You verified this because{' '}
                           {currentQuestion.explanation}
                         </p>
 
@@ -722,18 +865,23 @@ export default function AssessmentPage() {
                       </div>
                     ) : (
                       // INCORRECT ANSWER HUD (Rose/Red)
-                      <div className="p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/30 dark:border-rose-400/30 text-xs sm:text-sm">
+                      <div className="p-4 sm:p-5 rounded-2xl bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/30 dark:border-rose-400/30 text-xs sm:text-sm">
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400 font-mono font-bold text-xs uppercase">
                             <AlertTriangle className="w-4 h-4" />
                             <span>INVARIANT VIOLATION (0 PTS)</span>
                           </div>
-                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-500 border border-rose-500/30 uppercase">
+                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-500 border border-rose-500/30 uppercase font-mono">
                             Failed Rule: {currentQuestion.ruleId}
                           </span>
                         </div>
 
                         <p className="text-slate-700 dark:text-zinc-200 leading-relaxed mb-3">
+                          This scenario tests your understanding of{' '}
+                          <strong className="text-rose-600 dark:text-rose-400 font-mono font-bold">
+                            [{currentQuestion.ruleId}]
+                          </strong>{' '}
+                          ({getRuleFriendlyName(currentQuestion.ruleId)}). You missed this because{' '}
                           {currentQuestion.explanation}
                         </p>
 

@@ -133,122 +133,129 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// Fallback high-fidelity questions reflecting elite enterprise standards
+export type QuizPersona = 'student' | 'junior' | 'senior' | 'non-technical';
+
+// Fallback high-fidelity questions reflecting realistic engineering scenarios without leaking rule IDs
 const FALLBACK_QUESTIONS: QuizQuestion[] = [
   {
     id: 'Q1',
     questionType: 'scenario',
-    title: 'Authorization: Scalable Multi-Tenant Access Control',
+    title: 'Multi-Tenant Permissions: Student Assignment Editing',
     context:
-      'You are building a multi-tenant SaaS where a user can only edit their own posts. You currently have if (user.role === \'author\') hardcoded in your API route.',
-    codeSnippet: `if (user.role === 'author') {\n  await updatePost(postId, payload);\n}`,
+      'You are building a university portal where students submit and edit their internship reports. An API route currently contains an insecure check: `if (user.role === \'student\') { await updateReport(reportId, payload); }`. Any student can edit any other student\'s report by guessing the report ID.',
+    codeSnippet: `// Insecure route handler in /api/reports/[id]:\nif (user.role === 'student') {\n  await updateReport(reportId, payload);\n}`,
     codeLanguage: 'typescript',
-    prompt: 'What is the most scalable way to handle this?',
+    prompt: 'What is the most robust and scalable way to prevent students from tampering with other students\' reports?',
     options: [
-      'Add more roles (e.g., post_owner, post_editor) to the database.',
-      'Use Postgres Row-Level Security (RLS) with a user_id = auth.uid() policy.',
-      'Externalize the decision to a PDP using ABAC and Derived Roles (e.g., role: owner if resource.ownerId == principal.id).',
-      'Create a new table for every user.',
+      'Add more hardcoded roles to the database (e.g., student_owner, student_viewer, student_editor).',
+      'Rely on frontend React state to disable the edit button if the report author does not match.',
+      'Externalize permission checks using Attribute-Based Access Control (ABAC) with derived roles (e.g., allow edit if resource.authorId == principal.id).',
+      'Create a completely separate SQL database for each enrolled student.',
     ],
     correctAnswer: 2,
     ruleId: 'AUTH-04',
     explanation:
-      'Matches AUTH-01 and AUTH-04: Externalizing decision logic to a PDP using ABAC and derived roles decouples policy from code and prevents role explosion.',
+      'Externalizing decision logic to a Policy Decision Point (PDP) using ABAC and derived roles decouples ownership verification from code and prevents role explosion.',
   },
   {
     id: 'Q2',
     questionType: 'scenario',
-    title: 'Race Conditions: Concurrent Stock Decrement',
+    title: 'Concurrent Sales: Small Retail POS Stock Decrement',
     context:
-      'Two cashiers buy the last bag of feed at the exact same millisecond. Your code does SELECT stock then UPDATE stock - 1. Both succeed, resulting in -1 inventory.',
-    codeSnippet: `-- Vulnerable non-atomic read-then-write\nSELECT quantity FROM inventory WHERE product_id = 'prod_1';\nUPDATE inventory SET quantity = quantity - 1 WHERE product_id = 'prod_1';`,
+      'In a local campus supply shop POS, two cashiers ring up the very last uniform badge at the exact same second. Your backend executes a SELECT stock check followed by an UPDATE stock - 1. Both check queries return 1, and both write updates succeed, resulting in negative stock (-1) on the shelf.',
+    codeSnippet: `-- Vulnerable read-then-write sequence:\nSELECT quantity FROM inventory WHERE item_id = 'badge_01';\n-- Both cashier threads see quantity = 1, then proceed:\nUPDATE inventory SET quantity = quantity - 1 WHERE item_id = 'badge_01';`,
     codeLanguage: 'sql',
-    prompt: 'How do you fix this at the database level?',
+    prompt: 'How should the database guarantee stock never dips below zero under concurrent traffic?',
     options: [
-      'Add a UI loading spinner to block the second click.',
-      'Use an atomic conditional update (UPDATE stock SET quantity = quantity - 1 WHERE quantity >= 1).',
-      'Store the stock in a Redis cache.',
-      'Use a cron job to fix negative inventory every hour.',
+      'Add a visual disabled spinner on the checkout button to prevent double-clicks.',
+      'Execute an atomic conditional update directly in SQL: UPDATE inventory SET quantity = quantity - 1 WHERE item_id = ? AND quantity >= 1.',
+      'Temporarily store inventory balances in client-side localStorage before syncing to disk.',
+      'Run an hourly background cleanup job to reset negative inventory values back to zero.',
     ],
     correctAnswer: 1,
     ruleId: 'DB-13',
     explanation:
-      'Matches DB-13: Atomic conditional updates directly in the database engine guarantee counters never breach zero without needing locks or fragile app-level checks.',
+      'Atomic conditional database updates guarantee that counters never breach zero without requiring table-wide locks or fragile application-level checks.',
   },
   {
     id: 'Q3',
     questionType: 'scenario',
-    title: 'Data Privacy: Commercial Margin & Cost Redaction',
+    title: 'Data Privacy: Redacting Wholesale Costs in Cashier Terminal',
     context:
-      'A store owner wants their cashiers to use the POS system, but cashiers must NOT see the buyingCost or profitMargin of the products.',
-    codeSnippet: `// Cashier POS query\nconst products = await db.products.findMany();\nreturn res.json(products); // Exposes buyingCost & profitMargin`,
+      'A school cooperative store employs student cashiers on shifts. The cashier terminal must display retail selling prices, but wholesale supplier costs and store profit margins must remain strictly confidential.',
+    codeSnippet: `// Server API endpoint serving POS terminal:\nconst products = await db.products.findMany();\n// products array contains: [{ id, name, retailPrice, wholesaleCost, marginPercent }]\nreturn res.json(products);`,
     codeLanguage: 'typescript',
-    prompt: 'Where should this data redaction be enforced?',
+    prompt: 'Where must the wholesale cost and profit margin fields be stripped from the data?',
     options: [
-      'Hide the UI column using React conditional rendering.',
-      'Use CSS to make the text invisible.',
-      'Sanitize the API response on the server to strip buyingCost before it reaches the client.',
-      'Trust the cashiers not to open DevTools.',
+      'In the React component by conditionally hiding the wholesale cost table column.',
+      'Using CSS opacity: 0 and user-select: none to conceal the margin text.',
+      'On the backend server before sending the HTTP response, using selective field projections or DTO sanitization.',
+      'By instructing student cashiers not to open browser developer tools during their shift.',
     ],
     correctAnswer: 2,
     ruleId: 'SEC-14',
     explanation:
-      'Matches SEC-14: Server-side projection and sanitization must strip confidential commercial fields before payload leaves the server boundary.',
+      'Server-side projection and sanitization must strip confidential commercial fields before payloads cross the server-client network boundary.',
   },
   {
     id: 'Q4',
-    questionType: 'recall',
-    title: 'Anti-Hallucination: Epistemic Rigor',
+    questionType: 'scenario',
+    title: 'Intermittent Connectivity: Tracking OJT Hours in the Field',
     context:
-      'A user asks the AI: "What is the current inflation rate in the Philippines today?" You have no local Markdown documents containing current statistics, and real-time web access is unavailable.',
-    codeSnippet: `User: "What is the current inflation rate in the Philippines today?"\nLocal Vault: [No current macroeconomic statistics present]`,
-    codeLanguage: 'text',
-    prompt: 'What should the AI do if it does not have real-time web access?',
+      'An engineering student is completing an off-campus On-the-Job Training (OJT) shift at a remote construction site with dead cellular reception. They clock out at 5:00 PM, but the app fails to reach the cloud server.',
+    codeSnippet: `async function logClockOut(studentId: string, timestamp: number) {\n  // What happens if navigator.onLine is false or the request times out?\n  await fetch('/api/ojt/clock-out', { method: 'POST', body: JSON.stringify({ studentId, timestamp }) });\n}`,
+    codeLanguage: 'typescript',
+    prompt: 'What architectural pattern guarantees student time records are never lost during field outages?',
     options: [
-      'Guess the number based on the year.',
-      'Say "I don\'t know, but it\'s probably around 4%."',
-      'State: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source."',
-      'Refuse to answer and end the chat.',
+      'Show an alert error stating "No Connection" and clear the student\'s entered time entry.',
+      'Persist the time entry in an offline IndexedDB queue and use a Service Worker background sync to replay it when connectivity returns.',
+      'Block the student from opening the application until an active 5G signal is re-established.',
+      'Store time logs in unencrypted cookies and delete them once the browser tab closes.',
     ],
-    correctAnswer: 2,
-    ruleId: 'RS-03',
+    correctAnswer: 1,
+    ruleId: 'IR-05',
     explanation:
-      'Matches RS-03: When local vault documents do not contain verified data and web retrieval is unavailable, the AI must halt and state the explicit anti-hallucination warning.',
+      'Offline-first resilient integration requires local persistence in IndexedDB with transactional replay queues to prevent data loss during network disruptions.',
   },
   {
     id: 'Q5',
-    questionType: 'recall',
-    title: 'The Golden Path: Problem Interrogation',
+    questionType: 'scenario',
+    title: 'System Discovery: Interrogating Edge Cases Before Specifying',
     context:
-      'You are starting a new project in the Cortex Software Factory. You want to interrogate the problem and find edge cases before writing the technical PRD.',
-    codeSnippet: `Step 1: [ ??? ] -> Step 2: /pitch -> Step 3: /to-spec -> Step 4: /to-tickets`,
-    codeLanguage: 'bash',
-    prompt: 'Which pipeline command do you run first?',
-    options: ['/to-spec', '/grill', '/implement', '/harden'],
+      'A university faculty asks your engineering capstone team to build a real-time thesis defense scheduler. Before drafting UI wireframes or writing database schemas, your team needs to identify blind spots, scheduling conflicts, and room double-booking pitfalls.',
+    codeSnippet: `# Software Project Lifecycle:\nPhase 1: [ ??? ] -> Phase 2: Technical Specification -> Phase 3: Ticket Breakdown -> Phase 4: Implementation`,
+    codeLanguage: 'text',
+    prompt: 'What engineering practice should the team execute first before locking in requirements?',
+    options: [
+      'Begin coding the database migration immediately so frontend engineers have mock endpoints.',
+      'Conduct a structured problem pre-mortem and grill assumptions to reveal failure modes before writing specs.',
+      'Deploy an unauthenticated prototype directly to production to gather user ratings.',
+      'Purchase enterprise cloud infrastructure before confirming student and faculty volume.',
+    ],
     correctAnswer: 1,
     ruleId: 'PM-01',
     explanation:
-      'Matches PM-01 and the Golden Path SDLC: /grill activates Product Manager rules to interrogate assumptions and surface edge cases before any specification or code is produced.',
+      'Thorough pre-mortem problem interrogation surfaces hidden constraints, edge cases, and architectural risks before specifications and code are committed.',
   },
   {
     id: 'Q6',
     questionType: 'advanced',
-    title: 'Enterprise Hardening: CDN Cache Isolation',
+    title: 'Shared Edge Caching: Preventing Tenant Information Leaks',
     context:
-      'Your API serves tenant-specific data. A global CDN (like Cloudflare) caches the response, and the next user sees the previous user\'s data.',
+      'A school portal deploys a shared CDN edge cache in front of its API. An authenticated student views their private academic transcript. Shortly after, another student on a shared computer requests the same endpoint and views the first student\'s private grades.',
     codeSnippet: `HTTP/1.1 200 OK\nContent-Type: application/json\nCache-Control: public, max-age=3600`,
     codeLanguage: 'http',
-    prompt: 'What header prevents cross-tenant CDN cache leaks?',
+    prompt: 'Which HTTP Cache-Control header directive prevents intermediate CDNs and shared proxies from caching private student data?',
     options: [
-      'Cache-Control: public, max-age=3600',
+      'Cache-Control: public, max-age=86400',
       'Cache-Control: private, no-store, no-cache, must-revalidate',
       'Access-Control-Allow-Origin: *',
-      'Content-Type: application/json',
+      'X-Forwarded-For: 127.0.0.1',
     ],
     correctAnswer: 1,
     ruleId: 'SEC-15',
     explanation:
-      'Matches SEC-15: Setting Cache-Control: private, no-store, no-cache, must-revalidate on authenticated routes prevents shared proxies and CDNs from storing tenant data.',
+      'Configuring `Cache-Control: private, no-store, no-cache, must-revalidate` on authenticated user responses ensures downstream CDNs, shared proxies, and browser caches never persist tenant-sensitive records.',
   },
 ];
 
@@ -323,6 +330,17 @@ export async function POST(req: Request) {
       );
     }
 
+    // 2. Parse Persona / Difficulty Level
+    let persona: QuizPersona = 'junior';
+    try {
+      const body = await req.json();
+      if (body?.persona && ['student', 'junior', 'senior', 'non-technical'].includes(body.persona)) {
+        persona = body.persona as QuizPersona;
+      }
+    } catch {
+      // Default to junior developer
+    }
+
     const geminiApiKey = process.env.GEMINI_API_KEY;
     const nvidiaApiKey =
       process.env.NVIDIA_API_KEY ||
@@ -335,6 +353,7 @@ export async function POST(req: Request) {
         questions: FALLBACK_QUESTIONS,
         isFallback: true,
         source: 'static-fallback',
+        persona,
       });
     }
 
@@ -344,33 +363,80 @@ export async function POST(req: Request) {
         questions: FALLBACK_QUESTIONS,
         isFallback: true,
         source: 'static-fallback',
+        persona,
       });
     }
 
-    const prompt = `You are an expert examiner for the Cortex Architecture and Procedural Judgment Vault.
-Read these active rules from the 14 domains and agent gatekeepers:
+    const personaDescriptions: Record<QuizPersona, string> = {
+      student: `Target Persona: Student / Beginner.
+Focus on general logic, data privacy (e.g. redacting confidential columns, student grades), basic UX (loading states, friendly error messages), tracking OJT internship hours, school portal submissions, and handling intermittent/offline internet connections.`,
+      junior: `Target Persona: Junior Developer.
+Focus on standard web security (SQL injection prevention, auth tokens, CORS/CSRF), basic SQL/NoSQL queries, React patterns, offline queueing, and practical error recovery in web applications.`,
+      senior: `Target Persona: Senior Architect.
+Focus on high-scale architecture trade-offs, race conditions, atomic conditional database updates, multi-tenancy access control (ABAC, PDP, Derived Roles), distributed caching and CDN cache isolation, and fault tolerance under load.`,
+      'non-technical': `Target Persona: Non-Technical / Product Stakeholder.
+Focus on software process (Golden Path SDLC, pre-mortems), OJT attendance logging workflows, user empathy & reducing friction, business logic boundaries, MVP scope definition, and compliance.`,
+    };
 
+    const prompt = `You are an expert technical examiner designing a scenario-based, adaptive engineering assessment for the Cortex Architecture and Procedural Judgment Vault.
+
+${personaDescriptions[persona]}
+
+Read these active rules from the 14 domains and agent gatekeepers:
 ${vaultRulesText}
 
-Generate exactly 6 multiple-choice questions based on these rules:
-- 2 should be basic recall (e.g., 'What does rule X state?').
-- 2 should be scenario-based (e.g., 'A developer does Y, which rule is violated?').
-- 2 should be advanced (e.g., 'Which combination of rules prevents Z?').
+CRITICAL RULES FOR QUESTION GENERATION:
+1. NEVER mention rule IDs (such as "DB-13", "SEC-02", "RS-03", "SO-05", "AUTH-04", "PM-01", etc.) anywhere in the question 'title', 'context', 'codeSnippet', 'prompt', or 'options'. The user must NOT see rule codes during the exam. The exam must feel like a genuine, scenario-based engineering assessment, NOT a glossary or rule-memorization exam.
+2. Ground questions in realistic student and engineering scenarios: e.g. a student tracking OJT hours in the field, a school portal handling thesis or exam submissions, a small retail POS with concurrent cashier checkouts, protecting wholesale costs from cashiers, or handling flaky offline connections.
+3. The 'ruleId' field in the returned JSON must strictly contain the canonical rule ID being tested (e.g., "DB-13", "AUTH-04", "SEC-14", "IR-05", "PM-01", "SEC-15", etc.) for grading metadata.
+4. The 'explanation' field should concisely explain why the correct option is architecturally sound.
+
+Generate exactly 6 multiple-choice questions:
+- For 'student' or 'non-technical': 3 scenario-based questions, 3 conceptual/practical workflow questions.
+- For 'junior': 4 scenario-based questions, 2 practical implementation questions.
+- For 'senior': 4 advanced scenario-based questions with code, 2 deep architectural trade-off questions.
 
 For each question, provide:
 - id: e.g. "Q1", "Q2", "Q3", "Q4", "Q5", "Q6"
 - questionType: "recall" | "scenario" | "advanced"
-- title: A short, professional technical title
-- context: Scenario context or problem description
-- codeSnippet: (Optional) 1-4 lines of code, sql, or config demonstrating the problem
+- title: A realistic, technical problem title (DO NOT include rule IDs)
+- context: A concrete scenario or problem context (DO NOT include rule IDs)
+- codeSnippet: (Optional) 2-6 lines of realistic code, sql, or config demonstrating the issue
 - codeLanguage: (Optional) "typescript" | "sql" | "bash" | "http" | "text"
-- prompt: The clear, direct question being asked
-- options: An array of exactly 4 strings (options A, B, C, D)
+- prompt: The clear, direct question being asked (DO NOT include rule IDs)
+- options: An array of exactly 4 strings (options A, B, C, D) describing practical engineering approaches (DO NOT include rule IDs)
 - correctAnswer: The 0-based integer index (0 for A, 1 for B, 2 for C, or 3 for D) of the correct answer
-- ruleId: The specific rule ID being tested (e.g., "AUTH-01", "DB-13", "SEC-14", "RS-03", "PM-01", "SEC-15", etc.)
-- explanation: A concise, exactly 1-sentence explanation of why the correct answer is right and why the rule mandates it.
+- ruleId: The specific rule ID being tested (e.g., "AUTH-04", "DB-13", "SEC-14", "RS-03", "PM-01", "SEC-15", "IR-05")
+- explanation: A concise 1-2 sentence explanation of why the correct answer is right.
 
 Output strictly as a valid JSON array of 6 question objects. Do NOT include markdown code blocks, explanatory preamble, or trailing commentary. Just the raw JSON array.`;
+
+    // Helper to sanitize questions and ensure NO rule IDs leak into visible fields
+    const sanitizeGeneratedQuestions = (questions: any[]): QuizQuestion[] => {
+      const ruleIdRegex = /\b([A-Z]{2,4}-\d{2,3})\b/g;
+      return questions.map((q, idx) => {
+        const rawTitle = typeof q.title === 'string' ? q.title.replace(ruleIdRegex, '').replace(/\s*\(\s*\)/g, '').trim() : `Scenario ${idx + 1}`;
+        const rawContext = typeof q.context === 'string' ? q.context.replace(ruleIdRegex, '').trim() : '';
+        const rawPrompt = typeof q.prompt === 'string' ? q.prompt.replace(ruleIdRegex, '').trim() : '';
+        const rawOptions = Array.isArray(q.options)
+          ? q.options.map((opt: any) => (typeof opt === 'string' ? opt.replace(ruleIdRegex, '').trim() : String(opt)))
+          : ['Option A', 'Option B', 'Option C', 'Option D'];
+
+        return {
+          id: q.id || `Q${idx + 1}`,
+          questionType: ['recall', 'scenario', 'advanced'].includes(q.questionType) ? q.questionType : 'scenario',
+          title: rawTitle,
+          context: rawContext,
+          codeSnippet: typeof q.codeSnippet === 'string' ? q.codeSnippet : undefined,
+          codeLanguage: typeof q.codeLanguage === 'string' ? q.codeLanguage : 'typescript',
+          prompt: rawPrompt,
+          options: rawOptions.slice(0, 4),
+          correctAnswer: typeof q.correctAnswer === 'number' && q.correctAnswer >= 0 && q.correctAnswer <= 3 ? q.correctAnswer : 0,
+          ruleId: typeof q.ruleId === 'string' && q.ruleId.length > 0 ? q.ruleId : 'SEC-01',
+          explanation: typeof q.explanation === 'string' ? q.explanation : 'Aligns with core architectural invariants.',
+        };
+      });
+    };
 
     // Attempt Gemini Generation
     if (geminiApiKey) {
@@ -390,10 +456,12 @@ Output strictly as a valid JSON array of 6 question objects. Do NOT include mark
         const parsed = JSON.parse(cleaned);
 
         if (Array.isArray(parsed) && parsed.length >= 6) {
+          const sanitized = sanitizeGeneratedQuestions(parsed.slice(0, 6));
           return NextResponse.json({
-            questions: parsed.slice(0, 6),
+            questions: sanitized,
             isFallback: false,
             model: 'gemini-3.5-flash',
+            persona,
           });
         }
       } catch (err: any) {
@@ -416,7 +484,7 @@ Output strictly as a valid JSON array of 6 question objects. Do NOT include mark
               {
                 role: 'system',
                 content:
-                  'You are an expert technical examiner. Return strictly a JSON array of 6 multiple-choice questions without markdown tags or extra text.',
+                  'You are an expert technical examiner. Return strictly a JSON array of 6 scenario-based multiple-choice questions without markdown tags, rule IDs in titles/prompts, or extra text.',
               },
               { role: 'user', content: prompt },
             ],
@@ -431,10 +499,12 @@ Output strictly as a valid JSON array of 6 question objects. Do NOT include mark
           const cleaned = raw.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
           const parsed = JSON.parse(cleaned);
           if (Array.isArray(parsed) && parsed.length >= 6) {
+            const sanitized = sanitizeGeneratedQuestions(parsed.slice(0, 6));
             return NextResponse.json({
-              questions: parsed.slice(0, 6),
+              questions: sanitized,
               isFallback: false,
               model: 'nvidia-nim',
+              persona,
             });
           }
         }
@@ -448,6 +518,7 @@ Output strictly as a valid JSON array of 6 question objects. Do NOT include mark
       questions: FALLBACK_QUESTIONS,
       isFallback: true,
       source: 'static-fallback',
+      persona,
     });
   } catch (err: any) {
     console.error('[Cortex Quiz API] Unexpected error in quiz route:', err);
