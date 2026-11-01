@@ -21,7 +21,10 @@ import PixelBot, {
 } from '../../components/PixelBot';
 import SpeechBubble, {
   IDLE_SPEECH_MESSAGES,
+  WORKING_SPEECH_OPTIONS,
+  OfficeWaypointKey,
   PixelWorkstation,
+  PixelOfficeProp,
 } from '../../components/SpeechBubble';
 import ChatMessageContent from '../../components/ChatMessageContent';
 import ExportClaudeModal from '../../components/ExportClaudeModal';
@@ -55,12 +58,28 @@ const STATION_COORDINATES: Record<AgentCode, { x: number; y: number }> = {
   PM: { x: 18, y: 26 },  // Top Left (Interrogation Desk)
   UX: { x: 13, y: 53 },  // Mid Left (Design Studio Desk)
   GR: { x: 20, y: 79 },  // Bottom Left (Growth Pitch Desk)
-  DB: { x: 39, y: 85 },  // Bottom Center-Left (Vault Ledger Desk)
-  SEC: { x: 61, y: 85 }, // Bottom Center-Right (Sentinel Firewall Desk)
+  DB: { x: 37, y: 85 },  // Bottom Center-Left (Vault Ledger Desk)
+  SEC: { x: 63, y: 85 }, // Bottom Center-Right (Sentinel Firewall Desk)
   SD: { x: 80, y: 79 },  // Bottom Right (Systems Blueprint Desk)
   IR: { x: 87, y: 53 },  // Mid Right (Sync Bus Desk)
   RS: { x: 82, y: 26 },  // Top Right (Research Archive Desk)
 };
+
+// Shared Isometric Office Waypoints (Printer, Research Board, Coffee Machine)
+const SHARED_WAYPOINTS: Record<Exclude<OfficeWaypointKey, 'desk'>, { x: number; y: number }> = {
+  printer: { x: 33, y: 40 },
+  research_board: { x: 67, y: 40 },
+  coffee_machine: { x: 50, y: 73 },
+};
+
+type BotRoutineAction = 'working' | 'fetching_research' | 'printing' | 'coffee_break';
+
+interface BotRoutineState {
+  action: BotRoutineAction;
+  waypoint: OfficeWaypointKey;
+  bubbleText: string | null;
+  isWalking: boolean;
+}
 
 // Central Mainframe coordinates (center of the room)
 const MAINFRAME_COORDS = { x: 50, y: 50 };
@@ -131,7 +150,7 @@ export default function PixelAgentHQPage() {
     ARB: null,
   });
 
-  // Wandering target offsets around base station (updated every 4 seconds via setInterval)
+  // Wandering micro-offsets around current desk when working (updated every 4 seconds via setInterval)
   const [wanderOffsets, setWanderOffsets] = useState<Record<AgentCode, { x: number; y: number }>>({
     PM: { x: 0, y: 0 },
     UX: { x: 0, y: 0 },
@@ -144,10 +163,17 @@ export default function PixelAgentHQPage() {
     ARB: { x: 0, y: 0 },
   });
 
-  // Active idle speech bubbles per bot (randomly triggered every 5-10 seconds)
-  const [activeBubbles, setActiveBubbles] = useState<Partial<Record<AgentCode, boolean>>>({
-    DB: true,
-    ARB: true,
+  // Living Isometric Office Routine State Machine per Bot (desk, printer, research_board, coffee_machine)
+  const [botRoutines, setBotRoutines] = useState<Record<AgentCode, BotRoutineState>>({
+    PM: { action: 'working', waypoint: 'desk', bubbleText: 'Planning...', isWalking: false },
+    UX: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
+    GR: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
+    DB: { action: 'working', waypoint: 'desk', bubbleText: 'Indexing...', isWalking: false },
+    SEC: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
+    SD: { action: 'working', waypoint: 'desk', bubbleText: 'Architecting...', isWalking: false },
+    IR: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
+    RS: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
+    ARB: { action: 'working', waypoint: 'desk', bubbleText: 'Adjudicating...', isWalking: false },
   });
 
   // Chat state per agent
@@ -231,7 +257,7 @@ export default function PixelAgentHQPage() {
     fetchStats();
   }, [fetchStats]);
 
-  // PART 1.3: Wandering Logic — setInterval every 4 seconds (never on every frame)
+  // PART 1.3: Desk Micro-Shift Logic — setInterval every 4 seconds for bots working at their desk
   useEffect(() => {
     const interval = setInterval(() => {
       setWanderOffsets((prev) => {
@@ -240,10 +266,10 @@ export default function PixelAgentHQPage() {
           if (code === selectedAgent) {
             next[code] = { x: 0, y: 0 };
           } else {
-            // Pick a smooth random offset around the bot's base desk (-16px to +16px)
+            // Subtle posture shift around the bot's workstation desk (-10px to +10px)
             next[code] = {
-              x: Math.round(Math.random() * 32 - 16),
-              y: Math.round(Math.random() * 24 - 12),
+              x: Math.round(Math.random() * 20 - 10),
+              y: Math.round(Math.random() * 14 - 7),
             };
           }
         });
@@ -254,46 +280,144 @@ export default function PixelAgentHQPage() {
     return () => clearInterval(interval);
   }, [selectedAgent]);
 
-  // PART 2.2: Random Idle Speech Bubbles every 5-10 seconds
+  // PART 3: Isometric Office Routine State Machine (Every 10-15 seconds, bots execute routines between desk, printer, research_board, coffee_machine)
   useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let clearBubbleTimeoutId: ReturnType<typeof setTimeout>;
+    const activeTimers: Array<ReturnType<typeof setTimeout>> = [];
+    let mainLoopTimer: ReturnType<typeof setTimeout>;
 
-    const scheduleNextBubble = () => {
-      const delay = Math.floor(Math.random() * 5000) + 5000; // 5 to 10 seconds
-      timeoutId = setTimeout(() => {
-        const idleCandidates = ALL_AGENT_CODES.filter((c) => c !== selectedAgent);
-        if (idleCandidates.length > 0) {
-          // Pick 1 or 2 random idle bots to show their activity speech bubble
-          const shuffled = [...idleCandidates].sort(() => 0.5 - Math.random());
-          const chosen = shuffled.slice(0, 2);
+    const triggerOfficeRoutines = () => {
+      const availableBots = ALL_AGENT_CODES.filter((c) => c !== selectedAgent);
+      if (availableBots.length > 0) {
+        const shuffled = [...availableBots].sort(() => 0.5 - Math.random());
+        const travelerBot = shuffled[0];
+        const deskWorkers = shuffled.slice(1, 4);
 
-          setActiveBubbles((prev) => {
-            const updated = { ...prev };
-            chosen.forEach((c) => {
-              updated[c] = true;
-            });
-            return updated;
+        // Pick an errand for the traveler bot: fetching_research, printing, or coffee_break
+        const errandRoll = Math.random();
+        const chosenErrand: {
+          action: BotRoutineAction;
+          waypoint: Exclude<OfficeWaypointKey, 'desk'>;
+          pauseBubble: string;
+        } =
+          errandRoll < 0.42
+            ? { action: 'fetching_research', waypoint: 'research_board', pauseBubble: '📄 Reading...' }
+            : errandRoll < 0.82
+            ? { action: 'printing', waypoint: 'printer', pauseBubble: '🖨️ Printing...' }
+            : { action: 'coffee_break', waypoint: 'coffee_machine', pauseBubble: '☕ Recharging...' };
+
+        // 1. Update desk workers with fresh typing/thinking bubbles, and start traveler walking to waypoint
+        setBotRoutines((prev) => {
+          const next = { ...prev };
+
+          // Clear old desk bubbles first so the room doesn't get cluttered
+          ALL_AGENT_CODES.forEach((c) => {
+            if (next[c].waypoint === 'desk') {
+              next[c] = { ...next[c], bubbleText: null };
+            }
           });
 
-          clearBubbleTimeoutId = setTimeout(() => {
-            setActiveBubbles((prev) => {
-              const updated = { ...prev };
-              chosen.forEach((c) => {
-                delete updated[c];
-              });
-              return updated;
+          // Give 2-3 desk workers a contextual working bubble ("Analyzing...", "Compiling...", "Reading docs...")
+          deskWorkers.forEach((c) => {
+            if (next[c].waypoint === 'desk') {
+              const options = WORKING_SPEECH_OPTIONS[c] || [IDLE_SPEECH_MESSAGES[c]];
+              const picked = options[Math.floor(Math.random() * options.length)];
+              next[c] = {
+                action: 'working',
+                waypoint: 'desk',
+                bubbleText: picked,
+                isWalking: false,
+              };
+            }
+          });
+
+          // Send travelerBot to the chosen waypoint
+          next[travelerBot] = {
+            action: chosenErrand.action,
+            waypoint: chosenErrand.waypoint,
+            bubbleText: null,
+            isWalking: true,
+          };
+
+          return next;
+        });
+
+        // 2. Upon arriving at waypoint (~1.3s), pause for 3 seconds with action speech bubble ("📄 Reading..." or "🖨️ Printing...")
+        const arriveTimer = setTimeout(() => {
+          setBotRoutines((prev) => {
+            if (selectedAgent === travelerBot) return prev;
+            return {
+              ...prev,
+              [travelerBot]: {
+                ...prev[travelerBot],
+                isWalking: false,
+                bubbleText: chosenErrand.pauseBubble,
+              },
+            };
+          });
+        }, 1300);
+        activeTimers.push(arriveTimer);
+
+        // 3. After pausing for 3 seconds (at t = 4.5s), walk back to their base desk
+        const returnTimer = setTimeout(() => {
+          setBotRoutines((prev) => {
+            if (selectedAgent === travelerBot) return prev;
+            return {
+              ...prev,
+              [travelerBot]: {
+                action: 'working',
+                waypoint: 'desk',
+                bubbleText: null,
+                isWalking: true,
+              },
+            };
+          });
+        }, 4500);
+        activeTimers.push(returnTimer);
+
+        // 4. Settle back at desk (~5.8s) and resume working
+        const settleTimer = setTimeout(() => {
+          setBotRoutines((prev) => {
+            if (selectedAgent === travelerBot) return prev;
+            const options = WORKING_SPEECH_OPTIONS[travelerBot] || [IDLE_SPEECH_MESSAGES[travelerBot]];
+            return {
+              ...prev,
+              [travelerBot]: {
+                action: 'working',
+                waypoint: 'desk',
+                bubbleText: options[0],
+                isWalking: false,
+              },
+            };
+          });
+        }, 5800);
+        activeTimers.push(settleTimer);
+
+        // 5. Fade out desk speech bubbles after 6.5s so bubbles cycle cleanly
+        const clearDeskBubblesTimer = setTimeout(() => {
+          setBotRoutines((prev) => {
+            const next = { ...prev };
+            deskWorkers.forEach((c) => {
+              if (next[c].waypoint === 'desk') {
+                next[c] = { ...next[c], bubbleText: null };
+              }
             });
-          }, 3600);
-        }
-        scheduleNextBubble();
-      }, delay);
+            return next;
+          });
+        }, 6500);
+        activeTimers.push(clearDeskBubblesTimer);
+      }
+
+      // Schedule next routine cycle in 10 to 14 seconds
+      const nextDelay = Math.floor(Math.random() * 4000) + 10000;
+      mainLoopTimer = setTimeout(triggerOfficeRoutines, nextDelay);
     };
 
-    scheduleNextBubble();
+    const initialTimer = setTimeout(triggerOfficeRoutines, 3500);
+    activeTimers.push(initialTimer);
+
     return () => {
-      clearTimeout(timeoutId);
-      clearTimeout(clearBubbleTimeoutId);
+      clearTimeout(mainLoopTimer);
+      activeTimers.forEach((t) => clearTimeout(t));
     };
   }, [selectedAgent]);
 
@@ -830,7 +954,29 @@ export default function PixelAgentHQPage() {
           </div>
         </motion.div>
 
-        {/* 6. PART 2.1: PIXEL WORKSTATION DESKS AT EACH BOT'S BASE POSITION */}
+        {/* 6A. SHARED ISOMETRIC OFFICE WAYPOINT STATIONS (PRINTER, RESEARCH BOARD, COFFEE MACHINE) */}
+        {(Object.entries(SHARED_WAYPOINTS) as Array<[Exclude<OfficeWaypointKey, 'desk'>, { x: number; y: number }]>).map(
+          ([waypointKey, coords]) => {
+            const propX = clampX((coords.x / 100) * usableArenaWidth);
+            const propY = clampY((coords.y / 100) * arenaDimensions.height);
+
+            return (
+              <motion.div
+                key={`office-prop-${waypointKey}`}
+                animate={{ x: propX, y: propY - 16 }}
+                transition={{ type: 'spring', stiffness: 50, damping: 15, mass: 1 }}
+                style={{ position: 'absolute', left: 0, top: 0 }}
+                className="z-10 pointer-events-none"
+              >
+                <div className="-translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                  <PixelOfficeProp type={waypointKey} />
+                </div>
+              </motion.div>
+            );
+          }
+        )}
+
+        {/* 6B. PART 2.1: PIXEL WORKSTATION DESKS AT EACH BOT'S BASE POSITION */}
         {ALL_AGENT_CODES.map((code) => {
           const station = STATION_COORDINATES[code];
           const meta = AGENT_REGISTRY[code];
@@ -861,35 +1007,44 @@ export default function PixelAgentHQPage() {
           );
         })}
 
-        {/* 7. PART 1.2, 1.3, 1.5 & PART 2.2: PERSISTENT LIVING BOTS WITH SPRING PHYSICS & SPEECH BUBBLES */}
+        {/* 7. PERSISTENT LIVING BOTS WITH OFFICE ROUTINE WAYPOINTS, SPRING PHYSICS & SPEECH BUBBLES */}
         {ALL_AGENT_CODES.map((code, idx) => {
           const station = STATION_COORDINATES[code];
           const meta = AGENT_REGISTRY[code];
           const stat = statsMap[code];
+          const routine = botRoutines[code];
           const isSelected = selectedAgent === code;
           const isLow = stat.isLowKnowledge;
           const isProcessing = isSelected && isChatLoading;
 
-          // Base home coordinates in pixels
+          // Base home desk coordinates in pixels
           const baseX = clampX((station.x / 100) * usableArenaWidth);
           const baseY = clampY((station.y / 100) * arenaDimensions.height);
 
-          // Current target X & Y:
-          // - If selected: glide to Central Mainframe docking position
-          // - If unselected: glide back to baseX/baseY + 4s wander offset
-          const currentX = isSelected
-            ? centerPixelX
+          // Resolve waypoint coordinates if the bot is on an office routine errand (printer, research_board, coffee_machine)
+          const waypointCoords =
+            routine?.waypoint && routine.waypoint !== 'desk'
+              ? SHARED_WAYPOINTS[routine.waypoint]
+              : null;
+
+          const targetRoutineX = waypointCoords
+            ? clampX((waypointCoords.x / 100) * usableArenaWidth)
             : clampX(baseX + (wanderOffsets[code]?.x || 0));
 
-          const currentY = isSelected
-            ? dockedBotPixelY
+          const targetRoutineY = waypointCoords
+            ? clampY((waypointCoords.y / 100) * arenaDimensions.height + 12)
             : clampY(baseY + (wanderOffsets[code]?.y || 0));
+
+          // Current target X & Y:
+          // - If selected: glide to Central Mainframe docking position
+          // - If unselected: glide to current routine waypoint (desk, printer, research_board, or coffee_machine)
+          const currentX = isSelected ? centerPixelX : targetRoutineX;
+          const currentY = isSelected ? dockedBotPixelY : targetRoutineY;
 
           // Speech bubble text:
           // - When selected & answering: "Processing..." with animated dots
-          // - When idle & triggered by 5-10s timer: IDLE_SPEECH_MESSAGES[code]
-          const idleBubbleText =
-            !isSelected && activeBubbles[code] ? IDLE_SPEECH_MESSAGES[code] : null;
+          // - When executing office routine or working at desk: routine.bubbleText
+          const idleBubbleText = !isSelected ? routine?.bubbleText : null;
 
           return (
             <motion.div
@@ -900,7 +1055,7 @@ export default function PixelAgentHQPage() {
               }}
               transition={{
                 type: 'spring',
-                stiffness: 50,
+                stiffness: 42,
                 damping: 15,
                 mass: 1,
               }}
@@ -921,7 +1076,7 @@ export default function PixelAgentHQPage() {
                 }}
                 className="-translate-x-1/2 -translate-y-1/2 relative flex flex-col items-center"
               >
-                {/* PART 2.2: Pixel Speech Bubble */}
+                {/* Pixel Speech Bubble */}
                 <SpeechBubble
                   text={idleBubbleText}
                   isProcessing={isProcessing}
@@ -936,7 +1091,7 @@ export default function PixelAgentHQPage() {
                   health={stat.health}
                   isSelected={isSelected}
                   isHovered={hoveredBotCode === code}
-                  isWalking={false}
+                  isWalking={!isSelected && Boolean(routine?.isWalking)}
                   isLowKnowledgeOverride={isLow}
                   bobDelay={idx}
                   showNameTag={true}

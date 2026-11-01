@@ -831,18 +831,20 @@ export default function Home() {
   const selectedIdClean = selectedNode?.id ? String(selectedNode.id).split('::')[0] : '';
 
   return (
-    <main
+    <motion.main
+      layout
       onMouseMove={handleMouseMove}
       className={`relative w-screen h-screen overflow-hidden ${
         isReady ? 'bg-slate-50 dark:bg-[#050505]' : 'bg-[#050505]'
       } text-slate-900 dark:text-white select-none transition-colors duration-300`}
     >
-      {/* 1. Full-Screen 3D Synaptic Constellation Canvas */}
+      {/* 1. Full-Screen 3D Synaptic Constellation Canvas (Uses smooth padding-left transition so WebGL context never unmounts or flashes black) */}
       <motion.div
-        className={`absolute inset-y-0 right-0 h-screen z-0 ${
+        layout
+        className={`absolute inset-0 w-full h-screen z-0 ${
           isReady ? 'bg-slate-50 dark:bg-[#050505]' : 'bg-[#050505]'
-        } transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+        } transition-[padding-left] duration-300 ease-in-out ${
+          isSidebarOpen ? 'pl-0 md:pl-64' : 'pl-0'
         }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: isReady ? 1 : 0 }}
@@ -876,8 +878,8 @@ export default function Home() {
             className="pointer-events-none"
           >
             <div
-              className={`fixed inset-y-0 right-0 z-10 opacity-0 dark:opacity-100 transition-all duration-300 ease-in-out ${
-                isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+              className={`fixed inset-0 z-10 opacity-0 dark:opacity-100 transition-[padding-left] duration-300 ease-in-out ${
+                isSidebarOpen ? 'pl-0 md:pl-64' : 'pl-0'
               }`}
               style={{
                 backgroundImage: `
@@ -904,11 +906,12 @@ export default function Home() {
 
           {/* 3. Top Command Bar (fixed top-0 right-0 z-40, dynamically offsets based on sidebar state) */}
           <motion.header
+            layout
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: 'easeOut' }}
-            className={`fixed top-0 right-0 z-40 h-16 flex items-center justify-between px-3 sm:px-6 pointer-events-none transition-all duration-300 ease-in-out ${
-              isSidebarOpen ? 'left-0 md:left-64' : 'left-0'
+            className={`fixed top-0 inset-x-0 z-40 h-16 flex items-center justify-between px-3 sm:px-6 pointer-events-none transition-[padding-left] duration-300 ease-in-out ${
+              isSidebarOpen ? 'pl-3 sm:pl-6 md:pl-[17.5rem]' : 'pl-3 sm:pl-6'
             }`}
           >
         {/* Left: Sidebar Toggle (☰) + Overview Link + Cortex Brand Pill */}
@@ -1043,16 +1046,18 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Left Sidebar: Gates Directory (Collapsible w-64 vs w-0) */}
+      {/* Left Sidebar: Gates Directory (Always mounted w-64, GPU-translated via x so layout is never destroyed) */}
       <motion.aside
+        layout
         aria-label="Gates directory"
-        initial={{ opacity: 0, x: -16 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
-        className={`fixed left-0 top-0 z-40 h-screen flex flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white transition-all duration-300 ease-in-out ${
-          isSidebarOpen
-            ? 'w-64 opacity-100 pointer-events-auto'
-            : 'w-0 opacity-0 overflow-hidden border-none pointer-events-none'
+        initial={false}
+        animate={{
+          x: isSidebarOpen ? 0 : -256,
+          opacity: isSidebarOpen ? 1 : 0,
+        }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className={`fixed left-0 top-0 z-40 w-64 h-screen flex flex-col bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl border-r border-slate-200 dark:border-white/10 text-slate-900 dark:text-white ${
+          isSidebarOpen ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         style={{
           fontFamily:
@@ -2045,6 +2050,6 @@ export default function Home() {
         onNavigate={(href) => router.push(href)}
         onExportClaude={() => setIsExportClaudeOpen(true)}
       />
-    </main>
+    </motion.main>
   );
 }

@@ -784,14 +784,20 @@ export default function Brain3D({
       onReadyRef.current?.();
     }, 350);
 
-    // 9. Resize handling
+    // 9. Resize handling (Immediate synchronous render after setSize prevents WebGL black buffer flash)
+    let lastW = width;
+    let lastH = height;
     const handleResize = () => {
       if (!container) return;
       const w = Math.max(container.clientWidth || window.innerWidth, 320);
       const h = Math.max(container.clientHeight || window.innerHeight, 320);
+      if (w === lastW && h === lastH) return;
+      lastW = w;
+      lastH = h;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(w, h, false);
+      renderer.render(scene, camera);
     };
 
     window.addEventListener('resize', handleResize);

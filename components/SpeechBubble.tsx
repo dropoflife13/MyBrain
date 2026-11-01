@@ -16,6 +16,20 @@ export const IDLE_SPEECH_MESSAGES: Record<AgentCode, string> = {
   ARB: 'Adjudicating...',
 };
 
+export const WORKING_SPEECH_OPTIONS: Record<AgentCode, string[]> = {
+  DB: ['Indexing...', 'Compiling SQL...', 'Verifying RLS...'],
+  SEC: ['Scanning...', 'Auditing STRIDE...', 'Analyzing...'],
+  UX: ['Polishing...', 'Checking contrast...', 'Designing...'],
+  PM: ['Planning...', 'Writing specs...', 'Analyzing...'],
+  SD: ['Architecting...', 'Compiling TRD...', 'Modeling...'],
+  IR: ['Syncing...', 'Testing webhooks...', 'Compiling...'],
+  GR: ['Pitching...', 'Analyzing funnel...', 'Drafting...'],
+  RS: ['Researching...', 'Reading docs...', 'Triangulating...'],
+  ARB: ['Adjudicating...', 'Weighing rules...', 'Analyzing...'],
+};
+
+export type OfficeWaypointKey = 'desk' | 'printer' | 'research_board' | 'coffee_machine';
+
 export interface SpeechBubbleProps {
   text?: string | null;
   isProcessing?: boolean;
@@ -192,8 +206,128 @@ export function PixelWorkstation({
       </svg>
 
       {/* Workstation Label Tag */}
-      <div className="mt-0.5 px-1.5 py-0.2 rounded bg-slate-950/80 border border-slate-800 text-[8px] font-mono text-slate-400 tracking-widest uppercase">
+      <div className="mt-0.5 px-1.5 py-0.2 rounded bg-slate-950/80 border border-slate-800 text-[8px] font-mono text-slate-300 tracking-widest uppercase">
         TERM // {code}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shared Isometric Office Waypoint Props (Printer, Research Board, Coffee Machine)
+ * placed around the Space Station HQ floor so bots have physical destinations for their routines.
+ */
+export function PixelOfficeProp({
+  type,
+}: {
+  type: Exclude<OfficeWaypointKey, 'desk'>;
+}) {
+  if (type === 'printer') {
+    return (
+      <div className="relative flex flex-col items-center pointer-events-none select-none opacity-75">
+        <svg
+          width={76}
+          height={52}
+          viewBox="0 0 22 15"
+          style={{
+            imageRendering: 'pixelated',
+            shapeRendering: 'crispEdges',
+            filter: 'drop-shadow(0 0 8px rgba(56, 189, 248, 0.35))',
+          }}
+        >
+          {/* Top Paper Feed Sheet */}
+          <rect x="7" y="1" width="8" height="3" fill="#e2e8f0" />
+          <rect x="8" y="2" width="5" height="1" fill="#38bdf8" />
+          {/* Printer Main Chassis */}
+          <rect x="4" y="4" width="14" height="6" fill="#1e293b" />
+          <rect x="5" y="5" width="12" height="4" fill="#334155" />
+          {/* Laser Status Bar & LED */}
+          <rect x="6" y="6" width="7" height="1" fill="#00ffff" />
+          <rect x="15" y="6" width="1" height="1" fill="#10b981" />
+          {/* Output Paper Tray */}
+          <rect x="6" y="8" width="10" height="2" fill="#0f172a" />
+          <rect x="7" y="9" width="8" height="2" fill="#f8fafc" />
+          <rect x="8" y="10" width="6" height="1" fill="#94a3b8" />
+          {/* Base Stand */}
+          <rect x="5" y="10" width="12" height="4" fill="#0f172a" />
+          <rect x="6" y="11" width="10" height="2" fill="#1e293b" />
+        </svg>
+        <div className="mt-0.5 px-1.5 py-0.2 rounded bg-slate-950/85 border border-cyan-500/30 text-[8px] font-mono text-cyan-300 tracking-widest uppercase">
+          🖨️ PRINTER
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'research_board') {
+    return (
+      <div className="relative flex flex-col items-center pointer-events-none select-none opacity-75">
+        <svg
+          width={88}
+          height={56}
+          viewBox="0 0 26 16"
+          style={{
+            imageRendering: 'pixelated',
+            shapeRendering: 'crispEdges',
+            filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.35))',
+          }}
+        >
+          {/* Holo-Board Outer Frame */}
+          <rect x="2" y="1" width="22" height="10" fill="#1e1b4b" />
+          <rect x="3" y="2" width="20" height="8" fill="#0f172a" />
+          <rect x="3" y="2" width="20" height="1" fill="#a855f7" />
+          {/* Pinned Research Notes & Evidence Threads */}
+          <rect x="5" y="4" width="4" height="3" fill="#38bdf8" />
+          <rect x="11" y="4" width="5" height="2" fill="#f472b6" />
+          <rect x="18" y="4" width="3" height="4" fill="#fbbf24" />
+          <rect x="6" y="8" width="8" height="1" fill="#e2e8f0" opacity="0.8" />
+          <rect x="9" y="5" width="2" height="1" fill="#ef4444" />
+          <rect x="16" y="5" width="2" height="1" fill="#22d3ee" />
+          {/* Board Legs */}
+          <rect x="6" y="11" width="2" height="4" fill="#334155" />
+          <rect x="18" y="11" width="2" height="4" fill="#334155" />
+          <rect x="4" y="14" width="6" height="1" fill="#475569" />
+          <rect x="16" y="14" width="6" height="1" fill="#475569" />
+        </svg>
+        <div className="mt-0.5 px-1.5 py-0.2 rounded bg-slate-950/85 border border-purple-500/30 text-[8px] font-mono text-purple-300 tracking-widest uppercase">
+          📄 RESEARCH BOARD
+        </div>
+      </div>
+    );
+  }
+
+  // coffee_machine
+  return (
+    <div className="relative flex flex-col items-center pointer-events-none select-none opacity-75">
+      <svg
+        width={72}
+        height={52}
+        viewBox="0 0 20 15"
+        style={{
+          imageRendering: 'pixelated',
+          shapeRendering: 'crispEdges',
+          filter: 'drop-shadow(0 0 8px rgba(245, 158, 11, 0.35))',
+        }}
+      >
+        {/* Top Bean Hopper */}
+        <rect x="6" y="1" width="8" height="2" fill="#78350f" />
+        <rect x="7" y="1" width="6" height="1" fill="#f59e0b" />
+        {/* Espresso Machine Tower */}
+        <rect x="5" y="3" width="10" height="8" fill="#1e293b" />
+        <rect x="6" y="4" width="8" height="2" fill="#334155" />
+        <rect x="7" y="4" width="2" height="1" fill="#ef4444" />
+        <rect x="11" y="4" width="2" height="1" fill="#10b981" />
+        {/* Glowing Brew Chamber & Mug */}
+        <rect x="7" y="6" width="6" height="4" fill="#090d16" />
+        <rect x="9" y="6" width="2" height="1" fill="#fbbf24" />
+        <rect x="8" y="7" width="3" height="3" fill="#f8fafc" />
+        <rect x="11" y="8" width="1" height="1" fill="#f8fafc" />
+        {/* Counter Base */}
+        <rect x="3" y="11" width="14" height="3" fill="#0f172a" />
+        <rect x="4" y="11" width="12" height="1" fill="#f59e0b" opacity="0.7" />
+      </svg>
+      <div className="mt-0.5 px-1.5 py-0.2 rounded bg-slate-950/85 border border-amber-500/30 text-[8px] font-mono text-amber-300 tracking-widest uppercase">
+        ☕ SYNTH-BREW
       </div>
     </div>
   );

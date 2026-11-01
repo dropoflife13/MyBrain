@@ -14,15 +14,17 @@ import {
   FileSpreadsheet,
   Layout,
   Network,
+  Scale,
   ShieldAlert,
   Terminal,
   TrendingUp,
 } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import PixelBot from '../../components/PixelBot';
 
 interface AgentInfo {
-  code: 'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR' | 'RS';
+  code: 'DB' | 'SEC' | 'UX' | 'PM' | 'SD' | 'IR' | 'GR' | 'RS' | 'ARB';
   name: string;
   role: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -138,6 +140,19 @@ const AGENTS: AgentInfo[] = [
     file: 'agents/researchagent.md',
     accent: 'text-teal-400 border-teal-400/30 bg-teal-400/10',
   },
+  {
+    code: 'ARB',
+    name: 'Judgment Arbiter',
+    role: 'The Supreme Court',
+    icon: Scale,
+    description:
+      'The Supreme Court of the Cortex. Resolves conflicts between domains and enforces your core invariants when rules contradict.',
+    ruleCode: 'ARB-01',
+    ruleSnippet:
+      'Domain Separation: An agent or domain must never override the core invariants of another domain without explicit Arbiter escalation.',
+    file: 'brain/02-domains/arbiter.md',
+    accent: 'text-rose-400 border-rose-500/40 bg-rose-500/15',
+  },
 ];
 
 export default function AgentsPage() {
@@ -219,8 +234,8 @@ export default function AgentsPage() {
           </p>
         </div>
 
-        {/* 8 Agents Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* 9 Core Agents Grid with Large Floating PixelBots */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
           {AGENTS.map((agent, idx) => {
             const Icon = agent.icon;
             return (
@@ -229,19 +244,38 @@ export default function AgentsPage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: idx * 0.05 }}
-                className="rounded-2xl bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-7 space-y-5 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between group"
+                className="rounded-2xl bg-white/85 dark:bg-[#09090b]/85 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-7 space-y-5 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between group"
               >
-                <div className="space-y-4">
-                  {/* Card Header */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner ${agent.accent}`}
-                    >
-                      <Icon className="w-6 h-6" />
+                <div className="space-y-5">
+                  {/* Card Header: Large Floating PixelBot Pedestal + Icon & File Badge */}
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="relative p-3.5 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200 dark:border-white/10 shadow-inner flex items-center justify-center group-hover:border-cyan-400/40 transition-colors">
+                      <PixelBot
+                        code={agent.code}
+                        size={72}
+                        showNameTag={false}
+                        knowledge={100}
+                        bobDelay={idx}
+                      />
+                      <div
+                        className={`absolute -bottom-2 -right-2 w-8 h-8 rounded-xl flex items-center justify-center border shadow-md ${agent.accent}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
                     </div>
-                    <Badge variant="secondary" className="font-mono text-[10px]">
-                      {agent.file}
-                    </Badge>
+
+                    <div className="flex flex-col items-end gap-2">
+                      <Badge variant="secondary" className="font-mono text-[10px]">
+                        {agent.file}
+                      </Badge>
+                      <Link
+                        href="/hq"
+                        className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        <span>Dock in HQ</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
 
                   {/* Title & Role */}
@@ -255,14 +289,14 @@ export default function AgentsPage() {
                   </div>
 
                   {/* Description */}
-                  <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
+                  <p className="text-xs md:text-sm text-slate-700 dark:text-slate-200 leading-relaxed font-sans">
                     {agent.description}
                   </p>
                 </div>
 
                 {/* Code Snippet Box */}
                 <div className="pt-4 border-t border-slate-200 dark:border-white/10 space-y-2">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 dark:text-zinc-500 uppercase tracking-wider">
+                  <div className="flex items-center justify-between text-[10px] font-mono text-slate-500 dark:text-slate-300 uppercase tracking-wider">
                     <span className="flex items-center gap-1.5">
                       <Terminal className="w-3 h-3 text-cyan-500 dark:text-cyan-400" />
                       Invariant Rule
@@ -270,7 +304,7 @@ export default function AgentsPage() {
                     <span className="font-bold text-cyan-600 dark:text-cyan-400">{agent.ruleCode}</span>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-zinc-950/90 border border-slate-200 dark:border-white/10 font-mono text-xs text-slate-800 dark:text-zinc-300 leading-relaxed overflow-x-auto">
+                  <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-zinc-950/90 border border-slate-200 dark:border-white/10 font-mono text-xs text-slate-800 dark:text-slate-200 leading-relaxed overflow-x-auto">
                     <span className="text-cyan-600 dark:text-cyan-400 font-semibold mr-1.5">
                       {agent.ruleCode}:
                     </span>
