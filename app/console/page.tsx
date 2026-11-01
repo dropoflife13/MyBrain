@@ -31,6 +31,7 @@ import {
   Sparkles,
   Terminal,
   X,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -41,6 +42,7 @@ import NeuralLoader from '../../components/NeuralLoader';
 import { Tooltip } from '../../components/Tooltip';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import ChatMessageContent from '../../components/ChatMessageContent';
+import ChainedPipelineBubble, { type PipelineStep } from '../../components/ChainedPipelineBubble';
 import {
   BrainDocNode,
   BrainGraphData,
@@ -152,8 +154,12 @@ export default function Home() {
       timestamp: string;
       isImplementCommand?: boolean;
       topRules?: Array<{ ruleId: string; file: string; score: number }>;
+      isChainedPipeline?: boolean;
+      pipelineSteps?: PipelineStep[];
+      activeStepIndex?: number;
     }>
   >([]);
+  const [isAutoBuilding, setIsAutoBuilding] = useState<boolean>(false);
   const [chatInput, setChatInput] = useState<string>('');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
@@ -595,6 +601,216 @@ export default function Home() {
         },
       ]);
     } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleAutoBuild = async () => {
+    if (isChatLoading || isAutoBuilding) return;
+
+    // Grab user input or sensible default idea
+    const idea =
+      chatInput.trim() ||
+      (selectedNode?.name && selectedNode.id !== 'hub'
+        ? `Feature for ${selectedNode.name}: Production-grade multi-tenant persistence and realtime sync`
+        : 'Real-time collaborative document editor with atomic versioning, optimistic locking, and role-based access control');
+
+    setChatInput('');
+    setAttachedImage(null);
+    setIsChatLoading(true);
+    setIsAutoBuilding(true);
+
+    const userMsgId = `user-${Date.now()}`;
+    const userMsg = {
+      id: userMsgId,
+      role: 'user' as const,
+      text: `⚡ Auto-Build Golden Path: ${idea}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+
+    const pipelineMsgId = `pipeline-${Date.now()}`;
+    const initialSteps: PipelineStep[] = [
+      {
+        stepNumber: 1,
+        title: 'Problem & Edge-Case Interrogation',
+        cmd: '/grill',
+        agent: 'PM',
+        agentName: 'Product Manager Agent',
+        agentColor: '#eab308',
+        status: 'running',
+      },
+      {
+        stepNumber: 2,
+        title: 'Technical Specification & PRD',
+        cmd: '/to-spec',
+        agent: 'SD',
+        agentName: 'Systems Design & DBA Agents',
+        agentColor: '#06b6d4',
+        status: 'pending',
+      },
+      {
+        stepNumber: 3,
+        title: 'Atomic Ticket Decomposition',
+        cmd: '/to-tickets',
+        agent: 'PM',
+        agentName: 'Product Manager Agent',
+        agentColor: '#eab308',
+        status: 'pending',
+      },
+      {
+        stepNumber: 4,
+        title: 'Production Implementation & Sandbox Test',
+        cmd: '/implement',
+        agent: 'DB',
+        agentName: 'DBA & Security Agents',
+        agentColor: '#3b82f6',
+        status: 'pending',
+      },
+    ];
+
+    const assistantMsg = {
+      id: pipelineMsgId,
+      role: 'assistant' as const,
+      text: `⚡ Golden Path Auto-Build Pipeline initialized for: "${idea}"`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isChainedPipeline: true,
+      pipelineSteps: initialSteps,
+      activeStepIndex: 0,
+    };
+
+    setChatMessages((prev) => [...prev, userMsg, assistantMsg]);
+
+    const updatePipelineStep = (
+      stepNum: number,
+      updates: Partial<PipelineStep>,
+      nextRunningStepNum?: number
+    ) => {
+      setChatMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== pipelineMsgId || !m.pipelineSteps) return m;
+          const newSteps = m.pipelineSteps.map((s) => {
+            if (s.stepNumber === stepNum) {
+              return { ...s, ...updates };
+            }
+            if (nextRunningStepNum && s.stepNumber === nextRunningStepNum) {
+              return { ...s, status: 'running' as const };
+            }
+            return s;
+          });
+          return {
+            ...m,
+            pipelineSteps: newSteps,
+            activeStepIndex: (nextRunningStepNum || stepNum) - 1,
+            isImplementCommand: stepNum === 4 && updates.status === 'completed',
+          };
+        })
+      );
+    };
+
+    try {
+      // Step 1: /grill the idea (PM Agent)
+      const step1Res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `/grill: Interrogate problem & edge cases for idea: "${idea}". Challenge technical assumptions, uncover edge cases, and ask exactly 5 hard, non-obvious questions about this application before writing code.`,
+          contextNode: 'PM',
+          workflowCommand: '/grill',
+        }),
+      });
+      const step1Data = await step1Res.json().catch(() => null);
+      const step1Text = sanitizeAiMessage(step1Data, !step1Res.ok ? new Error(`Status ${step1Res.status}`) : undefined);
+      updatePipelineStep(
+        1,
+        {
+          status: 'completed',
+          output: step1Text,
+          model: step1Data?.model,
+          provider: step1Data?.provider,
+        },
+        2
+      );
+
+      // Step 2: /to-spec the requirements (SD + DB Agents)
+      const step2Res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `/to-spec: Based on the application idea "${idea}" and the Problem Interrogation from Step 1:\n\n${step1Text}\n\nRead systemsdesignagent.md, dbaagent.md, and authorization.md. Draft the complete technical architecture, data model, and PDP/PEP authorization strategy with As-Is/To-Be architectures, failure modes, data contracts, and non-goals.`,
+          contextNode: 'SD',
+          workflowCommand: '/to-spec',
+        }),
+      });
+      const step2Data = await step2Res.json().catch(() => null);
+      const step2Text = sanitizeAiMessage(step2Data, !step2Res.ok ? new Error(`Status ${step2Res.status}`) : undefined);
+      updatePipelineStep(
+        2,
+        {
+          status: 'completed',
+          output: step2Text,
+          model: step2Data?.model,
+          provider: step2Data?.provider,
+        },
+        3
+      );
+
+      // Step 3: /to-tickets to break it down (PM Agent)
+      const step3Res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `/to-tickets: Based on the technical specification from Step 2:\n\n${step2Text}\n\nDecompose it into 5 atomic, sequential implementation tickets with measurable acceptance criteria. Explicitly detail Ticket 1 with concrete acceptance criteria and data invariants so it can be implemented immediately.`,
+          contextNode: 'PM',
+          workflowCommand: '/to-tickets',
+        }),
+      });
+      const step3Data = await step3Res.json().catch(() => null);
+      const step3Text = sanitizeAiMessage(step3Data, !step3Res.ok ? new Error(`Status ${step3Res.status}`) : undefined);
+      updatePipelineStep(
+        3,
+        {
+          status: 'completed',
+          output: step3Text,
+          model: step3Data?.model,
+          provider: step3Data?.provider,
+        },
+        4
+      );
+
+      // Step 4: /implement Ticket 1 (DBA + Security + Integration Agents)
+      const step4Res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: `/implement: Implement Ticket 1 from the ticket decomposition in Step 3:\n\n${step3Text}\n\nStrictly obey DB rules (DB-13 atomic conditionals, append-only, RLS default deny), Security rules (SEC-14 server-side redaction, STRIDE), and Integration rules. Write production-ready, runnable code in a markdown code block (e.g. \`\`\`typescript or \`\`\`javascript or \`\`\`python) with self-contained execution tests and console output so it runs in the Cortex Code Sandbox.`,
+          contextNode: 'DB',
+          workflowCommand: '/implement',
+        }),
+      });
+      const step4Data = await step4Res.json().catch(() => null);
+      const step4Text = sanitizeAiMessage(step4Data, !step4Res.ok ? new Error(`Status ${step4Res.status}`) : undefined);
+      updatePipelineStep(4, {
+        status: 'completed',
+        output: step4Text,
+        model: step4Data?.model,
+        provider: step4Data?.provider,
+      });
+    } catch (err: any) {
+      console.error('[Cortex Auto-Build Error]:', err);
+      setChatMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== pipelineMsgId || !m.pipelineSteps) return m;
+          const newSteps = m.pipelineSteps.map((s) => {
+            if (s.status === 'running') {
+              return { ...s, status: 'error' as const, error: err?.message || 'Execution error' };
+            }
+            return s;
+          });
+          return { ...m, pipelineSteps: newSteps };
+        })
+      );
+    } finally {
+      setIsAutoBuilding(false);
       setIsChatLoading(false);
     }
   };
@@ -1128,70 +1344,82 @@ export default function Home() {
 
             {/* Body: Scrollable chat history */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-sm">
-              {chatMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`rounded-xl p-3.5 leading-relaxed ${
-                    msg.role === 'user'
-                      ? 'bg-cyan-500/10 text-cyan-900 dark:text-cyan-100 border border-cyan-500/20 ml-6'
-                      : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[10px] opacity-60 mb-1.5 uppercase font-bold tracking-wider">
-                    <span>{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
-                    <span>{msg.timestamp}</span>
+              {chatMessages.map((msg) =>
+                msg.isChainedPipeline && msg.pipelineSteps ? (
+                  <div key={msg.id} className="mr-4 my-2">
+                    <ChainedPipelineBubble
+                      steps={msg.pipelineSteps}
+                      activeStepIndex={msg.activeStepIndex}
+                      timestamp={msg.timestamp}
+                    />
                   </div>
-                  <ChatMessageContent
-                    text={msg.text}
-                    role={msg.role}
-                    autoRunFirstCodeBlock={Boolean(msg.isImplementCommand)}
-                  />
-                  {msg.imageUrl && (
-                    <div className="mt-2.5 overflow-hidden rounded-lg border border-black/10 dark:border-white/15 max-w-[260px] bg-black/10">
-                      <img
-                        src={msg.imageUrl}
-                        alt="Attached diagram"
-                        className="w-full h-auto max-h-48 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(msg.imageUrl, '_blank')}
-                      />
+                ) : (
+                  <div
+                    key={msg.id}
+                    className={`rounded-xl p-3.5 leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-cyan-500/10 text-cyan-900 dark:text-cyan-100 border border-cyan-500/20 ml-6'
+                        : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-[10px] opacity-60 mb-1.5 uppercase font-bold tracking-wider">
+                      <span>{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
+                      <span>{msg.timestamp}</span>
                     </div>
-                  )}
-                  {msg.topRules && msg.topRules.length > 0 && (
-                    <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10">
-                      <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-600 dark:text-cyan-400 mb-1.5">
-                        <Sparkles className="w-3 h-3 text-cyan-500 dark:text-[#00ffff]" />
-                        <span className="font-semibold uppercase tracking-wider text-[9px]">
-                          Semantic Vector RAG Invariants:
+                    <ChatMessageContent
+                      text={msg.text}
+                      role={msg.role}
+                      autoRunFirstCodeBlock={Boolean(msg.isImplementCommand)}
+                    />
+                    {msg.imageUrl && (
+                      <div className="mt-2.5 overflow-hidden rounded-lg border border-black/10 dark:border-white/15 max-w-[260px] bg-black/10">
+                        <img
+                          src={msg.imageUrl}
+                          alt="Attached diagram"
+                          className="w-full h-auto max-h-48 object-cover rounded-md cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(msg.imageUrl, '_blank')}
+                        />
+                      </div>
+                    )}
+                    {msg.topRules && msg.topRules.length > 0 && (
+                      <div className="mt-2.5 pt-2 border-t border-black/10 dark:border-white/10">
+                        <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-600 dark:text-cyan-400 mb-1.5">
+                          <Sparkles className="w-3 h-3 text-cyan-500 dark:text-[#00ffff]" />
+                          <span className="font-semibold uppercase tracking-wider text-[9px]">
+                            Semantic Vector RAG Invariants:
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {msg.topRules.map((r) => (
+                            <span
+                              key={r.ruleId}
+                              title={`${r.file} • Cosine: ${r.score.toFixed(3)}`}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/20 dark:border-cyan-400/30 text-[10px] text-cyan-700 dark:text-[#00ffff] font-mono"
+                            >
+                              <span className="font-bold">{r.ruleId}</span>
+                              <span className="text-[8px] opacity-60 font-sans">({(r.score * 100).toFixed(0)}%)</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {msg.role === 'assistant' && (msg.model || msg.provider) && (
+                      <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
+                        <span>
+                          via {msg.provider ? msg.provider.toUpperCase() : 'AI'} • {msg.model || 'default'}
                         </span>
                       </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {msg.topRules.map((r) => (
-                          <span
-                            key={r.ruleId}
-                            title={`${r.file} • Cosine: ${r.score.toFixed(3)}`}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/20 dark:border-cyan-400/30 text-[10px] text-cyan-700 dark:text-[#00ffff] font-mono"
-                          >
-                            <span className="font-bold">{r.ruleId}</span>
-                            <span className="text-[8px] opacity-60 font-sans">({(r.score * 100).toFixed(0)}%)</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {msg.role === 'assistant' && (msg.model || msg.provider) && (
-                    <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
-                      <span>
-                        via {msg.provider ? msg.provider.toUpperCase() : 'AI'} • {msg.model || 'default'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    )}
+                  </div>
+                )
+              )}
 
               {isChatLoading && (
                 <div className="bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 rounded-xl p-3.5 mr-4 font-mono text-sm flex items-center gap-2.5">
                   <Loader2 className="w-4 h-4 text-cyan-600 dark:text-[#00ffff] animate-spin" />
-                  <span className="text-xs text-slate-500 dark:text-zinc-400">Querying neural knowledge base...</span>
+                  <span className="text-xs text-slate-500 dark:text-zinc-400">
+                    {isAutoBuilding ? 'Auto-Building Golden Path pipeline across agents...' : 'Querying neural knowledge base...'}
+                  </span>
                 </div>
               )}
               <div ref={chatBottomRef} />
@@ -1209,11 +1437,28 @@ export default function Home() {
                 </span>
               </div>
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                {/* Auto-Build Skill Chaining Button */}
+                <button
+                  type="button"
+                  disabled={isChatLoading || isAutoBuilding}
+                  onClick={handleAutoBuild}
+                  title="Auto-Build: Automatically chain /grill ➔ /to-spec ➔ /to-tickets ➔ /implement"
+                  className="px-3 py-1 rounded-md bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-mono font-bold text-[11px] transition-all shrink-0 cursor-pointer disabled:opacity-40 active:scale-95 flex items-center gap-1.5 shadow-[0_0_12px_rgba(0,255,255,0.4)] border border-cyan-300"
+                >
+                  <Zap className="w-3.5 h-3.5 fill-black text-black" />
+                  <span>Auto-Build</span>
+                  <span className="text-[9px] opacity-80 uppercase tracking-tighter bg-black/20 text-black px-1 py-0.2 rounded font-sans font-semibold">
+                    Chained
+                  </span>
+                </button>
+
+                <div className="h-4 w-px bg-black/10 dark:bg-white/15 shrink-0 mx-0.5" />
+
                 {WORKFLOW_PILLS.map((pill) => (
                   <button
                     key={pill.cmd}
                     type="button"
-                    disabled={isChatLoading}
+                    disabled={isChatLoading || isAutoBuilding}
                     onClick={() => handleExecuteWorkflowCommand(pill)}
                     title={pill.desc}
                     className="px-2.5 py-1 rounded-md bg-white dark:bg-white/5 hover:bg-cyan-500/15 dark:hover:bg-cyan-400/15 text-slate-700 dark:text-zinc-300 hover:text-cyan-600 dark:hover:text-[#00ffff] border border-black/10 dark:border-white/10 hover:border-cyan-500/40 dark:hover:border-cyan-400/40 text-[11px] font-mono font-semibold transition-all shrink-0 cursor-pointer disabled:opacity-40 active:scale-95 flex items-center gap-1 shadow-sm"
