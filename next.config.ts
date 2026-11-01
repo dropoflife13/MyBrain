@@ -11,6 +11,22 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
+  webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      sharp$: false,
+      'onnxruntime-node$': false,
+    };
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      };
+    }
+    return config;
+  },
   async headers() {
     return [
       {

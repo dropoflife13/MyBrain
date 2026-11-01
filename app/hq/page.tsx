@@ -35,6 +35,7 @@ import PixelBot, {
 } from '../../components/PixelBot';
 import ChatMessageContent from '../../components/ChatMessageContent';
 import ExportClaudeModal from '../../components/ExportClaudeModal';
+import VoiceInput, { VoiceTTSButton, VoiceModeBadge } from '../../components/VoiceInput';
 import { ThemeToggle } from '../../components/ThemeToggle';
 
 interface AgentStats {
@@ -988,7 +989,7 @@ export default function PixelAgentHQPage() {
                 </div>
 
                 {/* Bot Vital Telemetry Bar */}
-                <div className="px-4 py-2 bg-black/40 border-b border-zinc-800 flex items-center justify-between text-[11px] font-mono text-zinc-400 shrink-0">
+                <div className="px-4 py-2 bg-black/40 border-b border-zinc-800 flex items-center justify-between gap-2 text-[11px] font-mono text-zinc-400 shrink-0 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span>Knowledge:</span>
                     <span
@@ -1006,8 +1007,8 @@ export default function PixelAgentHQPage() {
                       {statsMap[selectedAgent].health}%
                     </span>
                   </div>
-                  <div className="text-[10px] text-zinc-500">
-                    Target: /api/chat?contextNode={selectedAgent}
+                  <div className="flex items-center gap-2">
+                    <VoiceModeBadge />
                   </div>
                 </div>
 
@@ -1061,10 +1062,11 @@ export default function PixelAgentHQPage() {
                       >
                         <ChatMessageContent text={msg.text} role={msg.role} />
                         {msg.role === 'assistant' && (
-                          <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
+                          <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1.5 flex items-center justify-between gap-2">
                             <span>
                               [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.5-flash'}]
                             </span>
+                            <VoiceTTSButton text={msg.text} />
                           </div>
                         )}
                       </div>
@@ -1097,6 +1099,13 @@ export default function PixelAgentHQPage() {
                       placeholder={`Query ${activeBotMeta.name} (contextNode: ${selectedAgent})...`}
                       disabled={isChatLoading}
                       className="flex-1 h-10 px-3 rounded-lg bg-black/60 border border-zinc-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono text-white placeholder-zinc-500 outline-none transition-all"
+                    />
+                    <VoiceInput
+                      disabled={isChatLoading}
+                      variant="hq"
+                      onTranscript={(transcribed) =>
+                        setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${transcribed}` : transcribed))
+                      }
                     />
                     <button
                       type="submit"

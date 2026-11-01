@@ -15,6 +15,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import ChatMessageContent from './ChatMessageContent';
+import { VoiceTTSButton } from './VoiceInput';
 
 export interface PipelineStep {
   stepNumber: number;
@@ -281,10 +282,13 @@ export default function ChainedPipelineBubble({
                       />
 
                       {/* Step Footer Telemetry */}
-                      <div className="pt-2 mt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500 font-mono">
-                        <span>
-                          via {step.provider ? step.provider.toUpperCase() : 'AI'} • {step.model || 'cortex-engine'}
-                        </span>
+                      <div className="pt-2 mt-2 border-t border-white/5 flex items-center justify-between gap-2 text-[10px] text-zinc-500 font-mono flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            via {step.provider ? step.provider.toUpperCase() : 'AI'} • {step.model || 'cortex-engine'}
+                          </span>
+                          <VoiceTTSButton text={step.output} />
+                        </div>
                         {step.stepNumber < 4 ? (
                           <span className="text-cyan-400/80 flex items-center gap-1">
                             Handoff complete <ArrowRight className="w-3 h-3" /> Passing state to Step {step.stepNumber + 1}

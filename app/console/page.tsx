@@ -45,6 +45,7 @@ import { Tooltip } from '../../components/Tooltip';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import ChatMessageContent from '../../components/ChatMessageContent';
 import ChainedPipelineBubble, { type PipelineStep } from '../../components/ChainedPipelineBubble';
+import VoiceInput, { VoiceTTSButton, VoiceModeBadge } from '../../components/VoiceInput';
 import {
   BrainDocNode,
   BrainGraphData,
@@ -1343,11 +1344,12 @@ export default function Home() {
             {/* Header: Node Title, Node ID, green SYSTEM READY dot, and close X */}
             <div className="px-5 py-4 border-b border-black/10 dark:border-white/10 flex items-start justify-between gap-3 bg-slate-50/80 dark:bg-black/40">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
                   <span className="text-[10px] font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase">
                     SYSTEM READY
                   </span>
+                  <VoiceModeBadge />
                 </div>
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white truncate">
                   {selectedNode.id === 'hub' ? 'Cortex Master Hub (8-Agent Suite)' : selectedNode.name}
@@ -1387,9 +1389,12 @@ export default function Home() {
                         : 'bg-slate-100 dark:bg-white/5 text-slate-800 dark:text-zinc-200 border border-black/5 dark:border-white/10 mr-4'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[10px] opacity-60 mb-1.5 uppercase font-bold tracking-wider">
-                      <span>{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
-                      <span>{msg.timestamp}</span>
+                    <div className="flex items-center justify-between text-[10px] mb-1.5 uppercase font-bold tracking-wider">
+                      <span className="opacity-60">{msg.role === 'user' ? 'Operator' : 'Neural Core'}</span>
+                      <div className="flex items-center gap-2">
+                        {msg.role === 'assistant' && <VoiceTTSButton text={msg.text} />}
+                        <span className="opacity-60">{msg.timestamp}</span>
+                      </div>
                     </div>
                     <ChatMessageContent
                       text={msg.text}
@@ -1554,6 +1559,13 @@ export default function Home() {
                 placeholder={attachedImage ? 'Ask about this diagram or audit it...' : 'Ask about this rule or agent...'}
                 disabled={isChatLoading}
                 className="flex-1 px-3 py-2 text-sm font-mono rounded-lg bg-white dark:bg-zinc-900/90 border border-black/10 dark:border-white/15 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-cyan-500 dark:focus:border-[#00ffff]"
+              />
+              <VoiceInput
+                disabled={isChatLoading}
+                variant="console"
+                onTranscript={(transcribed) =>
+                  setChatInput((prev) => (prev.trim() ? `${prev.trim()} ${transcribed}` : transcribed))
+                }
               />
               <button
                 type="submit"
