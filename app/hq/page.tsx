@@ -49,6 +49,8 @@ interface ChatMessage {
   role: 'assistant' | 'user';
   text: string;
   timestamp: string;
+  model?: string;
+  provider?: string;
 }
 
 // 8 Bots in order of the Golden Path / SDLC Suite
@@ -172,8 +174,10 @@ export default function PixelAgentHQPage() {
       const initialGreeting: ChatMessage = {
         id: `init-${Date.now()}`,
         role: 'assistant',
-        text: `**${meta.name} (${meta.code}) docked to Cortex Mainframe.**\n\n*Role:* ${meta.role}\n*Invariants:* \`${meta.invariants}\`\n\nI am online and ready to inspect schemas, enforce architectural gates, or verify invariant compliance. How may I assist your engineering pipeline?`,
+        text: `Hey Architect! ${meta.name} docked and online. What do you need verified?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        model: 'gemini-3.5-flash',
+        provider: 'google',
       };
       setChatMessages((prev) => ({
         ...prev,
@@ -230,6 +234,7 @@ export default function PixelAgentHQPage() {
         body: JSON.stringify({
           query: textToSend,
           contextNode: botCode, // Hardcoded to specific bot code (DB, SEC, UX, PM, SD, IR, GR, RS)
+          source: 'hq', // Flag indicating quick conversational command center
         }),
       });
 
@@ -244,6 +249,8 @@ export default function PixelAgentHQPage() {
         role: 'assistant',
         text: replyText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        model: data?.model,
+        provider: data?.provider,
       };
 
       setChatMessages((prev) => ({
@@ -269,7 +276,7 @@ export default function PixelAgentHQPage() {
   const activeBotMeta = selectedBotCode ? AGENT_REGISTRY[selectedBotCode] : null;
 
   return (
-    <div className="relative w-screen min-h-screen bg-[#04060d] text-slate-100 flex flex-col font-mono overflow-x-hidden select-none">
+    <div className="relative w-screen h-screen max-h-screen bg-[#04060d] text-slate-100 flex flex-col font-mono overflow-hidden select-none">
       {/* 1. Retro CRT Scanline & Phosphor Overlay */}
       {crtEffect && (
         <div
@@ -394,9 +401,9 @@ export default function PixelAgentHQPage() {
       </header>
 
       {/* 3. MAIN ARENA: 2D RETRO COMMAND CENTER ROOM */}
-      <main className="relative flex-1 flex flex-col lg:flex-row overflow-hidden min-h-[calc(100vh-65px)]">
+      <main className="relative flex-1 flex flex-col lg:flex-row overflow-hidden h-[calc(100vh-65px)] max-h-[calc(100vh-65px)]">
         {/* Left / Center Area: The Command Center Deck */}
-        <div className="relative flex-1 min-h-[600px] lg:min-h-full flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden bg-[#030611]">
+        <div className="relative flex-1 min-h-[500px] lg:min-h-full flex flex-col items-center justify-center p-4 sm:p-8 overflow-hidden bg-[#030611]">
           {/* Neon Floor Grid Background (Isometric/Perspective Cyberpunk Grid) */}
           <div
             className="absolute inset-0 pointer-events-none opacity-40"
@@ -687,13 +694,13 @@ export default function PixelAgentHQPage() {
 
         {/* 7. RIGHT DOCKED TERMINAL CHAT PANEL */}
         <div
-          className={`w-full lg:w-[480px] xl:w-[520px] bg-[#070d1d] border-t lg:border-t-0 lg:border-l border-cyan-500/30 flex flex-col z-30 transition-all ${
+          className={`w-full lg:w-[480px] xl:w-[520px] bg-[#070d1d] border-t lg:border-t-0 lg:border-l border-cyan-500/30 flex flex-col z-30 transition-all h-full max-h-full overflow-hidden ${
             selectedBotCode ? 'flex' : 'hidden lg:flex'
           }`}
         >
           {selectedBotCode && activeBotMeta ? (
             // Active Docked Bot Terminal View
-            <div className="flex-1 flex flex-col h-full">
+            <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden">
               {/* Terminal Chat Header */}
               <div className="p-4 border-b border-cyan-500/25 bg-[#091126] flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -790,7 +797,7 @@ export default function PixelAgentHQPage() {
               </div>
 
               {/* Chat Message History Stream */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto max-h-[calc(100vh-250px)] p-4 space-y-4">
                 {(chatMessages[selectedBotCode] || []).map((msg) => (
                   <div
                     key={msg.id}
@@ -812,6 +819,13 @@ export default function PixelAgentHQPage() {
                       }`}
                     >
                       <ChatMessageContent text={msg.text} role={msg.role} />
+                      {msg.role === 'assistant' && (
+                        <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
+                          <span>
+                            [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.5-flash'}]
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

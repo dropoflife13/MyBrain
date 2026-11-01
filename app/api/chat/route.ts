@@ -391,6 +391,7 @@ const ChatRequestSchema = z.object({
     .optional(),
   workflowCommand: z.string().max(50).optional(),
   provider: z.string().max(50).optional(),
+  source: z.string().max(50).optional(),
   imageUrl: z
     .string()
     .max(MAX_IMAGE_BASE64_LENGTH, 'Image base64 payload exceeds 2MB limit')
@@ -641,7 +642,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { query, contextNode, workflowCommand, provider } = validation.data;
+    const { query, contextNode, workflowCommand, provider, source } = validation.data;
     const imageUrl = validation.data.imageUrl || undefined;
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -744,18 +745,23 @@ ${query}
 
 Respond in clean, highly structured GitHub-flavored markdown with strict engineering rigor.`;
     } else {
+      const fileContent = contextNode ? getFileContentForNode(contextNode) : '';
       if (topRulesPrompt) {
-        prompt = `You are Cortex AI, the procedural judgment engine and multi-agent supervisor.
+        prompt = `You are Cortex AI, representing agent ${contextNode || 'hub'} in the procedural judgment engine.
 Answer the user's question with strict engineering rigor, adhering to these top 3 mathematically triangulated rules retrieved via Semantic Vector RAG (all-MiniLM-L6-v2):
 
 ${topRulesPrompt}
-
+${fileContent ? `\n\nAGENT CONTEXT & INVARIANTS:\n${fileContent}\n` : ''}
 User Question:
 ${query}`;
       } else {
-        const fileContent = getFileContentForNode(contextNode);
         prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
       }
+    }
+
+    // Requirement 3: Fix AI Verbosity for HQ Route
+    if (source === 'hq') {
+      prompt += `\n\nYou are speaking inside a quick command center. Be highly concise. Answer in 1-2 sentences maximum. Do NOT use markdown headers (like ###) or long bullet points unless absolutely necessary. Speak directly and casually.`;
     }
 
     let succeededText = '';
