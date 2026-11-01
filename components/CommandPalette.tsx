@@ -9,6 +9,7 @@ import {
   Check,
   Compass,
   Cpu,
+  FileCode,
   FileCode2,
   FolderGit2,
   Search,
@@ -41,6 +42,7 @@ interface CommandPaletteProps {
   nodes: BrainDocNode[];
   onSelectNode?: (node: BrainDocNode) => void;
   onNavigate?: (href: string) => void;
+  onExportClaude?: () => void;
 }
 
 export default function CommandPalette({
@@ -49,6 +51,7 @@ export default function CommandPalette({
   nodes,
   onSelectNode,
   onNavigate,
+  onExportClaude,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -150,6 +153,22 @@ export default function CommandPalette({
       href: '/hq',
       keywords: ['hq', 'pixel', 'bots', 'agents', 'room', 'command', 'center', '2d', 'operations', 'qa'],
     });
+
+    if (onExportClaude) {
+      items.push({
+        id: 'action-export-claude',
+        title: 'Export CLAUDE.md & .cursorrules',
+        subtitle: 'Generate formatted system prompt with live 8-agent scores for VS Code & Cursor IDE',
+        category: 'navigation',
+        badge: 'EXPORT • IDE',
+        icon: <FileCode className="w-4 h-4 text-emerald-400" />,
+        action: () => {
+          onClose();
+          onExportClaude();
+        },
+        keywords: ['export', 'claude', 'cursor', 'rules', 'vscode', 'ide', 'sync', 'bridge', 'prompt'],
+      });
+    }
 
     // 2. Map nodes (Agents + Document Nodes + Synapses)
     const seenNodeIds = new Set<string>();

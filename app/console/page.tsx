@@ -15,6 +15,7 @@ import {
   Download,
   ExternalLink,
   Eye,
+  FileCode,
   FileCode2,
   GitFork,
   Image as ImageIcon,
@@ -38,6 +39,7 @@ import { useRouter } from 'next/navigation';
 import Brain3D from '../../components/Brain3D';
 import AuditInspector from '../../components/AuditInspector';
 import CommandPalette from '../../components/CommandPalette';
+import ExportClaudeModal from '../../components/ExportClaudeModal';
 import NeuralLoader from '../../components/NeuralLoader';
 import { Tooltip } from '../../components/Tooltip';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -123,6 +125,7 @@ export default function Home() {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [queryText, setQueryText] = useState<string>('');
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
+  const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [isMatrixOpen, setIsMatrixOpen] = useState<boolean>(false);
   const [vaultMode, setVaultMode] = useState<'assessed' | 'blank'>('assessed');
@@ -1105,6 +1108,28 @@ export default function Home() {
               </span>
             </Link>
 
+            {/* 3. Sleek Full-Width Primary Action: Export CLAUDE.md */}
+            <button
+              type="button"
+              onClick={() => setIsExportClaudeOpen(true)}
+              className="w-full px-3 py-2.5 rounded-lg flex items-center justify-between text-xs font-mono transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 hover:border-emerald-500/40 dark:hover:border-emerald-400/35 text-slate-800 dark:text-zinc-200 hover:text-emerald-700 dark:hover:text-emerald-400 shadow-sm group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                  <FileCode className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex flex-col text-left leading-tight min-w-0">
+                  <span className="font-bold truncate">Export CLAUDE.md</span>
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                    VS Code & Cursor Sync
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-semibold border border-emerald-500/20 shrink-0">
+                Export ↗
+              </span>
+            </button>
+
             {/* Show All Filter Button */}
             <button
               type="button"
@@ -1562,6 +1587,18 @@ export default function Home() {
           </Button>
         </Tooltip>
 
+        {/* Floating "Export CLAUDE.md" Button */}
+        <Tooltip content="Export 8-Agent System Prompt (CLAUDE.md / .cursorrules)" side="left">
+          <Button
+            variant="outline"
+            onClick={() => setIsExportClaudeOpen(true)}
+            className="backdrop-blur-xl bg-white/90 dark:bg-[#09090b]/85 border border-slate-300 dark:border-white/15 hover:border-emerald-500 dark:hover:border-emerald-400/50 text-slate-800 dark:text-white shadow-2xl px-4 py-2.5 h-auto font-mono text-xs flex items-center gap-2 transition-all hover:scale-[1.02] cursor-pointer"
+          >
+            <FileCode className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>Export CLAUDE.md</span>
+          </Button>
+        </Tooltip>
+
         {/* Floating "Fork this Brain" Button */}
         <Tooltip content="Export or fork blank-slate vault" side="left">
           <Button
@@ -1972,6 +2009,13 @@ export default function Home() {
         }}
       />
 
+      {/* Export CLAUDE.md & .cursorrules Modal */}
+      <ExportClaudeModal
+        isOpen={isExportClaudeOpen}
+        onClose={() => setIsExportClaudeOpen(false)}
+        initialStats={cortexStats}
+      />
+
       {/* 10. Global Cmd+K Search Palette (GR-04) */}
       <CommandPalette
         isOpen={isCmdPaletteOpen}
@@ -1979,6 +2023,7 @@ export default function Home() {
         nodes={graphData.nodes}
         onSelectNode={handleSelectNodeFromPalette}
         onNavigate={(href) => router.push(href)}
+        onExportClaude={() => setIsExportClaudeOpen(true)}
       />
     </main>
   );

@@ -12,6 +12,7 @@ import {
   Compass,
   Cpu,
   Eye,
+  FileCode,
   FolderGit2,
   Layers,
   MessageSquare,
@@ -33,6 +34,7 @@ import PixelBot, {
   AgentMeta,
 } from '../../components/PixelBot';
 import ChatMessageContent from '../../components/ChatMessageContent';
+import ExportClaudeModal from '../../components/ExportClaudeModal';
 import { ThemeToggle } from '../../components/ThemeToggle';
 
 interface AgentStats {
@@ -86,6 +88,7 @@ export default function PixelAgentHQPage() {
 
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
   const [crtEffect, setCrtEffect] = useState<boolean>(true);
+  const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);
 
   // Requirement 1: Ghost Selection Bug Fix
   // selectedAgent is strictly initialized to null and set to null when closed
@@ -469,6 +472,15 @@ export default function PixelAgentHQPage() {
             <Cpu className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">3D Brain</span>
           </Link>
+
+          <button
+            onClick={() => setIsExportClaudeOpen(true)}
+            title="Export CLAUDE.md / .cursorrules"
+            className="h-8 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs flex items-center gap-1.5 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.2)]"
+          >
+            <FileCode className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Export CLAUDE.md</span>
+          </button>
 
           <ThemeToggle />
         </div>
@@ -1133,6 +1145,12 @@ export default function PixelAgentHQPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Export CLAUDE.md Modal */}
+      <ExportClaudeModal
+        isOpen={isExportClaudeOpen}
+        onClose={() => setIsExportClaudeOpen(false)}
+      />
     </div>
   );
 }

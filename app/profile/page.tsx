@@ -18,6 +18,7 @@ import {
   Database,
   ExternalLink,
   FileCheck,
+  FileCode,
   Flame,
   GitFork,
   Globe,
@@ -47,6 +48,7 @@ import {
 } from 'recharts';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import CommandPalette from '../../components/CommandPalette';
+import ExportClaudeModal from '../../components/ExportClaudeModal';
 import { getBrainData } from '../../lib/brain-parser';
 
 interface CognitiveStat {
@@ -158,6 +160,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
+  const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -251,6 +254,16 @@ export default function ProfilePage() {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-500' : ''}`} />
             <span className="hidden md:inline">Sync</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsExportClaudeOpen(true)}
+            title="Export CLAUDE.md / .cursorrules for VS Code & Cursor"
+            className="h-9 px-3 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(16,185,129,0.2)] font-mono"
+          >
+            <FileCode className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export CLAUDE.md</span>
           </button>
 
           <Link
@@ -797,10 +810,18 @@ export default function ProfilePage() {
         </div>
       </main>
 
+      {/* Export CLAUDE.md Modal */}
+      <ExportClaudeModal
+        isOpen={isExportClaudeOpen}
+        onClose={() => setIsExportClaudeOpen(false)}
+        initialStats={stats}
+      />
+
       <CommandPalette
         isOpen={isCmdPaletteOpen}
         onClose={() => setIsCmdPaletteOpen(false)}
         nodes={getBrainData({ mode: 'assessed' }).nodes}
+        onExportClaude={() => setIsExportClaudeOpen(true)}
       />
     </div>
   );
