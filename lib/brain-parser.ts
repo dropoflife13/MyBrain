@@ -1,6 +1,7 @@
 import { buildBrainGraph } from './brainGraph';
 import {
   forceSimulation,
+  forceRadial,
   forceX,
   forceY,
   forceZ,
@@ -8,28 +9,47 @@ import {
   forceLink,
 } from 'd3-force-3d';
 
-export type ClusterId = 'Engineering' | 'Humanities' | 'World';
+export type ClusterId = 'Engineering' | 'Humanities' | 'World' | 'Science';
+
+export type AgentCode =
+  | 'PM'
+  | 'UX'
+  | 'GR'
+  | 'SD'
+  | 'IR'
+  | 'DB'
+  | 'SEC'
+  | 'RS'
+  | 'ARB'
+  | 'PSY'
+  | 'PHI'
+  | 'RHE'
+  | 'LIT'
+  | 'ART'
+  | 'EDU'
+  | 'MKT'
+  | 'MGT'
+  | 'ECO'
+  | 'GEO'
+  | 'LAW'
+  | 'POL'
+  | 'ENV'
+  | 'HIS'
+  | 'CRY'
+  | 'FIN'
+  | 'NWS'
+  | 'BIZ'
+  | 'HLT'
+  | 'DS'
+  | 'SCI'
+  | 'MED';
 
 export interface BrainDocNode {
   id: string;
   name: string;
   description: string;
   group: 1 | 2; // 1 = The Core Agents / Domain Anchors, 2 = Rule & Domain Nodes
-  agentCode?:
-    | 'PM'
-    | 'UX'
-    | 'GR'
-    | 'SD'
-    | 'IR'
-    | 'DB'
-    | 'SEC'
-    | 'PSY'
-    | 'PHI'
-    | 'RHE'
-    | 'ECO'
-    | 'GEO'
-    | 'HLT'
-    | 'RS';
+  agentCode?: AgentCode;
   cluster?: ClusterId;
   category: 'hub' | 'agent' | 'domain' | 'heuristic' | 'identity' | 'synapse' | 'workflow';
   content?: string;
@@ -46,6 +66,7 @@ export interface BrainDocNode {
 export interface BrainDocLink {
   source: string;
   target: string;
+  isHyperlink?: boolean;
 }
 
 export interface VaultAuditReport {
@@ -100,7 +121,7 @@ const RESERVED_AGENT_PREFIXES = new Set(['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SE
 
 /**
  * Deterministic anti-overlap & mechanical consistency check (H-03, H-06, BN-12).
- * Ensures zero duplicate rule IDs and zero prefix collisions between the 7 Agents and Domain files.
+ * Ensures zero duplicate rule IDs and zero prefix collisions between the 8 Core Agents and Domain files.
  */
 export function auditVaultConsistency(
   docNodes: BrainDocNode[],
@@ -144,7 +165,7 @@ export function auditVaultConsistency(
   };
 }
 
-const SEVEN_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC'> = {
+const EIGHT_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' | 'SEC' | 'RS'> = {
   productmanageragent: 'PM',
   uiuxagent: 'UX',
   growthagent: 'GR',
@@ -152,6 +173,7 @@ const SEVEN_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' 
   integrationagent: 'IR',
   dbaagent: 'DB',
   securityagent: 'SEC',
+  researchagent: 'RS',
   PM: 'PM',
   UX: 'UX',
   GR: 'GR',
@@ -159,33 +181,28 @@ const SEVEN_CORE_AGENTS: Record<string, 'PM' | 'UX' | 'GR' | 'SD' | 'IR' | 'DB' 
   IR: 'IR',
   DB: 'DB',
   SEC: 'SEC',
+  RS: 'RS',
 };
 
+const SEVEN_CORE_AGENTS = EIGHT_CORE_AGENTS;
+
 /**
- * Deterministic mapping of any rule prefix or document ID to its owning Core Agent Gatekeeper.
- * Ensures every CS- rule connects to SEC, every DB- rule connects to DB, etc., with zero orphans.
+ * Deterministic mapping of any rule prefix or document ID to its owning Core Agent / Domain Anchor.
+ * Ensures every rule connects to its parent domain/agent node with zero orphans.
  */
 export function resolveAgentOwner(idOrPrefix: string): {
   agentId: string;
-  agentCode:
-    | 'PM'
-    | 'UX'
-    | 'GR'
-    | 'SD'
-    | 'IR'
-    | 'DB'
-    | 'SEC'
-    | 'PSY'
-    | 'PHI'
-    | 'RHE'
-    | 'ECO'
-    | 'GEO'
-    | 'HLT'
-    | 'RS';
+  agentCode: AgentCode;
 } {
   const clean = idOrPrefix.split('::')[0].trim();
   const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
 
+  // Judgment Arbiter (Core)
+  if (clean === 'arbiter' || prefix === 'ARB') {
+    return { agentId: 'arbiter', agentCode: 'ARB' };
+  }
+
+  // Humanities & Enterprise Cluster (Inner Ring)
   if (clean === 'psychology' || prefix === 'PSY') {
     return { agentId: 'psychology', agentCode: 'PSY' };
   }
@@ -195,15 +212,69 @@ export function resolveAgentOwner(idOrPrefix: string): {
   if (clean === 'rhetoric' || prefix === 'RHE') {
     return { agentId: 'rhetoric', agentCode: 'RHE' };
   }
+  if (clean === 'literature' || prefix === 'LIT') {
+    return { agentId: 'literature', agentCode: 'LIT' };
+  }
+  if (clean === 'art' || prefix === 'ART') {
+    return { agentId: 'art', agentCode: 'ART' };
+  }
+  if (clean === 'education' || prefix === 'EDU') {
+    return { agentId: 'education', agentCode: 'EDU' };
+  }
+  if (clean === 'marketing' || prefix === 'MKT') {
+    return { agentId: 'marketing', agentCode: 'MKT' };
+  }
+  if (clean === 'management' || prefix === 'MGT') {
+    return { agentId: 'management', agentCode: 'MGT' };
+  }
+
+  // Global & Society Cluster (Outer Ring)
   if (clean === 'economy' || prefix === 'ECO') {
     return { agentId: 'economy', agentCode: 'ECO' };
   }
   if (clean === 'geopolitics' || prefix === 'GEO') {
     return { agentId: 'geopolitics', agentCode: 'GEO' };
   }
+  if (clean === 'law' || prefix === 'LAW') {
+    return { agentId: 'law', agentCode: 'LAW' };
+  }
+  if (clean === 'politics' || prefix === 'POL') {
+    return { agentId: 'politics', agentCode: 'POL' };
+  }
+  if (clean === 'environment' || prefix === 'ENV') {
+    return { agentId: 'environment', agentCode: 'ENV' };
+  }
+  if (clean === 'history' || prefix === 'HIS') {
+    return { agentId: 'history', agentCode: 'HIS' };
+  }
+  if (clean === 'crypto' || prefix === 'CRY') {
+    return { agentId: 'crypto', agentCode: 'CRY' };
+  }
+  if (clean === 'finance' || prefix === 'FIN') {
+    return { agentId: 'finance', agentCode: 'FIN' };
+  }
+  if (clean === 'news' || prefix === 'NWS') {
+    return { agentId: 'news', agentCode: 'NWS' };
+  }
+  if (clean === 'business' || prefix === 'BIZ') {
+    return { agentId: 'business', agentCode: 'BIZ' };
+  }
+
+  // Frontier & Science Cluster (Outer Ring)
   if (clean === 'health' || prefix === 'HLT') {
     return { agentId: 'health', agentCode: 'HLT' };
   }
+  if (clean === 'data-science' || prefix === 'DS') {
+    return { agentId: 'data-science', agentCode: 'DS' };
+  }
+  if (clean === 'science' || prefix === 'SCI') {
+    return { agentId: 'science', agentCode: 'SCI' };
+  }
+  if (clean === 'medicine' || prefix === 'MED') {
+    return { agentId: 'medicine', agentCode: 'MED' };
+  }
+
+  // 8 Core Agents (Galactic Core)
   if (clean === 'researchagent' || prefix === 'RS') {
     return { agentId: 'researchagent', agentCode: 'RS' };
   }
@@ -258,49 +329,82 @@ export function resolveAgentOwner(idOrPrefix: string): {
 }
 
 /**
- * Deterministic mapping of any document ID, agent, or rule prefix to its 3D Cluster lobe.
- * Engineering: Two Central Brain Hemispheres (Left x ≈ -30, Right x ≈ +30)
- * Humanities: Right Lobe (x ≈ +78)
- * World: Left Lobe (x ≈ -78)
+ * Deterministic mapping of any document ID, agent, or rule prefix to its Galactic Ring Cluster.
+ * - Engineering (Galactic Core: radius 0-30): Hub + 8 Core Agents + Judgment Arbiter + Engineering domains
+ * - Humanities (Inner Ring: radius ~80): Humanities & Enterprise (PSY, PHI, RHE, LIT, ART, EDU, MKT, MGT)
+ * - World (Outer Ring: radius ~140-170): Global & Society (ECO, GEO, LAW, POL, ENV, HIS, CRY, FIN, NWS, BIZ)
+ * - Science (Outer Ring: radius ~175-200): Frontier & Science (HLT, DS, SCI, MED)
  */
 export function resolveNodeCluster(idOrPrefix: string): ClusterId {
   const clean = idOrPrefix.split('::')[0].trim();
   const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
 
-  // Humanities Cluster — Right Lobe (PSY, PHI, RHE)
+  // Inner Ring — Humanities & Enterprise Cluster
   if (
     clean === 'psychology' ||
     clean === 'philosophy' ||
     clean === 'rhetoric' ||
+    clean === 'literature' ||
+    clean === 'art' ||
+    clean === 'education' ||
+    clean === 'marketing' ||
+    clean === 'management' ||
     prefix === 'PSY' ||
     prefix === 'PHI' ||
-    prefix === 'RHE'
+    prefix === 'RHE' ||
+    prefix === 'LIT' ||
+    prefix === 'ART' ||
+    prefix === 'EDU' ||
+    prefix === 'MKT' ||
+    prefix === 'MGT'
   ) {
     return 'Humanities';
   }
 
-  // World Cluster — Left Lobe (ECO, GEO, HLT, RS)
+  // Outer Ring — Global & Society Cluster
   if (
     clean === 'economy' ||
     clean === 'geopolitics' ||
-    clean === 'health' ||
-    clean === 'researchagent' ||
+    clean === 'law' ||
+    clean === 'politics' ||
+    clean === 'environment' ||
+    clean === 'history' ||
+    clean === 'crypto' ||
+    clean === 'finance' ||
+    clean === 'news' ||
+    clean === 'business' ||
     prefix === 'ECO' ||
     prefix === 'GEO' ||
-    prefix === 'HLT' ||
-    prefix === 'RS'
+    prefix === 'LAW' ||
+    prefix === 'POL' ||
+    prefix === 'ENV' ||
+    prefix === 'HIS' ||
+    prefix === 'CRY' ||
+    prefix === 'FIN' ||
+    prefix === 'NWS' ||
+    prefix === 'BIZ'
   ) {
     return 'World';
   }
 
-  // Engineering Cluster — Core Left & Right Hemispheres (7 Core Agents + Engineering domains)
+  // Outer Ring — Frontier & Science Cluster
+  if (
+    clean === 'health' ||
+    clean === 'data-science' ||
+    clean === 'science' ||
+    clean === 'medicine' ||
+    prefix === 'HLT' ||
+    prefix === 'DS' ||
+    prefix === 'SCI' ||
+    prefix === 'MED'
+  ) {
+    return 'Science';
+  }
+
+  // Galactic Core — Engineering + 8 Core Agents + Judgment Arbiter
   return 'Engineering';
 }
 
-/**
- * Determines whether an Engineering node belongs to the Left Hemisphere (-1, x ≈ -30)
- * or Right Hemisphere (+1, x ≈ +30) so the core splits into two distinct brain hemispheres.
- */
 export function resolveEngineeringHemisphere(idOrPrefix: string): -1 | 1 {
   const clean = idOrPrefix.split('::')[0].trim();
   const prefix = clean.replace(/^EMPTY-/, '').split('-')[0].toUpperCase();
@@ -386,25 +490,23 @@ export function parseMarkdownNode(
     description = description.slice(0, 157).trimEnd() + '...';
   }
 
-  const coreAgentCode = SEVEN_CORE_AGENTS[id];
-  const isResearchAgent = id === 'researchagent';
-  const is7Core = Boolean(coreAgentCode && !isResearchAgent);
-  const isDomainAgent = Boolean(!is7Core && (isResearchAgent || category === 'agent' || category === 'domain'));
-  const isAnchorAgent = Boolean(is7Core || isDomainAgent);
+  const coreAgentCode = EIGHT_CORE_AGENTS[id];
+  const is8Core = Boolean(coreAgentCode);
+  const isArbiter = id === 'arbiter';
+  const isDomainAgent = Boolean(!is8Core && (category === 'agent' || category === 'domain'));
+  const isAnchorAgent = Boolean(is8Core || isDomainAgent);
   const resolvedOwner = resolveAgentOwner(id);
   const cluster = resolveNodeCluster(id);
-  const val = is7Core ? 25 : isDomainAgent ? 15 : 3;
+  const val = is8Core ? 28 : isArbiter ? 22 : isDomainAgent ? 16 : 3;
 
   return {
     id,
     name,
     description,
     group: isAnchorAgent ? 1 : 2,
-    agentCode: isResearchAgent
-      ? 'RS'
-      : (coreAgentCode ?? (resolvedOwner.agentCode as any)),
+    agentCode: coreAgentCode ?? resolvedOwner.agentCode,
     cluster,
-    category: is7Core ? 'agent' : isDomainAgent ? 'domain' : category,
+    category: is8Core ? 'agent' : isDomainAgent ? 'domain' : category,
     content: contentWithoutFrontmatter.trim(),
     rules,
     val,
@@ -420,7 +522,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'dbaagent',
     category: 'agent',
-    anchor: [-24, 14, 18],
+    anchor: [18, 2, 0],
     markdown: `# [DB] DBA Agent — The Database
 - **DB-01** Append-only entities use three layers: REVOKE UPDATE, DELETE, TRUNCATE from all app roles; no UPDATE/DELETE policies; BEFORE UPDATE/DELETE trigger that raises. Corrections are new rows with supersedes_id.
 - **DB-02** Derived state is computed only from the source log; no INSERT/UPDATE grant on it; includes only approved, non-flagged rows.
@@ -438,7 +540,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'securityagent',
     category: 'agent',
-    anchor: [24, 14, 18],
+    anchor: [13, 3, 13],
     markdown: `# [SEC] Security Agent — The Gatekeeper
 - **SEC-01** STRIDE Threat Model covers each trust boundary: browser + IndexedDB, RPC/API, realtime, webhooks, admin.
 - **SEC-02** RLS bypass suite: attempt as anon and cross-role/cross-tenant via REST, RPC, views, and SECURITY DEFINER paths.
@@ -456,7 +558,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'uiuxagent',
     category: 'agent',
-    anchor: [-22, 8, 44],
+    anchor: [0, -2, 18],
     markdown: `# [UX] UI/UX Agent — The Frontend
 - **UX-01** Dark mode: theme class set by a synchronous inline pre-paint script (zero FOUC); colors only via semantic tokens; WCAG AA contrast >= 4.5:1.
 - **UX-02** Mobile menu: aria-expanded + aria-controls, focus trap while open, Esc closes, tap targets >= 44x44 px.
@@ -478,7 +580,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'productmanageragent',
     category: 'agent',
-    anchor: [22, 8, 44],
+    anchor: [-13, 2, 13],
     markdown: `# [PM] Product Manager Agent — The Planner
 - **PM-01** One concern per spec doc with version, status (draft|approved), and owner in frontmatter.
 - **PM-02** Docs state current truth only; history lives in git, never in the document body.
@@ -500,7 +602,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'systemsdesignagent',
     category: 'agent',
-    anchor: [-28, 12, -22],
+    anchor: [-18, -3, 0],
     markdown: `# [SD] Systems Design Agent — The Architect
 - **SD-01** CAP/PACELC declared per workflow in an ADR: offline logging is AP; approval transitions are CP.
 - **SD-02** Every data class defines its consistency model and max staleness window in seconds.
@@ -518,7 +620,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'integrationagent',
     category: 'agent',
-    anchor: [28, 12, -22],
+    anchor: [-13, 2, -13],
     markdown: `# [IR] Integration Agent — The Reliability Engineer
 - **IR-01** Webhooks: versioned envelope {id, type, version, created_at, data}, at-least-once queue delivery, consumer dedupe on id.
 - **IR-02** Real-time transport: SSE default for one-way server->client; jittered reconnect and Last-Event-ID cursor resume.
@@ -533,7 +635,7 @@ const VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'growthagent',
     category: 'agent',
-    anchor: [-26, -14, -24],
+    anchor: [0, -2, -18],
     markdown: `# [GR] Growth Agent — The Marketing
 - **GR-01** Newsletter & onboarding: double opt-in, explicit consent record, PH Data Privacy Act (RA 10173) compliance.
 - **GR-02** UTM links: built only by a single helper, lowercase kebab-case registered in UTM_REGISTRY.md, zero PII.
@@ -736,7 +838,7 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
   {
     id: 'researchagent',
     category: 'agent',
-    anchor: [-78, -2, -4],
+    anchor: [13, 3, -13],
     markdown: `# [RS] Research Agent — The Fact-Checker & Synthesizer
 - **RS-01** Verification: WHEN discussing current events, statistics, or recent trends → DO NOT guess. State the source, the date of the data, and the context. Never state unverified assumptions as facts. *breaks: internal product scoping assumptions logged explicitly with an owner and date under PM-13.* | conf: 4
 - **RS-02** Distinction: WHEN answering → DO clearly separate objective facts from predictions or opinions. | conf: 4
@@ -744,46 +846,171 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
 - **RS-04** Triangulation: WHEN verifying a claim → DO require at least two independent, reliable sources before accepting it as a fact. | conf: 4`,
   },
   {
+    id: 'arbiter',
+    category: 'domain',
+    anchor: [0, 14, 0],
+    markdown: `# [ARB] The Judgment Arbiter — Cross-Domain Conflict Resolution
+- **ARB-01** (Domain Separation): WHEN answering a query that spans multiple domains (e.g., Crypto + Finance) → DO explicitly separate the technical reality from the financial reality. Do not conflate blockchain security with financial viability | conf: 5
+- **ARB-02** (The Conflict Fallback): WHEN rules from two domains contradict (e.g., BIZ says "move fast" but SEC says "verify everything") → DO default to the most restrictive rule (Security > Growth) and explain the trade-off | conf: 5
+- **ARB-03** (Fact vs. Opinion): WHEN summarizing NWS (News) or LIT (Literature) → DO cite the source and the author's bias. Never present a news opinion as objective fact | conf: 5
+- **ARB-04** (The Precautionary Principle): WHEN dealing with SCI (Science) or MED (Medicine) → DO explicitly state if the information is peer-reviewed consensus or theoretical. Never give medical advice | conf: 5`,
+  },
+  // --- Inner Ring (Radius ~80): Humanities & Enterprise Cluster ---
+  {
     id: 'psychology',
     category: 'domain',
-    anchor: [76, 14, 14],
+    anchor: [80, 4, 0],
     markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
 - **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
   },
   {
     id: 'philosophy',
     category: 'domain',
-    anchor: [80, 2, -12],
+    anchor: [57, -5, 57],
     markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
 - **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
   },
   {
     id: 'rhetoric',
     category: 'domain',
-    anchor: [74, -12, 16],
+    anchor: [0, 6, 80],
     markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
 - **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
   },
   {
+    id: 'literature',
+    category: 'domain',
+    anchor: [-57, -4, 57],
+    markdown: `# [LIT] Literature — How I Think (status: draft • 0 Rules)
+- **EMPTY-LIT** _None yet._ Analyze narrative structures, literary criticism, and primary texts in 05-elicitation/THE-TEST.md to earn LIT-nn rules.`,
+  },
+  {
+    id: 'art',
+    category: 'domain',
+    anchor: [-80, 5, 0],
+    markdown: `# [ART] Art & Aesthetics — How I Think (status: draft • 0 Rules)
+- **EMPTY-ART** _None yet._ Evaluate visual composition, art history, and aesthetic principles in 05-elicitation/THE-TEST.md to earn ART-nn rules.`,
+  },
+  {
+    id: 'education',
+    category: 'domain',
+    anchor: [-57, -6, -57],
+    markdown: `# [EDU] Education & Pedagogy — How I Think (status: draft • 0 Rules)
+- **EMPTY-EDU** _None yet._ Model instructional design, spaced repetition, and skill acquisition in 05-elicitation/THE-TEST.md to earn EDU-nn rules.`,
+  },
+  {
+    id: 'marketing',
+    category: 'domain',
+    anchor: [0, 4, -80],
+    markdown: `# [MKT] Marketing & Brand Strategy — How I Think (status: draft • 0 Rules)
+- **EMPTY-MKT** _None yet._ Analyze positioning, distribution channels, and audience resonance in 05-elicitation/THE-TEST.md to earn MKT-nn rules.`,
+  },
+  {
+    id: 'management',
+    category: 'domain',
+    anchor: [57, -5, -57],
+    markdown: `# [MGT] Management & Operations — How I Think (status: draft • 0 Rules)
+- **EMPTY-MGT** _None yet._ Resolve organizational bottlenecks, team governance, and execution cadence in 05-elicitation/THE-TEST.md to earn MGT-nn rules.`,
+  },
+  // --- Outer Ring (Radius ~140-200): Global & Society Cluster ---
+  {
     id: 'economy',
     category: 'domain',
-    anchor: [-76, 14, 14],
+    anchor: [152, 6, 0],
     markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
 - **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
   },
   {
     id: 'geopolitics',
     category: 'domain',
-    anchor: [-80, 2, -12],
+    anchor: [123, -8, 89],
     markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
 - **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
   },
   {
+    id: 'law',
+    category: 'domain',
+    anchor: [47, 7, 145],
+    markdown: `# [LAW] Law & Jurisprudence — How I Think (status: draft • 0 Rules)
+- **EMPTY-LAW** _None yet._ Analyze statutory frameworks, regulatory compliance, and contractual liability in 05-elicitation/THE-TEST.md to earn LAW-nn rules.`,
+  },
+  {
+    id: 'politics',
+    category: 'domain',
+    anchor: [-47, -6, 145],
+    markdown: `# [POL] Politics & Governance — How I Think (status: draft • 0 Rules)
+- **EMPTY-POL** _None yet._ Model institutional incentives, public policy, and civic structures in 05-elicitation/THE-TEST.md to earn POL-nn rules.`,
+  },
+  {
+    id: 'environment',
+    category: 'domain',
+    anchor: [-123, 8, 89],
+    markdown: `# [ENV] Environment & Ecology — How I Think (status: draft • 0 Rules)
+- **EMPTY-ENV** _None yet._ Evaluate ecological systems, sustainability metrics, and climate resilience in 05-elicitation/THE-TEST.md to earn ENV-nn rules.`,
+  },
+  {
+    id: 'history',
+    category: 'domain',
+    anchor: [-152, -7, 0],
+    markdown: `# [HIS] History & Historiography — How I Think (status: draft • 0 Rules)
+- **EMPTY-HIS** _None yet._ Analyze primary archival sources, civilizational cycles, and historical parallels in 05-elicitation/THE-TEST.md to earn HIS-nn rules.`,
+  },
+  {
+    id: 'crypto',
+    category: 'domain',
+    anchor: [-123, 6, -89],
+    markdown: `# [CRY] Cryptography & Web3 Systems — How I Think (status: draft • 0 Rules)
+- **EMPTY-CRY** _None yet._ Evaluate distributed consensus, cryptographic primitives, and protocol economics in 05-elicitation/THE-TEST.md to earn CRY-nn rules.`,
+  },
+  {
+    id: 'finance',
+    category: 'domain',
+    anchor: [-47, -8, -145],
+    markdown: `# [FIN] Finance & Capital Markets — How I Think (status: draft • 0 Rules)
+- **EMPTY-FIN** _None yet._ Model valuation, risk-adjusted returns, liquidity, and balance-sheet discipline in 05-elicitation/THE-TEST.md to earn FIN-nn rules.`,
+  },
+  {
+    id: 'news',
+    category: 'domain',
+    anchor: [47, 7, -145],
+    markdown: `# [NWS] News & Media Epistemology — How I Think (status: draft • 0 Rules)
+- **EMPTY-NWS** _None yet._ Audit media framing, primary-source verification, and signal-to-noise filtering in 05-elicitation/THE-TEST.md to earn NWS-nn rules.`,
+  },
+  {
+    id: 'business',
+    category: 'domain',
+    anchor: [123, -6, -89],
+    markdown: `# [BIZ] Business Strategy & Unit Economics — How I Think (status: draft • 0 Rules)
+- **EMPTY-BIZ** _None yet._ Evaluate unit economics, competitive moats, pricing models, and enterprise strategy in 05-elicitation/THE-TEST.md to earn BIZ-nn rules.`,
+  },
+  // --- Outer Ring (Radius ~175-200): Frontier & Science Cluster ---
+  {
     id: 'health',
     category: 'domain',
-    anchor: [-74, -12, 16],
+    anchor: [133, 10, 133],
     markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
 - **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
+  },
+  {
+    id: 'data-science',
+    category: 'domain',
+    anchor: [-133, -10, 133],
+    markdown: `# [DS] Data Science & Statistical Modeling — How I Think (status: draft • 0 Rules)
+- **EMPTY-DS** _None yet._ Evaluate experimental design, statistical inference, and feature engineering in 05-elicitation/THE-TEST.md to earn DS-nn rules.`,
+  },
+  {
+    id: 'science',
+    category: 'domain',
+    anchor: [-133, 10, -133],
+    markdown: `# [SCI] Natural Sciences & Empirical Method — How I Think (status: draft • 0 Rules)
+- **EMPTY-SCI** _None yet._ Apply falsifiability, peer-reviewed replication standards, and physical modeling in 05-elicitation/THE-TEST.md to earn SCI-nn rules.`,
+  },
+  {
+    id: 'medicine',
+    category: 'domain',
+    anchor: [133, -10, -133],
+    markdown: `# [MED] Medicine & Clinical Evidence — How I Think (status: draft • 0 Rules)
+- **EMPTY-MED** _None yet._ Evaluate clinical trial hierarchy, pathophysiology, and evidence-based safety boundaries in 05-elicitation/THE-TEST.md to earn MED-nn rules.`,
   },
 ];
 
@@ -793,17 +1020,17 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
   anchor: [number, number, number];
   markdown: string;
 }> = [
-  ...VAULT_MARKDOWN_SOURCES.filter((s) => s.category === 'agent'),
+  ...VAULT_MARKDOWN_SOURCES.filter((s) => s.category === 'agent' || s.id === 'arbiter'),
   {
     id: 'SIX-COMMANDS',
     category: 'workflow',
-    anchor: [0, -22, 24],
+    anchor: [0, -14, 16],
     markdown: `# The Six Commands Pipeline — Golden Path SDLC (Workflow Node)`,
   },
   {
     id: 'ABOUT-ME',
     category: 'identity',
-    anchor: [0, 20, -28],
+    anchor: [0, 12, -16],
     markdown: `# About Me — Practitioner Intake (status: empty)
 - **STATUS-00** Vault is unassessed (0 personal rules). Fill out 01-identity/ABOUT-ME.md or run Launcher L-09 (AI Interview) before taking THE-TEST.md.
 - **STEP-01** Complete §1 Snapshot, §2 Domains & Years, §3 Shipped Systems, and §4 Failure Modes to calibrate your diagnostic quiz.`,
@@ -811,108 +1038,124 @@ const BLANK_VAULT_MARKDOWN_SOURCES: Array<{
   {
     id: 'OPERATING-PRINCIPLES',
     category: 'identity',
-    anchor: [-14, 24, -12],
+    anchor: [-12, 14, -10],
     markdown: `# Operating Principles — Tier 0 Governance (status: empty)
 - **EMPTY-OP** _None yet._ Run Launcher L-01 (05-elicitation/THE-TEST.md) to excavate your non-negotiable engineering principles.`,
   },
   {
     id: 'TASTE',
     category: 'identity',
-    anchor: [14, 24, -12],
+    anchor: [12, 14, -10],
     markdown: `# Taste — What I Call Good Work (status: empty)
 - **EMPTY-TA** _None yet._ Take the Visceral Cringe Test in 05-elicitation/THE-TEST.md to define what you respect vs. what you reject as slop.`,
   },
   {
     id: 'cybersec',
     category: 'domain',
-    anchor: [18, 22, 6],
+    anchor: [14, 14, 6],
     markdown: `# Cybersecurity Specialist — How I Think (status: draft • 0 Rules)
 - **EMPTY-CS** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Cybersecurity scenarios in 05-elicitation/THE-TEST.md to earn CS-nn rules.`,
   },
   {
     id: 'authorization',
     category: 'domain',
-    anchor: [22, 24, 8],
+    anchor: [16, 16, 8],
     markdown: `# Externalized Authorization — How I Think (status: draft • 0 Rules)
 - **EMPTY-AUTH** _None yet._ Complete authorization modeling in 05-elicitation/THE-TEST.md to earn AUTH-nn rules.`,
   },
   {
     id: 'solutions',
     category: 'domain',
-    anchor: [-18, 22, 6],
+    anchor: [-14, 14, 6],
     markdown: `# Solutions Specialist — How I Think (status: draft • 0 Rules)
 - **EMPTY-SO** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Architecture Trade-Off Triads in 05-elicitation/THE-TEST.md to earn SO-nn rules.`,
   },
   {
     id: 'business-analysis',
     category: 'domain',
-    anchor: [16, 18, 30],
+    anchor: [12, 12, 18],
     markdown: `# Business Analyst — How I Think (status: draft • 0 Rules)
 - **EMPTY-BA** _None yet (0 active rules)._ Rate your Self-Map (0–3) and complete the Scope & Stakeholder scenarios in 05-elicitation/THE-TEST.md to earn BA-nn rules.`,
   },
   {
     id: 'ui-frontend',
     category: 'domain',
-    anchor: [-16, 18, 30],
+    anchor: [-12, 12, 18],
     markdown: `# UI & Frontend Specialist — How I Think (status: draft • 0 Rules)
 - **EMPTY-UI** _None yet (0 active rules)._ Rate your Self-Map (0–3) and run the Visceral Cringe Test in 05-elicitation/THE-TEST.md to earn UI-nn rules.`,
   },
-  {
-    id: 'psychology',
-    category: 'domain',
-    anchor: [76, 14, 14],
-    markdown: `# [PSY] Psychology — How I Think (status: draft • 0 Rules)
-- **EMPTY-PSY** _None yet._ Complete psychological modeling in 05-elicitation/THE-TEST.md to earn PSY-nn rules.`,
-  },
-  {
-    id: 'philosophy',
-    category: 'domain',
-    anchor: [80, 2, -12],
-    markdown: `# [PHI] Philosophy — How I Think (status: draft • 0 Rules)
-- **EMPTY-PHI** _None yet._ Complete philosophical epistemology in 05-elicitation/THE-TEST.md to earn PHI-nn rules.`,
-  },
-  {
-    id: 'rhetoric',
-    category: 'domain',
-    anchor: [74, -12, 16],
-    markdown: `# [RHE] Rhetoric — How I Think (status: draft • 0 Rules)
-- **EMPTY-RHE** _None yet._ Complete persuasion and argumentation analysis in 05-elicitation/THE-TEST.md to earn RHE-nn rules.`,
-  },
-  {
-    id: 'economy',
-    category: 'domain',
-    anchor: [-76, 14, 14],
-    markdown: `# [ECO] Economy — How I Think (status: draft • 0 Rules)
-- **EMPTY-ECO** _None yet._ Complete macro/micro economic trade-off analysis in 05-elicitation/THE-TEST.md to earn ECO-nn rules.`,
-  },
-  {
-    id: 'geopolitics',
-    category: 'domain',
-    anchor: [-80, 2, -12],
-    markdown: `# [GEO] Geopolitics — How I Think (status: draft • 0 Rules)
-- **EMPTY-GEO** _None yet._ Complete geopolitical strategy analysis in 05-elicitation/THE-TEST.md to earn GEO-nn rules.`,
-  },
-  {
-    id: 'health',
-    category: 'domain',
-    anchor: [-74, -12, 16],
-    markdown: `# [HLT] Health — How I Think (status: draft • 0 Rules)
-- **EMPTY-HLT** _None yet._ Complete physiological and mental health ergonomics in 05-elicitation/THE-TEST.md to earn HLT-nn rules.`,
-  },
+  ...VAULT_MARKDOWN_SOURCES.filter((s) =>
+    [
+      'psychology',
+      'philosophy',
+      'rhetoric',
+      'literature',
+      'art',
+      'education',
+      'marketing',
+      'management',
+      'economy',
+      'geopolitics',
+      'law',
+      'politics',
+      'environment',
+      'history',
+      'crypto',
+      'finance',
+      'news',
+      'business',
+      'health',
+      'data-science',
+      'science',
+      'medicine',
+    ].includes(s.id)
+  ),
   {
     id: 'HEURISTICS',
     category: 'heuristic',
-    anchor: [-20, -4, -30],
+    anchor: [-14, -4, -18],
     markdown: `# Heuristics — Cross-Domain Judgment (status: empty • 0 Rules)
 - **EMPTY-H** _None yet._ Promote validated cross-domain rules from 06-raw/inbox.md using Launcher L-06 once conf >= 3.`,
   },
   {
     id: 'RED-FLAGS',
     category: 'heuristic',
-    anchor: [12, -10, 26],
+    anchor: [10, -8, 18],
     markdown: `# Red Flags — Visceral Blockers (status: empty • 0 Rules)
 - **EMPTY-RF** _None yet._ Document the signals in a PR, schema, or UI that make you immediately halt approval.`,
   },
+];
+
+// 28 Inter-Cluster Hyperlinks connecting the Galactic Core directly to the outermost domains
+const INTER_CLUSTER_HYPERLINKS: Array<[string, string]> = [
+  ['securityagent', 'crypto'],
+  ['securityagent', 'law'],
+  ['dbaagent', 'finance'],
+  ['dbaagent', 'data-science'],
+  ['systemsdesignagent', 'science'],
+  ['systemsdesignagent', 'environment'],
+  ['productmanageragent', 'business'],
+  ['productmanageragent', 'economy'],
+  ['uiuxagent', 'news'],
+  ['uiuxagent', 'health'],
+  ['integrationagent', 'geopolitics'],
+  ['integrationagent', 'crypto'],
+  ['growthagent', 'business'],
+  ['growthagent', 'finance'],
+  ['researchagent', 'science'],
+  ['researchagent', 'medicine'],
+  ['researchagent', 'history'],
+  ['researchagent', 'news'],
+  ['researchagent', 'data-science'],
+  ['researchagent', 'politics'],
+  ['arbiter', 'crypto'],
+  ['arbiter', 'finance'],
+  ['arbiter', 'news'],
+  ['arbiter', 'science'],
+  ['arbiter', 'medicine'],
+  ['arbiter', 'law'],
+  ['arbiter', 'business'],
+  ['hub', 'science'],
 ];
 
 export function getBrainData(options?: {
@@ -940,7 +1183,7 @@ export function getBrainData(options?: {
         description: 'Blank-slate vault (0 personal rules). Run Launcher L-01 to assess yourself.',
         group: 2,
         category: 'hub',
-        val: 28,
+        val: 32,
         fx: 0,
         fy: 0,
         fz: 0,
@@ -952,7 +1195,6 @@ export function getBrainData(options?: {
     const coreAgents = blankDocs.filter((d) => d.group === 1);
     const emptyFiles = blankDocs.filter((d) => d.group === 2);
 
-    // Connect the 7 Core Agent Gatekeepers in their perimeter ring + to central seed
     for (let i = 0; i < coreAgents.length; i++) {
       links.push({ source: 'hub', target: coreAgents[i].id });
       links.push({
@@ -961,7 +1203,6 @@ export function getBrainData(options?: {
       });
     }
 
-    // Connect each empty domain/identity slot to the central seed and its deterministic owning agent gate
     emptyFiles.forEach((doc) => {
       const owner = resolveAgentOwner(doc.id);
       links.push({ source: 'hub', target: doc.id });
@@ -982,7 +1223,7 @@ export function getBrainData(options?: {
   const procedural = buildBrainGraph({
     nodeCount: totalConstellationNodes,
     k: 3,
-    maxLinkLen: 22,
+    maxLinkLen: 26,
     seed: 7,
   });
 
@@ -1006,10 +1247,10 @@ export function getBrainData(options?: {
   }
 
   const allRulesCatalog: RuleCatalogEntry[] = [];
-  const leftEngCatalog: RuleCatalogEntry[] = [];
-  const rightEngCatalog: RuleCatalogEntry[] = [];
+  const coreEngCatalog: RuleCatalogEntry[] = [];
   const humanitiesCatalog: RuleCatalogEntry[] = [];
   const worldCatalog: RuleCatalogEntry[] = [];
+  const scienceCatalog: RuleCatalogEntry[] = [];
 
   for (const doc of docNodes) {
     if (doc.rules && doc.rules.length > 0) {
@@ -1027,14 +1268,14 @@ export function getBrainData(options?: {
           humanitiesCatalog.push(entry);
         } else if (cluster === 'World') {
           worldCatalog.push(entry);
-        } else if (resolveEngineeringHemisphere(entry.ruleId) === -1) {
-          leftEngCatalog.push(entry);
+        } else if (cluster === 'Science') {
+          scienceCatalog.push(entry);
         } else {
-          rightEngCatalog.push(entry);
+          coreEngCatalog.push(entry);
         }
       }
     } else {
-      // Seed draft Humanities / World domain slots so outer cortical lobes have synaptic density
+      // Seed draft Humanities, World, and Science domain slots so inner & outer galactic rings have rich synaptic density
       const cluster = resolveNodeCluster(doc.id);
       const owner = resolveAgentOwner(doc.id);
       const seedEntry: RuleCatalogEntry = {
@@ -1047,54 +1288,42 @@ export function getBrainData(options?: {
         humanitiesCatalog.push(seedEntry);
       } else if (cluster === 'World') {
         worldCatalog.push(seedEntry);
+      } else if (cluster === 'Science') {
+        scienceCatalog.push(seedEntry);
       }
-    }
-  }
-
-  // Ensure World catalog also includes seed slots for ECO, GEO, HLT alongside RS rules
-  for (const doc of docNodes) {
-    if (doc.id === 'economy' || doc.id === 'geopolitics' || doc.id === 'health') {
-      const owner = resolveAgentOwner(doc.id);
-      worldCatalog.push({
-        ruleId: `EMPTY-${owner.agentCode}`,
-        parentName: doc.name,
-        description: doc.description,
-        parentContent: doc.content || doc.description,
-      });
     }
   }
 
   const nodes: BrainDocNode[] = [];
   const links: BrainDocLink[] = [];
 
-  // Central Hub node (`id: 'hub'`, `group: 2`)
+  // Central Galactic Core Hub (`id: 'hub'`, `group: 2`, dead center [0,0,0])
   nodes.push({
     id: 'hub',
-    name: 'Cortex Master Hub',
-    description: 'Central procedural judgment engine & 7-Agent execution gatekeeper.',
+    name: 'Cortex Galactic Core',
+    description: 'Central procedural judgment engine, 8-Agent Core Suite & Judgment Arbiter.',
     group: 2,
     category: 'hub',
-    val: 28,
+    val: 34,
     fx: 0,
     fy: 0,
     fz: 0,
   });
 
-  let leftEngIdx = 0;
-  let rightEngIdx = 0;
+  let coreIdx = 0;
   let humIdx = 0;
   let worldIdx = 0;
+  let sciIdx = 0;
 
-  // Map procedural 3D coordinates to the 7 core agents (`group: 1`), domain anchors, and rule nodes (`group: 2`)
+  // Map procedural 3D coordinates to the 8 core agents, domain anchors, and synaptic nodes across the 3 galactic rings
   procedural.nodes.forEach((pNode, index) => {
     if (index < docNodes.length) {
       const doc = docNodes[index];
       const owner = resolveAgentOwner(doc.id);
-      const is7Core = Boolean(SEVEN_CORE_AGENTS[doc.id] && doc.id !== 'researchagent');
-      const isDomainAgent = Boolean(
-        !is7Core && (doc.id === 'researchagent' || doc.category === 'agent' || doc.category === 'domain')
-      );
-      const val = is7Core ? 25 : isDomainAgent ? 15 : (doc.val ?? 15);
+      const is8Core = Boolean(EIGHT_CORE_AGENTS[doc.id]);
+      const isArbiter = doc.id === 'arbiter';
+      const isDomainAgent = Boolean(!is8Core && (doc.category === 'agent' || doc.category === 'domain'));
+      const val = is8Core ? 28 : isArbiter ? 22 : isDomainAgent ? 16 : (doc.val ?? 14);
       nodes.push({
         ...doc,
         agentCode: doc.agentCode ?? owner.agentCode,
@@ -1115,16 +1344,17 @@ export function getBrainData(options?: {
         });
       }
     } else {
-      // Assign synapse rules by cortical hemisphere & lateral lobe so neighbor links form a cohesive brain
+      // Distribute synaptic nodes across Galactic Core (35%), Inner Ring Humanities (28%), Outer Ring World & Science (37%)
       let ruleEntry: RuleCatalogEntry;
-      if (pNode.ax > 36 && humanitiesCatalog.length > 0) {
+      const mod = index % 20;
+      if (mod < 7 && coreEngCatalog.length > 0) {
+        ruleEntry = coreEngCatalog[coreIdx++ % coreEngCatalog.length];
+      } else if (mod < 13 && humanitiesCatalog.length > 0) {
         ruleEntry = humanitiesCatalog[humIdx++ % humanitiesCatalog.length];
-      } else if (pNode.ax < -36 && worldCatalog.length > 0) {
+      } else if (mod < 18 && worldCatalog.length > 0) {
         ruleEntry = worldCatalog[worldIdx++ % worldCatalog.length];
-      } else if (pNode.ax < 0 && leftEngCatalog.length > 0) {
-        ruleEntry = leftEngCatalog[leftEngIdx++ % leftEngCatalog.length];
-      } else if (rightEngCatalog.length > 0) {
-        ruleEntry = rightEngCatalog[rightEngIdx++ % rightEngCatalog.length];
+      } else if (scienceCatalog.length > 0) {
+        ruleEntry = scienceCatalog[sciIdx++ % scienceCatalog.length];
       } else {
         ruleEntry = allRulesCatalog[index % allRulesCatalog.length];
       }
@@ -1141,12 +1371,11 @@ export function getBrainData(options?: {
         cluster,
         category: 'synapse',
         content: ruleEntry.parentContent,
-        val: 3,
+        val: 3.5,
         fx: pNode.ax,
         fy: pNode.ay,
         fz: pNode.az,
       });
-      // Deterministic rule-to-agent link: CS-* -> securityagent (SEC), DB-* -> dbaagent (DB), etc.
       links.push({
         source: owner.agentId,
         target: nodeId,
@@ -1154,15 +1383,52 @@ export function getBrainData(options?: {
     }
   });
 
-  // Inter-connect the 7 core agents (`group: 1`) in a subtle cortical ring
+  // Inter-connect the 8 Core Agents + Judgment Arbiter in the tight Galactic Core ring
   const coreAgentIds = docNodes
-    .filter((d) => Boolean(SEVEN_CORE_AGENTS[d.id] && d.id !== 'researchagent'))
+    .filter((d) => Boolean(EIGHT_CORE_AGENTS[d.id] || d.id === 'arbiter'))
     .map((d) => d.id);
   for (let i = 0; i < coreAgentIds.length; i++) {
     links.push({
       source: coreAgentIds[i],
       target: coreAgentIds[(i + 1) % coreAgentIds.length],
     });
+  }
+
+  // Connect Inner Ring (Humanities & Enterprise) domains in a sweeping galactic ring
+  const innerRingIds = docNodes
+    .filter((d) => resolveNodeCluster(d.id) === 'Humanities')
+    .map((d) => d.id);
+  for (let i = 0; i < innerRingIds.length; i++) {
+    links.push({
+      source: innerRingIds[i],
+      target: innerRingIds[(i + 1) % innerRingIds.length],
+    });
+  }
+
+  // Connect Outer Ring (Global/Society & Frontier/Science) domains in a sweeping outer galactic arm ring
+  const outerRingIds = docNodes
+    .filter((d) => {
+      const c = resolveNodeCluster(d.id);
+      return c === 'World' || c === 'Science';
+    })
+    .map((d) => d.id);
+  for (let i = 0; i < outerRingIds.length; i++) {
+    links.push({
+      source: outerRingIds[i],
+      target: outerRingIds[(i + 1) % outerRingIds.length],
+    });
+  }
+
+  // Add the 28 Inter-Cluster Hyperlinks connecting the Galactic Core directly to the outermost domains
+  const presentNodeIds = new Set(nodes.map((n) => n.id));
+  for (const [src, tgt] of INTER_CLUSTER_HYPERLINKS) {
+    if (presentNodeIds.has(src) && presentNodeIds.has(tgt)) {
+      links.push({
+        source: src,
+        target: tgt,
+        isHyperlink: true,
+      });
+    }
   }
 
   const idByProceduralIndex = new Map<number, string>();
@@ -1186,61 +1452,72 @@ export function getBrainData(options?: {
     }
   });
 
-  // 3D Force-Directed Brain Hemisphere & Lobe Physics (forceX, forceY, forceZ)
-  // - Engineering (Core): Split into Left Hemisphere (x ≈ -30) and Right Hemisphere (x ≈ +30), Z flattened
-  // - Humanities (Right Lobe): Pulled to the right lobe (x ≈ +78)
-  // - World (Left Lobe): Pulled to the left lobe (x ≈ -78)
-  // - Vertical (Y): Arched cortical profile so nodes interweave into a 3D brain silhouette
-  const simNodes = nodes.map((n) => {
-    const cluster = n.cluster ?? resolveNodeCluster(n.id);
-    const baseAx = n.fx ?? n.x ?? 0;
-    const baseAy = n.fy ?? n.y ?? 0;
-    const baseAz = n.fz ?? n.z ?? 0;
+  // Lookup map of parent domain/agent anchor positions so synaptic nodes orbit near their parent domain along the ring
+  const anchorById = new Map<string, [number, number, number]>();
+  for (const src of VAULT_MARKDOWN_SOURCES) {
+    anchorById.set(src.id, src.anchor);
+  }
 
-    let targetX = 0;
-    let targetY = baseAy * 0.85;
-    let targetZ = baseAz * 0.65; // Flatten Z-axis slightly for an oval brain shape
+  // 3D Cosmic Galaxy Physics (d3.forceRadial + Galactic Disc Plane):
+  // 1. The Core (Hub + 8 Core Agents + Judgment Arbiter + Engineering): forceRadial radius 0-30
+  // 2. Inner Ring (Humanities & Enterprise): forceRadial radius ~80
+  // 3. Outer Ring (Global/Society & Frontier/Science): forceRadial radius ~140-200
+  const simNodes = nodes.map((n, idx) => {
+    const cluster = n.cluster ?? resolveNodeCluster(n.id);
+    const owner = resolveAgentOwner(n.id);
+    const parentAnchor = anchorById.get(n.id) ?? anchorById.get(owner.agentId);
+
+    const goldenAngle = idx * 2.399963229728653;
+    let baseAngle = goldenAngle;
+    if (parentAnchor && (parentAnchor[0] !== 0 || parentAnchor[2] !== 0)) {
+      const parentAngle = Math.atan2(parentAnchor[2], parentAnchor[0]);
+      baseAngle = n.category === 'synapse' ? parentAngle + ((idx % 11) - 5) * 0.14 : parentAngle;
+    }
+
+    let targetRadius = 22;
+    let targetY = ((idx % 9) - 4) * 2.2;
 
     if (n.id === 'hub') {
-      targetX = 0;
+      targetRadius = 0;
       targetY = 0;
-      targetZ = 0;
+    } else if (EIGHT_CORE_AGENTS[n.id] || n.id === 'arbiter') {
+      // 8 Core Agents & Arbiter pulled tightly into dead center (radius 14-20)
+      targetRadius = n.id === 'arbiter' ? 14 : 18;
+      targetY = parentAnchor ? parentAnchor[1] * 0.45 : ((idx % 5) - 2) * 2.5;
+    } else if (cluster === 'Engineering') {
+      // Core Engineering domains & synapses tightly inside radius 16-29 (<= 30)
+      targetRadius = n.category !== 'synapse' ? 24 : 18 + (idx % 12);
+      targetY = ((idx % 7) - 3) * 2.4;
     } else if (cluster === 'Humanities') {
-      // Right Lobe expanding outward around x = +78
-      const lobeSpread = (Math.abs(baseAx) - 42) * 0.45;
-      targetX = n.category !== 'synapse' ? (n.fx ?? 78) : 76 + Math.max(-10, Math.min(10, lobeSpread));
-      targetY = baseAy * 0.78;
-      targetZ = baseAz * 0.6;
+      // Inner Galactic Ring: Humanities & Enterprise (Radius ~80)
+      targetRadius = n.category !== 'synapse' ? 80 : 72 + (idx % 17);
+      targetY = ((idx % 9) - 4) * 2.6;
     } else if (cluster === 'World') {
-      // Left Lobe expanding outward around x = -78
-      const lobeSpread = (Math.abs(baseAx) - 42) * 0.45;
-      targetX = n.category !== 'synapse' ? (n.fx ?? -78) : -76 - Math.max(-10, Math.min(10, lobeSpread));
-      targetY = baseAy * 0.78;
-      targetZ = baseAz * 0.6;
+      // Outer Galactic Ring: Global & Society (Radius ~140-170)
+      targetRadius = n.category !== 'synapse' ? 152 : 140 + (idx % 29);
+      targetY = ((idx % 11) - 5) * 3.0;
     } else {
-      // Engineering Core: Left Hemisphere (x ≈ -30) and Right Hemisphere (x ≈ +30)
-      const hemi = resolveEngineeringHemisphere(n.id);
-      if (n.category !== 'synapse' && n.fx !== undefined) {
-        targetX = hemi * Math.max(16, Math.min(34, Math.abs(n.fx)));
-      } else {
-        const localSpread = (Math.abs(baseAx) - 24) * 0.65;
-        const clampedMag = Math.max(9, Math.min(48, 30 + localSpread));
-        targetX = hemi * clampedMag;
-      }
+      // Outer Galactic Ring: Frontier & Science (Radius ~172-200)
+      targetRadius = n.category !== 'synapse' ? 188 : 172 + (idx % 28);
+      targetY = ((idx % 11) - 5) * 3.2;
     }
+
+    const targetX = targetRadius * Math.cos(baseAngle);
+    const targetZ = targetRadius * Math.sin(baseAngle);
 
     return {
       id: n.id,
       cluster,
+      targetRadius,
       targetX,
       targetY,
       targetZ,
       fx: n.id === 'hub' ? 0 : undefined,
       fy: n.id === 'hub' ? 0 : undefined,
       fz: n.id === 'hub' ? 0 : undefined,
-      x: targetX + (Math.random() - 0.5) * 4,
-      y: targetY + (Math.random() - 0.5) * 4,
-      z: targetZ + (Math.random() - 0.5) * 4,
+      x: targetX + (Math.random() - 0.5) * 3,
+      y: targetY + (Math.random() - 0.5) * 2,
+      z: targetZ + (Math.random() - 0.5) * 3,
       group: n.group,
       val: n.val,
       category: n.category,
@@ -1248,8 +1525,8 @@ export function getBrainData(options?: {
   });
 
   const nodeCategoryById = new Map<string, string>(nodes.map((n) => [String(n.id), n.category]));
-  // Filter physics simulation links to local cortical connections so hub/agent star-spokes don't collapse hemispheres into balls
   const simLinks = links
+    .filter((l) => !l.isHyperlink)
     .map((l) => ({
       source: typeof l.source === 'object' ? (l.source as any).id : l.source,
       target: typeof l.target === 'object' ? (l.target as any).id : l.target,
@@ -1268,33 +1545,39 @@ export function getBrainData(options?: {
 
   const simulation = forceSimulation(simNodes, 3)
     .force(
+      'radial',
+      forceRadial((d: any) => (d.id === 'hub' ? 0 : d.targetRadius), 0, 0, 0).strength((d: any) =>
+        d.id === 'hub' ? 1.0 : 0.85
+      )
+    )
+    .force(
       'x',
       forceX((d: any) => (d.id === 'hub' ? 0 : d.targetX)).strength((d: any) =>
-        d.id === 'hub' ? 1.0 : 0.55
+        d.id === 'hub' ? 1.0 : d.category !== 'synapse' ? 0.65 : 0.35
       )
     )
     .force(
       'y',
       forceY((d: any) => (d.id === 'hub' ? 0 : d.targetY)).strength((d: any) =>
-        d.id === 'hub' ? 1.0 : 0.45
+        d.id === 'hub' ? 1.0 : 0.75
       )
     )
     .force(
       'z',
       forceZ((d: any) => (d.id === 'hub' ? 0 : d.targetZ)).strength((d: any) =>
-        d.id === 'hub' ? 1.0 : 0.48
+        d.id === 'hub' ? 1.0 : d.category !== 'synapse' ? 0.65 : 0.35
       )
     )
-    .force('charge', forceManyBody().strength(-3.5))
+    .force('charge', forceManyBody().strength(-2.5))
     .force(
       'link',
       forceLink(simLinks)
         .id((d: any) => d.id)
         .distance(14)
-        .strength(0.05)
+        .strength(0.03)
     );
 
-  // Run 80 simulation ticks so nodes settle into two distinct brain hemispheres and outer lobes
+  // Run 80 simulation ticks so nodes settle into concentric Galactic Rings (0-30 Core, ~80 Inner Ring, 140-200 Outer Ring)
   for (let i = 0; i < 80; i++) {
     simulation.tick();
   }

@@ -8,7 +8,7 @@ import { type BrainDocNode, getBrainData } from './brain-parser';
 export const TARGET_WEIGHTED_SCORE_PER_AGENT = 60;
 export const TARGET_RULES_PER_AGENT = TARGET_WEIGHTED_SCORE_PER_AGENT;
 
-export type ClusterId = 'Engineering' | 'Humanities' | 'World' | string;
+export type ClusterId = 'Engineering' | 'Humanities' | 'World' | 'Science' | string;
 
 export interface AgentStatConfig {
   id: string;
@@ -22,7 +22,7 @@ export interface AgentStatConfig {
 }
 
 export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
-  // --- Cluster 1: Engineering (The 7 Core Agents) ---
+  // --- Cluster 1: Engineering & Core Governance (The 8 Core Agents + Judgment Arbiter) ---
   {
     id: 'dbaagent',
     code: 'DB',
@@ -93,8 +93,28 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     prefixes: ['GR'],
     description: 'Value synthesis, executive pitches, activation loops, viral mechanics.',
   },
+  {
+    id: 'researchagent',
+    code: 'RS',
+    cluster: 'Engineering',
+    label: 'Research',
+    fullName: 'Research Agent',
+    file: 'agents/researchagent.md',
+    prefixes: ['RS'],
+    description: 'Epistemic rigor, source verification, triangulation, anti-hallucination gates.',
+  },
+  {
+    id: 'arbiter',
+    code: 'ARB',
+    cluster: 'Engineering',
+    label: 'Arbiter',
+    fullName: 'Judgment Arbiter',
+    file: 'brain/02-domains/arbiter.md',
+    prefixes: ['ARB'],
+    description: 'Cross-domain conflict resolution, domain separation, precautionary principle, fact vs. opinion.',
+  },
 
-  // --- Cluster 2: Humanities ---
+  // --- Cluster 2: Humanities & Enterprise (Inner Galactic Ring) ---
   {
     id: 'psychology',
     code: 'PSY',
@@ -125,8 +145,58 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     prefixes: ['RHE'],
     description: 'Persuasion, narrative framing, classical argumentation, voice and tone.',
   },
+  {
+    id: 'literature',
+    code: 'LIT',
+    cluster: 'Humanities',
+    label: 'Literature',
+    fullName: 'Literature Domain',
+    file: 'brain/02-domains/literature.md',
+    prefixes: ['LIT'],
+    description: 'Narrative structure, literary criticism, intertextuality, and primary text analysis.',
+  },
+  {
+    id: 'art',
+    code: 'ART',
+    cluster: 'Humanities',
+    label: 'Art',
+    fullName: 'Art & Aesthetics Domain',
+    file: 'brain/02-domains/art.md',
+    prefixes: ['ART'],
+    description: 'Visual composition, art history, aesthetic theory, and creative synthesis.',
+  },
+  {
+    id: 'education',
+    code: 'EDU',
+    cluster: 'Humanities',
+    label: 'Education',
+    fullName: 'Education & Pedagogy Domain',
+    file: 'brain/02-domains/education.md',
+    prefixes: ['EDU'],
+    description: 'Instructional design, spaced repetition, cognitive load management, and mastery learning.',
+  },
+  {
+    id: 'marketing',
+    code: 'MKT',
+    cluster: 'Humanities',
+    label: 'Marketing',
+    fullName: 'Marketing & Brand Domain',
+    file: 'brain/02-domains/marketing.md',
+    prefixes: ['MKT'],
+    description: 'Brand positioning, audience segmentation, distribution channels, and conversion psychology.',
+  },
+  {
+    id: 'management',
+    code: 'MGT',
+    cluster: 'Humanities',
+    label: 'Management',
+    fullName: 'Management & Operations Domain',
+    file: 'brain/02-domains/management.md',
+    prefixes: ['MGT'],
+    description: 'Organizational design, team governance, operational cadence, and bottleneck resolution.',
+  },
 
-  // --- Cluster 3: World ---
+  // --- Cluster 3: Global & Society (Outer Galactic Ring) ---
   {
     id: 'economy',
     code: 'ECO',
@@ -148,24 +218,126 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     description: 'Global resource flows, international trade, sovereignty, statecraft.',
   },
   {
+    id: 'law',
+    code: 'LAW',
+    cluster: 'World',
+    label: 'Law',
+    fullName: 'Law & Jurisprudence Domain',
+    file: 'brain/02-domains/law.md',
+    prefixes: ['LAW'],
+    description: 'Statutory interpretation, regulatory compliance, contractual liability, and due process.',
+  },
+  {
+    id: 'politics',
+    code: 'POL',
+    cluster: 'World',
+    label: 'Politics',
+    fullName: 'Politics & Policy Domain',
+    file: 'brain/02-domains/politics.md',
+    prefixes: ['POL'],
+    description: 'Institutional incentives, public policy analysis, coalition dynamics, and civic governance.',
+  },
+  {
+    id: 'environment',
+    code: 'ENV',
+    cluster: 'World',
+    label: 'Environment',
+    fullName: 'Environment & Ecology Domain',
+    file: 'brain/02-domains/environment.md',
+    prefixes: ['ENV'],
+    description: 'Ecological systems, climate resilience, carbon accounting, and resource sustainability.',
+  },
+  {
+    id: 'history',
+    code: 'HIS',
+    cluster: 'World',
+    label: 'History',
+    fullName: 'History & Historiography Domain',
+    file: 'brain/02-domains/history.md',
+    prefixes: ['HIS'],
+    description: 'Primary archival analysis, civilizational cycles, institutional evolution, and historical parallels.',
+  },
+  {
+    id: 'crypto',
+    code: 'CRY',
+    cluster: 'World',
+    label: 'Crypto',
+    fullName: 'Crypto & Web3 Systems Domain',
+    file: 'brain/02-domains/crypto.md',
+    prefixes: ['CRY'],
+    description: 'Cryptographic primitives, distributed consensus, on-chain verification, and protocol economics.',
+  },
+  {
+    id: 'finance',
+    code: 'FIN',
+    cluster: 'World',
+    label: 'Finance',
+    fullName: 'Finance & Capital Markets Domain',
+    file: 'brain/02-domains/finance.md',
+    prefixes: ['FIN'],
+    description: 'Valuation modeling, risk-adjusted returns, liquidity management, and balance-sheet discipline.',
+  },
+  {
+    id: 'news',
+    code: 'NWS',
+    cluster: 'World',
+    label: 'News & Media',
+    fullName: 'News & Media Epistemology Domain',
+    file: 'brain/02-domains/news.md',
+    prefixes: ['NWS'],
+    description: 'Media framing analysis, primary-source attribution, bias detection, and signal-to-noise filtering.',
+  },
+  {
+    id: 'business',
+    code: 'BIZ',
+    cluster: 'World',
+    label: 'Business',
+    fullName: 'Business Strategy Domain',
+    file: 'brain/02-domains/business.md',
+    prefixes: ['BIZ'],
+    description: 'Unit economics, competitive moats, pricing architecture, and enterprise go-to-market.',
+  },
+
+  // --- Cluster 4: Frontier & Science (Outer Galactic Ring) ---
+  {
     id: 'health',
     code: 'HLT',
-    cluster: 'World',
+    cluster: 'Science',
     label: 'Health',
-    fullName: 'Health Domain',
+    fullName: 'Health & Longevity Domain',
     file: 'brain/02-domains/health.md',
     prefixes: ['HLT'],
     description: 'Biological longevity, metabolic health, cognitive endurance, somatic baselines.',
   },
   {
-    id: 'researchagent',
-    code: 'RS',
-    cluster: 'World',
-    label: 'Research',
-    fullName: 'Research Agent',
-    file: 'agents/researchagent.md',
-    prefixes: ['RS'],
-    description: 'Epistemic rigor, source verification, triangulation, anti-hallucination gates.',
+    id: 'data-science',
+    code: 'DS',
+    cluster: 'Science',
+    label: 'Data Science',
+    fullName: 'Data Science Domain',
+    file: 'brain/02-domains/data-science.md',
+    prefixes: ['DS'],
+    description: 'Statistical inference, experimental design, causal modeling, and feature engineering.',
+  },
+  {
+    id: 'science',
+    code: 'SCI',
+    cluster: 'Science',
+    label: 'Science',
+    fullName: 'Natural Sciences Domain',
+    file: 'brain/02-domains/science.md',
+    prefixes: ['SCI'],
+    description: 'Empirical falsifiability, peer-reviewed replication standards, and physical modeling.',
+  },
+  {
+    id: 'medicine',
+    code: 'MED',
+    cluster: 'Science',
+    label: 'Medicine',
+    fullName: 'Medicine & Clinical Domain',
+    file: 'brain/02-domains/medicine.md',
+    prefixes: ['MED'],
+    description: 'Clinical trial hierarchy, pathophysiology, Precautionary Principle, and evidence-based boundaries.',
   },
 ];
 
@@ -184,32 +356,42 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
   {
     key: 'engineering',
     subject: 'Engineering',
-    label: 'Engineering Cluster',
+    label: 'Engineering & Core Cluster',
     cluster: 'Engineering',
-    prefixes: ['DB', 'SEC', 'CS', 'AUTH', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR'],
-    agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR'],
-    agentCount: 7, // 7 * 60 = 420 pts
-    description: 'Architecture, security, database immutability, UI/UX polish, and systems integration (The 7 Core Agents).',
+    prefixes: ['DB', 'SEC', 'CS', 'AUTH', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR', 'RS', 'ARB'],
+    agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR', 'RS', 'ARB'],
+    agentCount: 9, // 9 * 60 = 540 pts
+    description: 'Architecture, security, database immutability, UI/UX polish, research verification, and the Judgment Arbiter (The Galactic Core).',
   },
   {
     key: 'humanities',
-    subject: 'Humanities',
-    label: 'Humanities Cluster',
+    subject: 'Humanities & Enterprise',
+    label: 'Humanities & Enterprise Cluster',
     cluster: 'Humanities',
-    prefixes: ['PSY', 'PHI', 'RHE'],
-    agentCodes: ['PSY', 'PHI', 'RHE'],
-    agentCount: 3, // 3 * 60 = 180 pts
-    description: 'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
+    prefixes: ['PSY', 'PHI', 'RHE', 'LIT', 'ART', 'EDU', 'MKT', 'MGT'],
+    agentCodes: ['PSY', 'PHI', 'RHE', 'LIT', 'ART', 'EDU', 'MKT', 'MGT'],
+    agentCount: 8, // 8 * 60 = 480 pts
+    description: 'Psychology, philosophy, rhetoric, literature, art, education, marketing, and management (Inner Galactic Ring).',
   },
   {
     key: 'world',
-    subject: 'World',
-    label: 'World Cluster',
+    subject: 'Global & Society',
+    label: 'Global & Society Cluster',
     cluster: 'World',
-    prefixes: ['ECO', 'GEO', 'HLT', 'RS'],
-    agentCodes: ['ECO', 'GEO', 'HLT', 'RS'],
+    prefixes: ['ECO', 'GEO', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
+    agentCodes: ['ECO', 'GEO', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
+    agentCount: 10, // 10 * 60 = 600 pts
+    description: 'Economy, geopolitics, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
+  },
+  {
+    key: 'science',
+    subject: 'Frontier & Science',
+    label: 'Frontier & Science Cluster',
+    cluster: 'Science',
+    prefixes: ['HLT', 'DS', 'SCI', 'MED'],
+    agentCodes: ['HLT', 'DS', 'SCI', 'MED'],
     agentCount: 4, // 4 * 60 = 240 pts
-    description: 'Macroeconomics, global geopolitical dynamics, biological health, and rigorous research verification.',
+    description: 'Health, data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
   },
 ];
 
@@ -556,11 +738,27 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
   // 2. Dynamically group agents into Clusters & calculate Cognitive Dimensions
   const CLUSTER_DESCRIPTIONS: Record<string, string> = {
     Engineering:
-      'Architecture, security, database immutability, UI/UX polish, and systems integration (The Autonomous Gatekeepers).',
+      'Architecture, security, database immutability, UI/UX polish, research verification, and the Judgment Arbiter (The Galactic Core).',
     Humanities:
-      'Cognitive models, human psychology, philosophical epistemology, and persuasive rhetoric.',
+      'Psychology, philosophy, rhetoric, literature, art, education, marketing, and management (Inner Galactic Ring).',
     World:
-      'Macroeconomics, global geopolitics, biological health, and rigorous research verification.',
+      'Economy, geopolitics, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
+    Science:
+      'Health, data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
+  };
+
+  const CLUSTER_NAMES: Record<string, string> = {
+    Engineering: 'Engineering & Core Cluster',
+    Humanities: 'Humanities & Enterprise Cluster',
+    World: 'Global & Society Cluster',
+    Science: 'Frontier & Science Cluster',
+  };
+
+  const CLUSTER_SUBJECTS: Record<string, string> = {
+    Engineering: 'Engineering & Core',
+    Humanities: 'Humanities & Enterprise',
+    World: 'Global & Society',
+    Science: 'Frontier & Science',
   };
 
   // Dynamically identify all clusters present in agentList
@@ -597,8 +795,8 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
 
     const clusterDim: StatMetric = {
       key: clusterId.toLowerCase(),
-      subject: clusterId,
-      label: `${clusterId} Cluster`,
+      subject: CLUSTER_SUBJECTS[clusterId] || clusterId,
+      label: CLUSTER_NAMES[clusterId] || `${clusterId} Cluster`,
       cluster: clusterId as ClusterId,
       prefixes: clusterPrefixes,
       count,
@@ -622,7 +820,7 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
 
     clusters[clusterId] = {
       id: clusterId as ClusterId,
-      name: clusterId,
+      name: CLUSTER_NAMES[clusterId] || `${clusterId} Cluster`,
       description: clusterDim.description,
       agents: clusterAgents,
       dimension: clusterDim,

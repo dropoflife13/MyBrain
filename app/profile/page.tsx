@@ -136,7 +136,7 @@ interface StatsPayload {
 }
 
 const AGENT_ICONS: Record<string, React.ReactNode> = {
-  // Engineering
+  // Engineering & Core
   SEC: <Lock className="w-4 h-4 text-rose-500 dark:text-rose-400" />,
   SD: <Layers className="w-4 h-4 text-cyan-500 dark:text-[#00ffff]" />,
   DB: <Database className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
@@ -144,15 +144,33 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   UX: <Users className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
   IR: <Zap className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
   GR: <TrendingUp className="w-4 h-4 text-blue-500 dark:text-blue-400" />,
-  // Humanities
+  RS: <FileCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+  ARB: <ShieldCheck className="w-4 h-4 text-rose-500 dark:text-rose-400" />,
+  // Humanities & Enterprise
   PSY: <Brain className="w-4 h-4 text-pink-500 dark:text-pink-400" />,
   PHI: <Compass className="w-4 h-4 text-violet-500 dark:text-violet-400" />,
   RHE: <MessageSquare className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
-  // World
+  LIT: <BookOpen className="w-4 h-4 text-fuchsia-500 dark:text-fuchsia-400" />,
+  ART: <Sparkles className="w-4 h-4 text-pink-500 dark:text-pink-400" />,
+  EDU: <Award className="w-4 h-4 text-violet-500 dark:text-violet-400" />,
+  MKT: <TrendingUp className="w-4 h-4 text-purple-500 dark:text-purple-400" />,
+  MGT: <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />,
+  // Global & Society
   ECO: <Coins className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
   GEO: <Globe className="w-4 h-4 text-sky-500 dark:text-sky-400" />,
+  LAW: <Shield className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+  POL: <Globe className="w-4 h-4 text-teal-500 dark:text-teal-400" />,
+  ENV: <Flame className="w-4 h-4 text-green-500 dark:text-green-400" />,
+  HIS: <BookOpen className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
+  CRY: <Lock className="w-4 h-4 text-cyan-500 dark:text-cyan-400" />,
+  FIN: <Coins className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+  NWS: <MessageSquare className="w-4 h-4 text-sky-500 dark:text-sky-400" />,
+  BIZ: <TrendingUp className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+  // Frontier & Science
   HLT: <Activity className="w-4 h-4 text-red-500 dark:text-red-400" />,
-  RS: <FileCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />,
+  DS: <Cpu className="w-4 h-4 text-amber-500 dark:text-amber-400" />,
+  SCI: <Sparkles className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />,
+  MED: <Activity className="w-4 h-4 text-rose-500 dark:text-rose-400" />,
 };
 
 export default function ProfilePage() {
@@ -674,6 +692,8 @@ export default function ProfilePage() {
                             ? 'bg-cyan-500 shadow-[0_0_8px_#00ffff]'
                             : clusterId === 'Humanities'
                             ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
+                            : clusterId === 'Science'
+                            ? 'bg-amber-500 shadow-[0_0_8px_#f59e0b]'
                             : 'bg-emerald-500 shadow-[0_0_8px_#10b981]'
                         }`}
                       />

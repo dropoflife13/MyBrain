@@ -39,19 +39,36 @@ Active rules from the brain feed directly into the execution checklists in `agen
 | Business Analysis | BA | [[business-analysis]] | 7 (`BA-01..07`) | 4.7 | ok (6/6 sub-areas) |
 | UI & Frontend | UI | [[ui-frontend]] | 9 (`UI-01..09`) | 4.9 | ok (6/6 sub-areas) |
 | Authorization | AUTH | [[authorization]] | 5 (`AUTH-01..05`) | 4.0 | ok (PDP/PEP, ABAC, Policy-as-Code) |
+| Judgment Arbiter | ARB | [[arbiter]] | 4 (`ARB-01..04`) | 5.0 | ok (Domain separation, conflict fallback, precaution) |
 | Empathy & Personas | PM | [[empathy-personas]] | Reference framework | - | Empathy Map & Target Personas (`PM-14`, `PM-15`) |
 | Cross-Domain Heuristics | H / P / RF | [[HEURISTICS]] · [[PATTERNS]] · [[RED-FLAGS]] | 6 H · 5 P · 10 RF | 4.9 | rich |
 | Psychology | PSY | [[psychology]] | 0 (draft) | - | Human behavior, biases, cognitive science |
-| Economy | ECO | [[economy]] | 0 (draft) | - | Macroeconomics, finance, market trends |
 | Philosophy | PHI | [[philosophy]] | 0 (draft) | - | Logic, ethics, epistemology |
-| Geopolitics | GEO | [[geopolitics]] | 0 (draft) | - | History, global trade, current events |
 | Rhetoric | RHE | [[rhetoric]] | 0 (draft) | - | Vocabulary, persuasion, communication |
-| Health | HLT | [[health]] | 0 (draft) | - | Physical, mental, and longevity |
+| Literature | LIT | [[literature]] | 0 (draft) | - | Narrative structure, criticism, primary texts |
+| Art & Aesthetics | ART | [[art]] | 0 (draft) | - | Visual composition, art history, aesthetics |
+| Education | EDU | [[education]] | 0 (draft) | - | Pedagogy, spaced repetition, skill acquisition |
+| Marketing | MKT | [[marketing]] | 0 (draft) | - | Brand strategy, positioning, distribution |
+| Management | MGT | [[management]] | 0 (draft) | - | Operations, team governance, execution cadence |
+| Economy | ECO | [[economy]] | 0 (draft) | - | Macroeconomics, monetary dynamics, market trends |
+| Geopolitics | GEO | [[geopolitics]] | 0 (draft) | - | Sovereignty, global trade, statecraft |
+| Law | LAW | [[law]] | 0 (draft) | - | Jurisprudence, regulatory compliance, liability |
+| Politics | POL | [[politics]] | 0 (draft) | - | Institutional incentives, public policy, civics |
+| Environment | ENV | [[environment]] | 0 (draft) | - | Ecology, sustainability, climate resilience |
+| History | HIS | [[history]] | 0 (draft) | - | Historiography, archival evidence, civilizational cycles |
+| Crypto | CRY | [[crypto]] | 0 (draft) | - | Cryptography, distributed consensus, Web3 protocols |
+| Finance | FIN | [[finance]] | 0 (draft) | - | Capital markets, valuation, risk-adjusted returns |
+| News & Media | NWS | [[news]] | 0 (draft) | - | Media framing, source attribution, signal filtering |
+| Business | BIZ | [[business]] | 0 (draft) | - | Unit economics, competitive moats, enterprise strategy |
+| Health | HLT | [[health]] | 0 (draft) | - | Physical, mental, and biological longevity |
+| Data Science | DS | [[data-science]] | 0 (draft) | - | Statistical inference, experimental design, modeling |
+| Science | SCI | [[science]] | 0 (draft) | - | Empirical method, falsifiability, replication |
+| Medicine | MED | [[medicine]] | 0 (draft) | - | Clinical evidence hierarchy, pathophysiology, safety |
 
 Counts are refreshed by [[GAP-FINDER]]. Add a domain: see [[EXTENDING]] and `02-domains/_TEMPLATE.md`.
 
 ## Folders
-- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`, `authorization.md`, `empathy-personas.md`, `PSY`, `ECO`, `PHI`, `GEO`, `RHE`, `HLT`, `_TEMPLATE.md`)
+- `01-identity/` who I am as a practitioner (`ABOUT-ME.md`, `OPERATING-PRINCIPLES.md`, `TASTE.md`) · `02-domains/` per-specialty rules (`CS`, `SO`, `BA`, `UI`, `AUTH`, `ARB`, `empathy-personas.md`, `PSY`, `PHI`, `RHE`, `LIT`, `ART`, `EDU`, `MKT`, `MGT`, `ECO`, `GEO`, `LAW`, `POL`, `ENV`, `HIS`, `CRY`, `FIN`, `NWS`, `BIZ`, `HLT`, `DS`, `SCI`, `MED`, `_TEMPLATE.md`)
 - `03-heuristics/` cross-domain judgment (`HEURISTICS.md`, `PATTERNS.md`, `RED-FLAGS.md`) · `04-models/` mental models (`M-01-blast-radius.md`, `M-02-offline-sync.md`, `_TEMPLATE.md`)
 - `05-elicitation/` protocols & triggers (`THE-TEST.md`, `ELICITATION-PROTOCOL.md`, `QUESTION-BANK.md`, `SCENARIO-BANK.md`, `ARTIFACT-ARCHAEOLOGY.md`, `GAP-FINDER.md`, `LAUNCHERS.md`), `artifacts/` (`A-01`–`A-06`), `sessions/` (`S-01`–`S-03`)
 - `06-raw/` candidate staging (`inbox.md`) · `07-meta/` vault governance (`ARCHITECTURE.md`, `DIGEST.md`, `CONVENTIONS.md`, `SYNC-PROTOCOL.md`, `EXTENDING.md`, `NEW-PROJECT-SNIPPET.md`, `brainagent.md`, `check-vault.py`)
