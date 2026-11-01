@@ -365,6 +365,7 @@ export function resolveNodeCluster(idOrPrefix: string): ClusterId {
   if (
     clean === 'economy' ||
     clean === 'geopolitics' ||
+    clean === 'health' ||
     clean === 'law' ||
     clean === 'politics' ||
     clean === 'environment' ||
@@ -375,6 +376,7 @@ export function resolveNodeCluster(idOrPrefix: string): ClusterId {
     clean === 'business' ||
     prefix === 'ECO' ||
     prefix === 'GEO' ||
+    prefix === 'HLT' ||
     prefix === 'LAW' ||
     prefix === 'POL' ||
     prefix === 'ENV' ||
@@ -389,11 +391,9 @@ export function resolveNodeCluster(idOrPrefix: string): ClusterId {
 
   // Outer Ring — Frontier & Science Cluster
   if (
-    clean === 'health' ||
     clean === 'data-science' ||
     clean === 'science' ||
     clean === 'medicine' ||
-    prefix === 'HLT' ||
     prefix === 'DS' ||
     prefix === 'SCI' ||
     prefix === 'MED'

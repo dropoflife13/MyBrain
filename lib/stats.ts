@@ -218,6 +218,16 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
     description: 'Global resource flows, international trade, sovereignty, statecraft.',
   },
   {
+    id: 'health',
+    code: 'HLT',
+    cluster: 'World',
+    label: 'Health',
+    fullName: 'Health & Longevity Domain',
+    file: 'brain/02-domains/health.md',
+    prefixes: ['HLT'],
+    description: 'Biological longevity, metabolic health, cognitive endurance, somatic baselines.',
+  },
+  {
     id: 'law',
     code: 'LAW',
     cluster: 'World',
@@ -300,16 +310,6 @@ export const AGENT_STAT_CONFIGS: AgentStatConfig[] = [
 
   // --- Cluster 4: Frontier & Science (Outer Galactic Ring) ---
   {
-    id: 'health',
-    code: 'HLT',
-    cluster: 'Science',
-    label: 'Health',
-    fullName: 'Health & Longevity Domain',
-    file: 'brain/02-domains/health.md',
-    prefixes: ['HLT'],
-    description: 'Biological longevity, metabolic health, cognitive endurance, somatic baselines.',
-  },
-  {
     id: 'data-science',
     code: 'DS',
     cluster: 'Science',
@@ -355,18 +355,18 @@ export interface DimensionConfig {
 export const DIMENSION_CONFIGS: DimensionConfig[] = [
   {
     key: 'engineering',
-    subject: 'Engineering',
-    label: 'Engineering & Core Cluster',
+    subject: 'Engineering Core',
+    label: 'Engineering Core',
     cluster: 'Engineering',
     prefixes: ['DB', 'SEC', 'CS', 'AUTH', 'UX', 'UI', 'TA', 'PM', 'BA', 'OP', 'SD', 'SO', 'IR', 'RF', 'H', 'P', 'GR', 'RS', 'ARB'],
-    agentCodes: ['DB', 'SEC', 'UX', 'PM', 'SD', 'IR', 'GR', 'RS', 'ARB'],
+    agentCodes: ['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC', 'RS', 'ARB'],
     agentCount: 9, // 9 * 60 = 540 pts
     description: 'Architecture, security, database immutability, UI/UX polish, research verification, and the Judgment Arbiter (The Galactic Core).',
   },
   {
     key: 'humanities',
     subject: 'Humanities & Enterprise',
-    label: 'Humanities & Enterprise Cluster',
+    label: 'Humanities & Enterprise',
     cluster: 'Humanities',
     prefixes: ['PSY', 'PHI', 'RHE', 'LIT', 'ART', 'EDU', 'MKT', 'MGT'],
     agentCodes: ['PSY', 'PHI', 'RHE', 'LIT', 'ART', 'EDU', 'MKT', 'MGT'],
@@ -376,22 +376,22 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
   {
     key: 'world',
     subject: 'Global & Society',
-    label: 'Global & Society Cluster',
+    label: 'Global & Society',
     cluster: 'World',
-    prefixes: ['ECO', 'GEO', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
-    agentCodes: ['ECO', 'GEO', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
-    agentCount: 10, // 10 * 60 = 600 pts
-    description: 'Economy, geopolitics, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
+    prefixes: ['ECO', 'GEO', 'HLT', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
+    agentCodes: ['ECO', 'GEO', 'HLT', 'LAW', 'POL', 'ENV', 'HIS', 'CRY', 'FIN', 'NWS', 'BIZ'],
+    agentCount: 11, // 11 * 60 = 660 pts
+    description: 'Economy, geopolitics, health, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
   },
   {
     key: 'science',
     subject: 'Frontier & Science',
-    label: 'Frontier & Science Cluster',
+    label: 'Frontier & Science',
     cluster: 'Science',
-    prefixes: ['HLT', 'DS', 'SCI', 'MED'],
-    agentCodes: ['HLT', 'DS', 'SCI', 'MED'],
-    agentCount: 4, // 4 * 60 = 240 pts
-    description: 'Health, data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
+    prefixes: ['DS', 'SCI', 'MED'],
+    agentCodes: ['DS', 'SCI', 'MED'],
+    agentCount: 3, // 3 * 60 = 180 pts
+    description: 'Data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
   },
 ];
 
@@ -742,20 +742,20 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     Humanities:
       'Psychology, philosophy, rhetoric, literature, art, education, marketing, and management (Inner Galactic Ring).',
     World:
-      'Economy, geopolitics, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
+      'Economy, geopolitics, health, law, politics, environment, history, crypto, finance, news, and business (Outer Galactic Ring).',
     Science:
-      'Health, data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
+      'Data science, natural sciences, and clinical medicine governed by the Precautionary Principle (Outer Galactic Ring).',
   };
 
   const CLUSTER_NAMES: Record<string, string> = {
-    Engineering: 'Engineering & Core Cluster',
-    Humanities: 'Humanities & Enterprise Cluster',
-    World: 'Global & Society Cluster',
-    Science: 'Frontier & Science Cluster',
+    Engineering: 'Engineering Core',
+    Humanities: 'Humanities & Enterprise',
+    World: 'Global & Society',
+    Science: 'Frontier & Science',
   };
 
   const CLUSTER_SUBJECTS: Record<string, string> = {
-    Engineering: 'Engineering & Core',
+    Engineering: 'Engineering Core',
     Humanities: 'Humanities & Enterprise',
     World: 'Global & Society',
     Science: 'Frontier & Science',

@@ -46,23 +46,24 @@ interface ChatMessage {
   provider?: string;
 }
 
-// 8 Bots in order of the Golden Path / SDLC Suite
-const ALL_AGENT_CODES: AgentCode[] = ['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC', 'RS'];
+// 9 Core Engineering & Governance Bots (8 Core Agents + Judgment Arbiter)
+const ALL_AGENT_CODES: AgentCode[] = ['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC', 'RS', 'ARB'];
 
 // Base Workstation Coordinates as percentages of the usable arena [x%, y%]
 const STATION_COORDINATES: Record<AgentCode, { x: number; y: number }> = {
-  PM: { x: 18, y: 25 },  // Top Left (Interrogation Desk)
-  UX: { x: 13, y: 52 },  // Mid Left (Design Studio Desk)
-  GR: { x: 20, y: 78 },  // Bottom Left (Growth Pitch Desk)
-  DB: { x: 39, y: 84 },  // Bottom Center-Left (Vault Ledger Desk)
-  SEC: { x: 61, y: 84 }, // Bottom Center-Right (Sentinel Firewall Desk)
-  SD: { x: 80, y: 78 },  // Bottom Right (Systems Blueprint Desk)
-  IR: { x: 87, y: 52 },  // Mid Right (Sync Bus Desk)
-  RS: { x: 82, y: 25 },  // Top Right (Research Archive Desk)
+  ARB: { x: 50, y: 18 }, // Top Center (Supreme Court Arbiter Bench)
+  PM: { x: 18, y: 26 },  // Top Left (Interrogation Desk)
+  UX: { x: 13, y: 53 },  // Mid Left (Design Studio Desk)
+  GR: { x: 20, y: 79 },  // Bottom Left (Growth Pitch Desk)
+  DB: { x: 39, y: 85 },  // Bottom Center-Left (Vault Ledger Desk)
+  SEC: { x: 61, y: 85 }, // Bottom Center-Right (Sentinel Firewall Desk)
+  SD: { x: 80, y: 79 },  // Bottom Right (Systems Blueprint Desk)
+  IR: { x: 87, y: 53 },  // Mid Right (Sync Bus Desk)
+  RS: { x: 82, y: 26 },  // Top Right (Research Archive Desk)
 };
 
 // Central Mainframe coordinates (center of the room)
-const MAINFRAME_COORDS = { x: 50, y: 47 };
+const MAINFRAME_COORDS = { x: 50, y: 50 };
 
 // Width of the slide-out terminal drawer on desktop viewports
 const TERMINAL_DRAWER_WIDTH = 480;
@@ -77,6 +78,7 @@ export default function PixelAgentHQPage() {
     IR: { percentage: 86, count: 14, avgConfidence: 4.4, health: 90, isLowKnowledge: false },
     GR: { percentage: 85, count: 14, avgConfidence: 4.3, health: 89, isLowKnowledge: false },
     RS: { percentage: 91, count: 14, avgConfidence: 4.6, health: 93, isLowKnowledge: false },
+    ARB: { percentage: 100, count: 4, avgConfidence: 5.0, health: 100, isLowKnowledge: false },
   });
 
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
@@ -104,6 +106,7 @@ export default function PixelAgentHQPage() {
     DB: null,
     SEC: null,
     RS: null,
+    ARB: null,
   });
   const baseLineRefs = useRef<Record<AgentCode, SVGLineElement | null>>({
     PM: null,
@@ -114,6 +117,7 @@ export default function PixelAgentHQPage() {
     DB: null,
     SEC: null,
     RS: null,
+    ARB: null,
   });
   const pulseLineRefs = useRef<Record<AgentCode, SVGLineElement | null>>({
     PM: null,
@@ -124,6 +128,7 @@ export default function PixelAgentHQPage() {
     DB: null,
     SEC: null,
     RS: null,
+    ARB: null,
   });
 
   // Wandering target offsets around base station (updated every 4 seconds via setInterval)
@@ -136,12 +141,13 @@ export default function PixelAgentHQPage() {
     SD: { x: 0, y: 0 },
     IR: { x: 0, y: 0 },
     RS: { x: 0, y: 0 },
+    ARB: { x: 0, y: 0 },
   });
 
   // Active idle speech bubbles per bot (randomly triggered every 5-10 seconds)
   const [activeBubbles, setActiveBubbles] = useState<Partial<Record<AgentCode, boolean>>>({
     DB: true,
-    PM: true,
+    ARB: true,
   });
 
   // Chat state per agent
@@ -154,6 +160,7 @@ export default function PixelAgentHQPage() {
     IR: [],
     GR: [],
     RS: [],
+    ARB: [],
   });
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
@@ -663,16 +670,16 @@ export default function PixelAgentHQPage() {
 
         {/* Top Space Station Telemetry Readout */}
         <div
-          className="absolute top-3 left-6 hidden md:flex items-center justify-between text-[10px] text-zinc-500 pointer-events-none uppercase tracking-wider z-10 transition-all duration-300"
+          className="absolute top-3 left-6 hidden md:flex items-center justify-between text-[10px] text-slate-300 pointer-events-none uppercase tracking-wider z-10 transition-all duration-300"
           style={{ width: `${Math.max(300, usableArenaWidth - 48)}px` }}
         >
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-cyan-400 font-bold">
               <Radio className="w-3 h-3 animate-pulse" />
-              <span>STATION ORBIT // ISOMETRIC OFFICE DECK 08</span>
+              <span>STATION ORBIT // ISOMETRIC OFFICE DECK 09</span>
             </span>
-            <span className="text-zinc-600">•</span>
-            <span>8 WORKSTATIONS ONLINE</span>
+            <span className="text-slate-500">•</span>
+            <span>9 CORE WORKSTATIONS ONLINE (8 AGENTS + ARBITER)</span>
           </div>
           <div className="flex items-center gap-4">
             <span>CLICK BOT TO DOCK • ESC TO CLOSE</span>
@@ -792,7 +799,7 @@ export default function PixelAgentHQPage() {
                   <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
 
                   <div className="flex items-center justify-between w-full text-[8px] text-cyan-400 font-bold">
-                    <span>BUS: 8</span>
+                    <span>BUS: 9</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
                   </div>
 
@@ -1182,12 +1189,12 @@ export default function PixelAgentHQPage() {
                 <h3 className="text-base font-bold text-white tracking-wider mb-2">
                   TERMINAL STANDBY // SELECT AGENT
                 </h3>
-                <p className="text-xs text-zinc-400 max-w-xs leading-relaxed mb-6 font-mono">
-                  Click any of the 8 living Pixel Bots or select a badge below to dock them to the central Mainframe.
+                <p className="text-xs text-slate-200 max-w-xs leading-relaxed mb-6 font-mono">
+                  Click any of the 9 Core Pixel Bots (8 Engineering Agents + the Judgment Arbiter) or select a badge below to dock them to the central Mainframe.
                 </p>
 
                 {/* Bot Quick-Select Grid */}
-                <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
                   {ALL_AGENT_CODES.map((code) => {
                     const meta = AGENT_REGISTRY[code];
                     return (

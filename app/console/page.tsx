@@ -135,15 +135,19 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [collapsedClusters, setCollapsedClusters] = useState<Record<string, boolean>>({
     Engineering: false,
-    Humanities: false,
-    World: false,
+    Humanities: true,
+    World: true,
+    Science: true,
   });
 
   const toggleCluster = (clusterId: string) => {
-    setCollapsedClusters((prev) => ({
-      ...prev,
-      [clusterId]: !prev[clusterId],
-    }));
+    setCollapsedClusters((prev) => {
+      const current = prev[clusterId] ?? (clusterId !== 'Engineering');
+      return {
+        ...prev,
+        [clusterId]: !current,
+      };
+    });
   };
 
   // Sliding AI Neural Chat Panel State (Framer Motion right sidebar)
@@ -1152,34 +1156,34 @@ export default function Home() {
 
             {/* Collapsible Clusters: Dynamically mapped from cortexStats.clusters */}
             {Object.entries(cortexStats.clusters).map(([clusterId, cluster]) => {
-              const isCollapsed = !!collapsedClusters[clusterId];
+              const isCollapsed = collapsedClusters[clusterId] ?? (clusterId !== 'Engineering');
               const clusterAgents = cluster.agents;
               const clusterStat = cluster;
 
               return (
-                <div key={clusterId} className="space-y-1 pt-1 first:pt-0">
+                <div key={clusterId} className="space-y-1.5 pt-2 first:pt-0">
                   {/* Cluster Accordion Header */}
                   <button
                     type="button"
                     onClick={() => toggleCluster(clusterId)}
-                    className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold tracking-wider uppercase text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2 min-w-0">
                       {isCollapsed ? (
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                        <ChevronRight className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                        <ChevronDown className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />
                       )}
-                      <span>{cluster.name || clusterId}</span>
+                      <span className="truncate">{cluster.name || clusterId}</span>
                     </div>
-                    <span className="text-[10px] font-mono font-normal text-slate-400 dark:text-zinc-500">
-                      {clusterStat?.dimension ? `${clusterStat.dimension.displayScore}/${clusterStat.dimension.target} pts` : `${clusterAgents.length} gates`}
+                    <span className="text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-300 shrink-0 ml-1">
+                      {clusterAgents.length}
                     </span>
                   </button>
 
                   {/* Cluster Agents with Knowledge Bars */}
                   {!isCollapsed && (
-                    <div className="space-y-1">
+                    <div className="space-y-1.5 pl-1">
                       {clusterAgents.map((agent) => {
                         const isActive = activeGate === agent.code;
                         const stat = agent;
@@ -1196,20 +1200,22 @@ export default function Home() {
                               type="button"
                               onClick={() => setActiveGate(isActive ? null : (agent.code || null))}
                               aria-pressed={isActive}
-                              className={`w-full px-2.5 py-1.5 rounded-lg flex flex-col gap-1 text-xs transition-all cursor-pointer border group ${
+                              className={`w-full px-3 py-2.5 rounded-lg flex flex-col gap-1.5 text-xs transition-all cursor-pointer border group ${
                                 isActive
                                   ? stat.isHighConfidence
                                     ? 'bg-purple-500/10 dark:bg-purple-500/15 border-purple-500/50 text-purple-700 dark:text-purple-300 font-semibold shadow-[0_0_14px_rgba(168,85,247,0.2)] ring-1 ring-purple-500/30'
                                     : 'bg-cyan-500/10 dark:bg-[#00ffff]/10 border-cyan-500/40 dark:border-[#00ffff]/40 text-cyan-700 dark:text-[#00ffff] font-semibold shadow-[0_0_14px_rgba(0,255,255,0.15)] ring-1 ring-cyan-500/30'
-                                  : 'border-transparent text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-200 dark:hover:border-white/10'
+                                  : 'border-transparent text-slate-800 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 hover:border-slate-200 dark:hover:border-white/10'
                               }`}
                             >
                               {/* Top Row: Indicator dot + Code + Label + Percentage Text */}
                               <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center gap-1.5 min-w-0">
+                                <div className="flex items-center gap-2 min-w-0">
                                   <span
-                                    className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                                      stat.isHighConfidence
+                                    className={`w-2 h-2 rounded-full shrink-0 ${
+                                      agent.code === 'ARB'
+                                        ? 'bg-rose-500 shadow-[0_0_8px_#e11d48]'
+                                        : stat.isHighConfidence
                                         ? isActive
                                           ? 'bg-purple-500 shadow-[0_0_8px_#a855f7]'
                                           : 'bg-purple-400 group-hover:bg-purple-300'
@@ -1217,11 +1223,11 @@ export default function Home() {
                                         ? 'bg-amber-400 group-hover:bg-amber-300'
                                         : isActive
                                         ? 'bg-cyan-600 dark:bg-[#00ffff] shadow-[0_0_8px_#00ffff]'
-                                        : 'bg-cyan-500/70 group-hover:bg-cyan-400'
+                                        : 'bg-cyan-500/80 group-hover:bg-cyan-400'
                                     }`}
                                   />
                                   <span className="font-bold tracking-wider text-left">{agent.code}</span>
-                                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                                  <span className="text-[11px] text-slate-600 dark:text-slate-200 truncate font-normal">
                                     {agent.label}
                                   </span>
                                 </div>
@@ -1231,7 +1237,7 @@ export default function Home() {
                                       ? 'text-purple-600 dark:text-purple-400 group-hover:text-purple-500 dark:group-hover:text-purple-300 font-bold'
                                       : stat.isUnverified
                                       ? 'text-amber-600 dark:text-amber-400 font-bold'
-                                      : 'text-slate-500 dark:text-zinc-400 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
+                                      : 'text-slate-600 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff]'
                                   }`}
                                 >
                                   {stat.isUnverified ? `⚠️ ${stat.percentageText}` : stat.percentageText}
@@ -1239,10 +1245,12 @@ export default function Home() {
                               </div>
 
                               {/* Knowledge Bar (Mastery Progress) */}
-                              <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+                              <div className="w-full h-1.5 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
                                 <div
                                   className={`h-full rounded-full transition-all duration-500 ${
-                                    stat.isHighConfidence
+                                    agent.code === 'ARB'
+                                      ? 'bg-rose-500 shadow-[0_0_8px_rgba(225,29,72,0.8)]'
+                                      : stat.isHighConfidence
                                       ? 'bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]'
                                       : stat.isUnverified
                                       ? 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.7)]'

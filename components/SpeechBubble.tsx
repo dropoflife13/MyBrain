@@ -13,6 +13,7 @@ export const IDLE_SPEECH_MESSAGES: Record<AgentCode, string> = {
   IR: 'Syncing...',
   GR: 'Pitching...',
   RS: 'Researching...',
+  ARB: 'Adjudicating...',
 };
 
 export interface SpeechBubbleProps {
