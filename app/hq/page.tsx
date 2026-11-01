@@ -85,16 +85,21 @@ export default function PixelAgentHQPage() {
   });
 
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
-  const [selectedBotCode, setSelectedBotCode] = useState<AgentCode | null>(null);
-  const [hoveredBotCode, setHoveredBotCode] = useState<AgentCode | null>(null);
-  const [isWalking, setIsWalking] = useState<boolean>(false);
   const [crtEffect, setCrtEffect] = useState<boolean>(true);
 
-  // Requirement 1: Collapsible Terminal Panel (Default: closed/hidden, 100% canvas)
+  // Requirement 1: Ghost Selection Bug Fix
+  // selectedAgent is strictly initialized to null and set to null when closed
+  const [selectedAgent, setSelectedAgent] = useState<AgentCode | null>(null);
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(false);
+  const [returningAgent, setReturningAgent] = useState<AgentCode | null>(null);
+  const [hoveredBotCode, setHoveredBotCode] = useState<AgentCode | null>(null);
 
-  // Requirement 2: Living Bots - Wandering offsets from station origins
-  const [botOffsets, setBotOffsets] = useState<Record<AgentCode, { x: number; y: number }>>({
+  // Arena dimensions measurement for precise pixel-perfect Framer Motion spring physics
+  const arenaRef = useRef<HTMLDivElement>(null);
+  const [arenaDimensions, setArenaDimensions] = useState({ width: 1200, height: 700 });
+
+  // Requirement 2: Idle wandering offsets around baseX and baseY (Math.random() * 20 - 10)
+  const [wanderOffsets, setWanderOffsets] = useState<Record<AgentCode, { x: number; y: number }>>({
     PM: { x: 0, y: 0 },
     UX: { x: 0, y: 0 },
     GR: { x: 0, y: 0 },
@@ -119,6 +124,27 @@ export default function PixelAgentHQPage() {
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Measure arena size for exact coordinate calculation
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (arenaRef.current) {
+        setArenaDimensions({
+          width: arenaRef.current.clientWidth,
+          height: arenaRef.current.clientHeight,
+        });
+      }
+    };
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    const ro = new ResizeObserver(updateDimensions);
+    if (arenaRef.current) ro.observe(arenaRef.current);
+
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+      ro.disconnect();
+    };
+  }, []);
 
   // Fetch live stats from /api/stats
   const fetchStats = async () => {
@@ -164,49 +190,35 @@ export default function PixelAgentHQPage() {
     fetchStats();
   }, []);
 
-  // Requirement 2: Wandering Timer (Simulate living bots pacing & inspecting systems)
+  // Requirement 2: Continuous slow wandering loop around base station
+  // ONLY runs when bot is idle (selectedAgent !== code && returningAgent !== code)
   useEffect(() => {
     const interval = setInterval(() => {
-      setBotOffsets((prev) => {
+      setWanderOffsets((prev) => {
         const next: Record<AgentCode, { x: number; y: number }> = { ...prev };
         ALL_AGENT_CODES.forEach((code) => {
-          if (code === selectedBotCode) {
-            // Selected/docked bot stays on dock pad
-            next[code] = { x: 0, y: 0 };
+          if (code !== selectedAgent && code !== returningAgent) {
+            // Wander slightly around base: Math.random() * 20 - 10
+            next[code] = {
+              x: Number((Math.random() * 20 - 10).toFixed(1)),
+              y: Number((Math.random() * 20 - 10).toFixed(1)),
+            };
           } else {
-            // Smooth wandering drift within ±2.2% X and ±2.2% Y from station origin
-            const randX = Number((Math.sin(Date.now() / 1000 + code.charCodeAt(0)) * 2.2).toFixed(1));
-            const randY = Number((Math.cos(Date.now() / 1200 + code.charCodeAt(1)) * 2.2).toFixed(1));
-            next[code] = { x: randX, y: randY };
+            next[code] = { x: 0, y: 0 };
           }
         });
         return next;
       });
-    }, 3600);
+    }, 3800);
 
     return () => clearInterval(interval);
-  }, [selectedBotCode]);
+  }, [selectedAgent, returningAgent]);
 
-  // Requirement 1: Press 'Esc' to close terminal & undock bot
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isTerminalOpen) {
-        handleUndockBot();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isTerminalOpen]);
-
-  // Count degraded bots (< 30% knowledge)
-  const degradedCount = useMemo(() => {
-    return Object.values(statsMap).filter((s) => s.isLowKnowledge).length;
-  }, [statsMap]);
-
-  // Bot selection handler: bot walks to terminal and opens terminal drawer
+  // Requirement 1 & 2: Explicit Bot Selection Handler
   const handleSelectBot = (code: AgentCode) => {
-    setIsWalking(true);
-    setSelectedBotCode(code);
+    if (!code) return;
+    setReturningAgent(null);
+    setSelectedAgent(code);
     setIsTerminalOpen(true);
 
     // Seed initial greeting if this bot has no messages yet
@@ -225,36 +237,52 @@ export default function PixelAgentHQPage() {
         [code]: [initialGreeting],
       }));
     }
-
-    // Walking animation settles in 500ms
-    setTimeout(() => {
-      setIsWalking(false);
-    }, 500);
   };
 
-  // Undock bot and slide terminal drawer out
-  const handleUndockBot = () => {
-    setIsWalking(true);
+  // Requirement 1 & 2: Explicit Close / Return to Base Handler
+  const handleCloseTerminal = () => {
+    const prev = selectedAgent;
+    setSelectedAgent(null);
     setIsTerminalOpen(false);
-    setTimeout(() => {
-      setSelectedBotCode(null);
-      setIsWalking(false);
-    }, 350);
+
+    if (prev) {
+      // Put bot in return state so it animates back to home station (baseX, baseY) first
+      setReturningAgent(prev);
+      setTimeout(() => {
+        setReturningAgent((curr) => (curr === prev ? null : curr));
+      }, 900); // Only resume wandering after bot reaches home
+    }
   };
+
+  // Requirement 1: Esc key strictly closes terminal and triggers return animation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isTerminalOpen) {
+        handleCloseTerminal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isTerminalOpen, selectedAgent]);
+
+  // Count degraded bots (< 30% knowledge)
+  const degradedCount = useMemo(() => {
+    return Object.values(statsMap).filter((s) => s.isLowKnowledge).length;
+  }, [statsMap]);
 
   // Scroll chat to bottom when new messages arrive
   useEffect(() => {
-    if (selectedBotCode && isTerminalOpen) {
+    if (selectedAgent && isTerminalOpen) {
       chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [chatMessages, selectedBotCode, isTerminalOpen]);
+  }, [chatMessages, selectedAgent, isTerminalOpen]);
 
   // Submit chat prompt to /api/chat with hardcoded contextNode and source='hq'
   const handleSendChat = async (queryText?: string) => {
     const textToSend = (queryText ?? chatInput).trim();
-    if (!textToSend || !selectedBotCode || isChatLoading) return;
+    if (!textToSend || !selectedAgent || isChatLoading) return;
 
-    const botCode = selectedBotCode;
+    const botCode = selectedAgent;
     const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -315,7 +343,11 @@ export default function PixelAgentHQPage() {
     }
   };
 
-  const activeBotMeta = selectedBotCode ? AGENT_REGISTRY[selectedBotCode] : null;
+  const activeBotMeta = selectedAgent ? AGENT_REGISTRY[selectedAgent] : null;
+
+  // Center Coordinates in Pixels
+  const centerPixelX = (MAINFRAME_COORDS.x / 100) * arenaDimensions.width;
+  const centerPixelY = (MAINFRAME_COORDS.y / 100) * arenaDimensions.height + 42;
 
   return (
     <div className="relative w-screen h-screen max-h-screen bg-[#02050e] text-slate-100 flex flex-col font-mono overflow-hidden select-none">
@@ -373,7 +405,7 @@ export default function PixelAgentHQPage() {
           {ALL_AGENT_CODES.map((code) => {
             const meta = AGENT_REGISTRY[code];
             const stat = statsMap[code];
-            const isSelected = selectedBotCode === code;
+            const isSelected = selectedAgent === code;
             const isLow = stat.isLowKnowledge;
 
             return (
@@ -443,7 +475,10 @@ export default function PixelAgentHQPage() {
       </header>
 
       {/* 3. MAIN ARENA: 100% FULL-WIDTH SPACE STATION CANVAS */}
-      <main className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden flex flex-col items-center justify-center bg-[#02050e]">
+      <main
+        ref={arenaRef}
+        className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden flex flex-col items-center justify-center bg-[#02050e]"
+      >
         {/* Requirement 3: Perspective TRON Grid Floor with Depth & Fading Horizon */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Deep space radial glow */}
@@ -489,16 +524,16 @@ export default function PixelAgentHQPage() {
           </div>
           <div className="flex items-center gap-4">
             <span>BUS PROTOCOL: CORTEX 8-PORT ROOT</span>
-            <span>PRESS ESC TO CLOSE TERMINAL</span>
+            <span>CLICK BOT TO QUERY • ESC TO CLOSE</span>
           </div>
         </div>
 
-        {/* Requirement 3: Radar Sweep & Concentric Energy Core Behind Mainframe */}
+        {/* Radar Sweep & Concentric Energy Core Behind Mainframe */}
         <div
           className="absolute z-0 pointer-events-none"
           style={{
-            left: `${MAINFRAME_COORDS.x}%`,
-            top: `${MAINFRAME_COORDS.y}%`,
+            left: `${centerPixelX}px`,
+            top: `${(MAINFRAME_COORDS.y / 100) * arenaDimensions.height}px`,
             transform: 'translate(-50%, -50%)',
           }}
         >
@@ -527,7 +562,7 @@ export default function PixelAgentHQPage() {
           <div className="w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl absolute -translate-x-1/2 -translate-y-1/2" />
         </div>
 
-        {/* 4. DYNAMIC SVG TETHER LAYER (Live-updates as bots wander) */}
+        {/* 4. DYNAMIC SVG TETHER LAYER (Live-updates dynamically with spring coordinates) */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-10">
           <defs>
             {ALL_AGENT_CODES.map((code) => {
@@ -550,29 +585,39 @@ export default function PixelAgentHQPage() {
 
           {ALL_AGENT_CODES.map((code, idx) => {
             const station = STATION_COORDINATES[code];
-            const offset = botOffsets[code] || { x: 0, y: 0 };
-            const isSelected = selectedBotCode === code;
             const meta = AGENT_REGISTRY[code];
             const isLow = statsMap[code]?.isLowKnowledge;
+            const isSelected = selectedAgent === code;
+            const isReturning = returningAgent === code;
             const isWorking = isChatLoading && isSelected;
 
-            // Compute dynamic coordinates (station origin + wandering offset)
-            const currentX = station.x + offset.x;
-            const currentY = station.y + offset.y;
+            // Base position in pixels
+            const baseX = (station.x / 100) * arenaDimensions.width;
+            const baseY = (station.y / 100) * arenaDimensions.height;
 
-            const startX = `${currentX}%`;
-            const startY = `${currentY}%`;
-            const endX = `${MAINFRAME_COORDS.x}%`;
-            const endY = `${MAINFRAME_COORDS.y}%`;
+            // Target coordinates (Active vs Returning vs Idle Wandering)
+            const botTargetX = isSelected
+              ? centerPixelX
+              : isReturning
+              ? baseX
+              : baseX + (wanderOffsets[code]?.x || 0);
+
+            const botTargetY = isSelected
+              ? centerPixelY
+              : isReturning
+              ? baseY
+              : baseY + (wanderOffsets[code]?.y || 0);
+
+            const mainframeY = (MAINFRAME_COORDS.y / 100) * arenaDimensions.height;
 
             return (
               <g key={`tether-${code}`}>
                 {/* Subtle base tether wire */}
                 <line
-                  x1={startX}
-                  y1={startY}
-                  x2={endX}
-                  y2={endY}
+                  x1={botTargetX}
+                  y1={botTargetY}
+                  x2={centerPixelX}
+                  y2={mainframeY}
                   stroke={isLow ? '#facc15' : meta.color}
                   strokeWidth={isSelected ? 4 : 1.5}
                   strokeOpacity={isSelected ? 0.9 : 0.35}
@@ -586,10 +631,10 @@ export default function PixelAgentHQPage() {
 
                 {/* Animated dashed cable pulse */}
                 <line
-                  x1={startX}
-                  y1={startY}
-                  x2={endX}
-                  y2={endY}
+                  x1={botTargetX}
+                  y1={botTargetY}
+                  x2={centerPixelX}
+                  y2={mainframeY}
                   stroke={isSelected ? '#ffffff' : isLow ? '#fef08a' : meta.colorLight}
                   strokeWidth={isSelected ? 3 : 1.5}
                   strokeDasharray={isSelected ? '8 12' : '4 16'}
@@ -597,14 +642,14 @@ export default function PixelAgentHQPage() {
                   className="animate-[dash_1.5s_linear_infinite]"
                 />
 
-                {/* Requirement 3: Animated Glowing Data Packet traveling from Bot to Mainframe */}
+                {/* Animated Glowing Data Packet traveling from Bot to Mainframe */}
                 <motion.circle
                   r={isSelected ? 4.5 : 2.5}
                   fill={isSelected ? '#00ffff' : isLow ? '#facc15' : meta.colorLight}
                   filter={`drop-shadow(0 0 6px ${isSelected ? '#00ffff' : meta.colorLight})`}
                   animate={{
-                    cx: [`${currentX}%`, `${MAINFRAME_COORDS.x}%`],
-                    cy: [`${currentY}%`, `${MAINFRAME_COORDS.y}%`],
+                    cx: [botTargetX, centerPixelX],
+                    cy: [botTargetY, mainframeY],
                     opacity: [0.2, 1, 0.4],
                   }}
                   transition={{
@@ -622,13 +667,13 @@ export default function PixelAgentHQPage() {
         <div
           className="absolute z-20 flex flex-col items-center justify-center pointer-events-auto"
           style={{
-            left: `${MAINFRAME_COORDS.x}%`,
-            top: `${MAINFRAME_COORDS.y}%`,
+            left: `${centerPixelX}px`,
+            top: `${(MAINFRAME_COORDS.y / 100) * arenaDimensions.height}px`,
             transform: 'translate(-50%, -50%)',
           }}
         >
           {/* Holographic Cortex Core */}
-          <div className="relative group cursor-pointer" onClick={() => handleUndockBot()}>
+          <div className="relative group cursor-pointer" onClick={() => handleCloseTerminal()}>
             {/* Outer Cyan Cyber Ring */}
             <motion.div
               animate={{ rotate: 360 }}
@@ -665,7 +710,7 @@ export default function PixelAgentHQPage() {
                 </div>
 
                 <span className="text-[7px] text-cyan-400/80 font-mono tracking-tighter">
-                  {selectedBotCode ? `DOCKED: [${selectedBotCode}]` : 'ROOT BUS READY'}
+                  {selectedAgent ? `DOCKED: [${selectedAgent}]` : 'ROOT BUS READY'}
                 </span>
               </div>
             </div>
@@ -673,161 +718,165 @@ export default function PixelAgentHQPage() {
             {/* Docking Bay Floor Pad (In Front of Terminal) */}
             <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-28 h-8 rounded-[100%] bg-cyan-500/15 border border-cyan-400/40 blur-[0.5px] flex items-center justify-center shadow-[0_0_15px_rgba(0,255,255,0.25)]">
               <span className="text-[8px] font-bold text-cyan-300 tracking-widest uppercase">
-                {selectedBotCode ? `PORT [${selectedBotCode}] ACTIVE` : 'DOCKING RECEPTOR'}
+                {selectedAgent ? `PORT [${selectedAgent}] ACTIVE` : 'DOCKING RECEPTOR'}
               </span>
             </div>
           </div>
-
-          {/* If a bot is currently docked, show the bot physically standing on the central terminal pad */}
-          {selectedBotCode && (
-            <motion.div
-              layoutId={`bot-${selectedBotCode}`}
-              className="absolute z-30 -bottom-16 flex flex-col items-center"
-            >
-              {/* Requirement 2: Working State (Faster floating + typing indicator) */}
-              {isChatLoading && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8, y: 5 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-[10px] font-mono text-cyan-300 flex items-center gap-1 shadow-[0_0_12px_rgba(0,255,255,0.6)] z-30"
-                >
-                  <span className="w-1 h-1 rounded-full bg-cyan-400 animate-ping" />
-                  <span>thinking...</span>
-                </motion.div>
-              )}
-
-              <PixelBot
-                code={selectedBotCode}
-                size={72}
-                knowledge={statsMap[selectedBotCode].percentage}
-                health={statsMap[selectedBotCode].health}
-                isSelected={true}
-                isWalking={isWalking}
-                isLowKnowledgeOverride={statsMap[selectedBotCode].isLowKnowledge}
-                showNameTag={true}
-                showStats={true}
-                showHealthBar={true}
-              />
-            </motion.div>
-          )}
         </div>
 
-        {/* 6. THE 8 PERIMETER STATIONS (Where Bots Live, Idle & Wander) */}
-        {ALL_AGENT_CODES.map((code, idx) => {
+        {/* 6. STATIC STATION FLOOR PADS (Stay anchored on deck) */}
+        {ALL_AGENT_CODES.map((code) => {
           const station = STATION_COORDINATES[code];
-          const offset = botOffsets[code] || { x: 0, y: 0 };
           const meta = AGENT_REGISTRY[code];
           const stat = statsMap[code];
-          const isDocked = selectedBotCode === code;
+          const isSelected = selectedAgent === code;
           const isHovered = hoveredBotCode === code;
           const isLow = stat.isLowKnowledge;
-          const isWorking = isChatLoading && isDocked;
-
-          // Wandering coordinates
-          const botX = station.x + offset.x;
-          const botY = station.y + offset.y;
 
           return (
-            <React.Fragment key={code}>
-              {/* Static Floor Pad (Stays anchored at station origin) */}
+            <div
+              key={`station-pad-${code}`}
+              className="absolute z-10 flex flex-col items-center pointer-events-auto"
+              style={{
+                left: `${station.x}%`,
+                top: `${station.y}%`,
+                transform: 'translate(-50%, -50%)',
+              }}
+            >
               <div
-                className="absolute z-10 flex flex-col items-center pointer-events-auto"
+                onClick={() => handleSelectBot(code)}
+                className={`w-24 h-12 rounded-[100%] border flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative ${
+                  isSelected
+                    ? 'border-cyan-400/20 bg-black/40'
+                    : isLow
+                    ? 'border-yellow-500/70 bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.4)]'
+                    : isHovered
+                    ? 'border-white/60 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.3)]'
+                    : 'border-zinc-700/60 bg-zinc-950/60 hover:border-cyan-500/40'
+                }`}
                 style={{
-                  left: `${station.x}%`,
-                  top: `${station.y}%`,
-                  transform: 'translate(-50%, -50%)',
+                  boxShadow: !isSelected
+                    ? `0 0 14px ${isLow ? 'rgba(234, 179, 8, 0.35)' : meta.glowColor}`
+                    : undefined,
                 }}
               >
-                <div
-                  onClick={() => handleSelectBot(code)}
-                  className={`w-24 h-12 rounded-[100%] border flex flex-col items-center justify-center cursor-pointer transition-all duration-300 relative ${
-                    isDocked
-                      ? 'border-cyan-400/20 bg-black/40'
-                      : isLow
-                      ? 'border-yellow-500/70 bg-yellow-500/10 shadow-[0_0_15px_rgba(234,179,8,0.4)]'
-                      : isHovered
-                      ? 'border-white/60 bg-white/10 shadow-[0_0_15px_rgba(255,255,255,0.3)]'
-                      : 'border-zinc-700/60 bg-zinc-950/60 hover:border-cyan-500/40'
-                  }`}
-                  style={{
-                    boxShadow: !isDocked ? `0 0 14px ${isLow ? 'rgba(234, 179, 8, 0.35)' : meta.glowColor}` : undefined,
-                  }}
+                <span
+                  className="text-[9px] font-bold font-mono tracking-wider"
+                  style={{ color: isLow ? '#facc15' : meta.colorLight }}
                 >
-                  <span
-                    className="text-[9px] font-bold font-mono tracking-wider"
-                    style={{ color: isLow ? '#facc15' : meta.colorLight }}
-                  >
-                    PAD [{code}]
-                  </span>
-                </div>
-
-                {/* Station Info Sub-bar */}
-                <div className="mt-2 text-center pointer-events-none">
-                  <div className="text-[10px] font-bold text-white flex items-center justify-center gap-1">
-                    <span>{meta.name.replace(' Agent', '')}</span>
-                    {isLow && (
-                      <span title="Knowledge < 30%" className="text-yellow-400 text-xs">
-                        ⚠️
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[9px] text-zinc-500 font-mono">
-                    {stat.count} rules • {stat.percentage}%
-                  </div>
-                </div>
+                  PAD [{code}]
+                </span>
               </div>
 
-              {/* Requirement 2: Living Wandering Bot Sprite (Pacing around station) */}
-              {!isDocked ? (
+              {/* Station Info Sub-bar */}
+              <div className="mt-2 text-center pointer-events-none">
+                <div className="text-[10px] font-bold text-white flex items-center justify-center gap-1">
+                  <span>{meta.name.replace(' Agent', '')}</span>
+                  {isLow && (
+                    <span title="Knowledge < 30%" className="text-yellow-400 text-xs">
+                      ⚠️
+                    </span>
+                  )}
+                </div>
+                <div className="text-[9px] text-zinc-500 font-mono">
+                  {stat.count} rules • {stat.percentage}%
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* 7. REQUIREMENTS 2 & 3: PERSISTENT LIVING BOTS (Fluid Framer Motion Springs) */}
+        {ALL_AGENT_CODES.map((code, idx) => {
+          const station = STATION_COORDINATES[code];
+          const stat = statsMap[code];
+          const isSelected = selectedAgent === code;
+          const isReturning = returningAgent === code;
+          const isWandering = !isSelected && !isReturning;
+          const isLow = stat.isLowKnowledge;
+          const isWorking = isChatLoading && isSelected;
+
+          // Home base in pixels
+          const baseX = (station.x / 100) * arenaDimensions.width;
+          const baseY = (station.y / 100) * arenaDimensions.height;
+
+          // Target X & Y (Center vs Returning to Base vs Idle Wandering)
+          const targetX = isSelected
+            ? centerPixelX
+            : isReturning
+            ? baseX
+            : baseX + (wanderOffsets[code]?.x || 0);
+
+          const targetY = isSelected
+            ? centerPixelY
+            : isReturning
+            ? baseY
+            : baseY + (wanderOffsets[code]?.y || 0);
+
+          return (
+            <motion.div
+              key={`living-bot-${code}`}
+              animate={{
+                x: targetX,
+                y: targetY,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 50,
+                damping: 15,
+              }}
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                transform: 'translate(-50%, -50%)',
+              }}
+              className="z-20 flex flex-col items-center pointer-events-auto cursor-pointer"
+              onClick={() => handleSelectBot(code)}
+              onMouseEnter={() => setHoveredBotCode(code)}
+              onMouseLeave={() => setHoveredBotCode(null)}
+            >
+              <div className="relative flex flex-col items-center">
+                {/* Working State: Floating Thinking Indicator when AI is Generating */}
+                {isWorking && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8, y: 5 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-[10px] font-mono text-cyan-300 flex items-center gap-1 shadow-[0_0_12px_rgba(0,255,255,0.6)] z-30 pointer-events-none"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                    <span>thinking...</span>
+                  </motion.div>
+                )}
+
+                {/* Staggered Floating / Bobbing Effect (Faster when working) */}
                 <motion.div
-                  animate={{
-                    left: `${botX}%`,
-                    top: `${botY}%`,
-                  }}
+                  animate={{ y: [0, -6, 0] }}
                   transition={{
-                    duration: 3.5,
+                    repeat: Infinity,
+                    duration: isWorking ? 0.7 : 2.2 + (idx % 4) * 0.25,
+                    delay: idx * 0.2,
                     ease: 'easeInOut',
                   }}
-                  className="absolute z-20 flex flex-col items-center pointer-events-auto"
-                  style={{
-                    transform: 'translate(-50%, -50%)',
-                  }}
-                  onMouseEnter={() => setHoveredBotCode(code)}
-                  onMouseLeave={() => setHoveredBotCode(null)}
                 >
-                  <div className="relative -top-6 flex flex-col items-center">
-                    <motion.div
-                      layoutId={`bot-${code}`}
-                      onClick={() => handleSelectBot(code)}
-                      // Staggered floating effect
-                      animate={{ y: [0, -6, 0] }}
-                      transition={{
-                        repeat: Infinity,
-                        duration: 2.2 + (idx % 4) * 0.25,
-                        delay: idx * 0.2,
-                        ease: 'easeInOut',
-                      }}
-                    >
-                      <PixelBot
-                        code={code}
-                        size={60}
-                        knowledge={stat.percentage}
-                        health={stat.health}
-                        isSelected={false}
-                        isHovered={isHovered}
-                        isWalking={false}
-                        isLowKnowledgeOverride={isLow}
-                        bobDelay={idx}
-                        showNameTag={true}
-                        showStats={true}
-                        showHealthBar={true}
-                      />
-                    </motion.div>
-                  </div>
+                  <PixelBot
+                    code={code}
+                    size={isSelected ? 72 : 60}
+                    knowledge={stat.percentage}
+                    health={stat.health}
+                    isSelected={isSelected}
+                    isHovered={hoveredBotCode === code}
+                    isWalking={isReturning}
+                    isLowKnowledgeOverride={isLow}
+                    bobDelay={idx}
+                    showNameTag={true}
+                    showStats={true}
+                    showHealthBar={true}
+                  />
                 </motion.div>
-              ) : null}
-            </React.Fragment>
+              </div>
+            </motion.div>
           );
         })}
 
@@ -837,18 +886,21 @@ export default function PixelAgentHQPage() {
             <Sparkles className="w-3.5 h-3.5" />
             <span>SPACE STATION HQ:</span>
           </span>
-          <span>• Click any wandering Bot to dock &amp; open Chat Drawer</span>
-          <span>• Yellow flashing eyes = Knowledge &lt; 30% alert</span>
-          <span>• Live dynamic tethers stream packets into Mainframe</span>
+          <span>• Click any living Bot to dock &amp; open Chat Drawer</span>
+          <span>• Esc to close terminal &amp; smoothly return bot to base</span>
+          <span>• Spring-physics movement with real-time dynamic tethers</span>
         </div>
 
-        {/* Requirement 1: Small Floating "Toggle Terminal" Button (Bottom Right) */}
+        {/* Floating "Toggle Terminal" Button (Bottom Right) */}
         <button
           onClick={() => {
             if (isTerminalOpen) {
-              handleUndockBot();
+              handleCloseTerminal();
+            } else if (selectedAgent) {
+              setIsTerminalOpen(true);
             } else {
-              handleSelectBot(selectedBotCode || 'PM');
+              // Open terminal drawer in standby mode WITHOUT ghost-selecting a bot
+              setIsTerminalOpen(true);
             }
           }}
           className="fixed bottom-5 right-5 z-30 px-3.5 py-2.5 rounded-xl bg-[#081124]/90 hover:bg-[#0c1833] border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,255,0.25)] backdrop-blur-md transition-all cursor-pointer group"
@@ -856,17 +908,17 @@ export default function PixelAgentHQPage() {
         >
           <Terminal className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
           <span>{isTerminalOpen ? 'Close Terminal' : 'Open Terminal'}</span>
-          {selectedBotCode && (
+          {selectedAgent && (
             <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">
-              {selectedBotCode}
+              {selectedAgent}
             </span>
           )}
         </button>
       </main>
 
-      {/* Requirement 1: SLIDE-OUT COLLAPSIBLE TERMINAL DRAWER (Framer Motion) */}
+      {/* 8. SLIDE-OUT COLLAPSIBLE TERMINAL DRAWER (Framer Motion) */}
       <AnimatePresence>
-        {isTerminalOpen && activeBotMeta && selectedBotCode && (
+        {isTerminalOpen && (
           <motion.div
             key="terminal-drawer"
             initial={{ x: '100%', opacity: 0 }}
@@ -875,171 +927,209 @@ export default function PixelAgentHQPage() {
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
             className="fixed top-[61px] right-0 bottom-0 w-full sm:w-[480px] xl:w-[520px] bg-[#070d1d]/95 backdrop-blur-xl border-l border-cyan-500/30 flex flex-col z-40 shadow-[-12px_0_35px_rgba(0,0,0,0.85)] max-h-[calc(100vh-61px)] overflow-hidden"
           >
-            {/* Terminal Chat Header */}
-            <div className="p-4 border-b border-cyan-500/25 bg-[#091126] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <div
-                  className="p-1.5 rounded-lg border flex items-center justify-center"
-                  style={{
-                    borderColor: activeBotMeta.color,
-                    backgroundColor: `${activeBotMeta.color}20`,
-                  }}
-                >
-                  <PixelBot
-                    code={selectedBotCode}
-                    size={36}
-                    knowledge={statsMap[selectedBotCode].percentage}
-                    health={statsMap[selectedBotCode].health}
-                    isLowKnowledgeOverride={statsMap[selectedBotCode].isLowKnowledge}
-                    showNameTag={false}
-                  />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-sm font-bold text-white tracking-wide">
-                      {activeBotMeta.name}
-                    </h2>
-                    <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border ${activeBotMeta.badgeBg}`}>
-                      {activeBotMeta.code}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-zinc-400">
-                    {activeBotMeta.role} • {activeBotMeta.invariants.split(':')[0]}
-                  </p>
-                </div>
-              </div>
-
-              {/* Undock / Close Button */}
-              <button
-                onClick={handleUndockBot}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-mono border border-zinc-700 flex items-center gap-1.5 transition-all cursor-pointer"
-                title="Undock bot and close terminal (Esc)"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Close</span>
-              </button>
-            </div>
-
-            {/* Bot Vital Telemetry Bar */}
-            <div className="px-4 py-2 bg-black/40 border-b border-zinc-800 flex items-center justify-between text-[11px] font-mono text-zinc-400 shrink-0">
-              <div className="flex items-center gap-2">
-                <span>Knowledge:</span>
-                <span
-                  className={`font-bold ${
-                    statsMap[selectedBotCode].isLowKnowledge
-                      ? 'text-yellow-400 animate-pulse'
-                      : 'text-cyan-400'
-                  }`}
-                >
-                  {statsMap[selectedBotCode].percentage}%
-                </span>
-                <span>•</span>
-                <span>Health:</span>
-                <span className="text-emerald-400 font-bold">
-                  {statsMap[selectedBotCode].health}%
-                </span>
-              </div>
-              <div className="text-[10px] text-zinc-500">
-                Target: /api/chat?contextNode={selectedBotCode}
-              </div>
-            </div>
-
-            {/* Quick Invariant Prompt Shortcuts */}
-            <div className="px-4 py-2 bg-[#081022] border-b border-zinc-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
-              <button
-                onClick={() => handleSendChat(activeBotMeta.samplePrompt)}
-                className="px-2.5 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
-              >
-                ⚡ {activeBotMeta.samplePrompt.slice(0, 36)}...
-              </button>
-              <button
-                onClick={() =>
-                  handleSendChat(`List your top invariants and explain why they must not be violated.`)
-                }
-                className="px-2.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
-              >
-                📜 Core Invariants
-              </button>
-              <button
-                onClick={() =>
-                  handleSendChat(`/implement a minimal reference implementation enforcing ${activeBotMeta.code} rules`)
-                }
-                className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
-              >
-                🚀 /implement
-              </button>
-            </div>
-
-            {/* Chat Message History Stream */}
-            <div className="flex-1 overflow-y-auto max-h-[calc(100vh-250px)] p-4 space-y-4">
-              {(chatMessages[selectedBotCode] || []).map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${
-                    msg.role === 'user' ? 'items-end' : 'items-start'
-                  }`}
-                >
-                  <div className="text-[10px] font-mono text-zinc-500 mb-1 flex items-center gap-1.5">
-                    <span>{msg.role === 'user' ? 'Architect / QA' : activeBotMeta.name}</span>
-                    <span>•</span>
-                    <span>{msg.timestamp}</span>
-                  </div>
-
-                  <div
-                    className={`max-w-[90%] p-3.5 rounded-xl text-xs leading-relaxed font-mono ${
-                      msg.role === 'user'
-                        ? 'bg-cyan-600/20 text-cyan-100 border border-cyan-500/40 rounded-br-none shadow-[0_0_10px_rgba(0,255,255,0.15)]'
-                        : 'bg-[#091329] text-slate-200 border border-zinc-800 rounded-bl-none shadow-md'
-                    }`}
-                  >
-                    <ChatMessageContent text={msg.text} role={msg.role} />
-                    {msg.role === 'assistant' && (
-                      <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
-                        <span>
-                          [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.5-flash'}]
+            {selectedAgent && activeBotMeta ? (
+              // Active Docked Bot Terminal View
+              <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden">
+                {/* Terminal Chat Header */}
+                <div className="p-4 border-b border-cyan-500/25 bg-[#091126] flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="p-1.5 rounded-lg border flex items-center justify-center"
+                      style={{
+                        borderColor: activeBotMeta.color,
+                        backgroundColor: `${activeBotMeta.color}20`,
+                      }}
+                    >
+                      <PixelBot
+                        code={selectedAgent}
+                        size={36}
+                        knowledge={statsMap[selectedAgent].percentage}
+                        health={statsMap[selectedAgent].health}
+                        isLowKnowledgeOverride={statsMap[selectedAgent].isLowKnowledge}
+                        showNameTag={false}
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-sm font-bold text-white tracking-wide">
+                          {activeBotMeta.name}
+                        </h2>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border ${activeBotMeta.badgeBg}`}>
+                          {activeBotMeta.code}
                         </span>
                       </div>
-                    )}
+                      <p className="text-[11px] text-zinc-400">
+                        {activeBotMeta.role} • {activeBotMeta.invariants.split(':')[0]}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Undock / Close Button */}
+                  <button
+                    onClick={handleCloseTerminal}
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-mono border border-zinc-700 flex items-center gap-1.5 transition-all cursor-pointer"
+                    title="Undock bot and close terminal (Esc)"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Close</span>
+                  </button>
+                </div>
+
+                {/* Bot Vital Telemetry Bar */}
+                <div className="px-4 py-2 bg-black/40 border-b border-zinc-800 flex items-center justify-between text-[11px] font-mono text-zinc-400 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span>Knowledge:</span>
+                    <span
+                      className={`font-bold ${
+                        statsMap[selectedAgent].isLowKnowledge
+                          ? 'text-yellow-400 animate-pulse'
+                          : 'text-cyan-400'
+                      }`}
+                    >
+                      {statsMap[selectedAgent].percentage}%
+                    </span>
+                    <span>•</span>
+                    <span>Health:</span>
+                    <span className="text-emerald-400 font-bold">
+                      {statsMap[selectedAgent].health}%
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-zinc-500">
+                    Target: /api/chat?contextNode={selectedAgent}
                   </div>
                 </div>
-              ))}
 
-              {isChatLoading && (
-                <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 p-3 bg-[#091329] border border-cyan-500/30 rounded-xl w-fit">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Querying {activeBotMeta.name} neural bus...</span>
+                {/* Quick Invariant Prompt Shortcuts */}
+                <div className="px-4 py-2 bg-[#081022] border-b border-zinc-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+                  <button
+                    onClick={() => handleSendChat(activeBotMeta.samplePrompt)}
+                    className="px-2.5 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                  >
+                    ⚡ {activeBotMeta.samplePrompt.slice(0, 36)}...
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSendChat(`List your top invariants and explain why they must not be violated.`)
+                    }
+                    className="px-2.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                  >
+                    📜 Core Invariants
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleSendChat(`/implement a minimal reference implementation enforcing ${activeBotMeta.code} rules`)
+                    }
+                    className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                  >
+                    🚀 /implement
+                  </button>
                 </div>
-              )}
 
-              <div ref={chatBottomRef} />
-            </div>
+                {/* Chat Message History Stream */}
+                <div className="flex-1 overflow-y-auto max-h-[calc(100vh-250px)] p-4 space-y-4">
+                  {(chatMessages[selectedAgent] || []).map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex flex-col ${
+                        msg.role === 'user' ? 'items-end' : 'items-start'
+                      }`}
+                    >
+                      <div className="text-[10px] font-mono text-zinc-500 mb-1 flex items-center gap-1.5">
+                        <span>{msg.role === 'user' ? 'Architect / QA' : activeBotMeta.name}</span>
+                        <span>•</span>
+                        <span>{msg.timestamp}</span>
+                      </div>
 
-            {/* Chat Prompt Input Bar */}
-            <div className="p-3 bg-[#091126] border-t border-cyan-500/20 shrink-0">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSendChat();
-                }}
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder={`Query ${activeBotMeta.name} (contextNode: ${selectedBotCode})...`}
-                  disabled={isChatLoading}
-                  className="flex-1 h-10 px-3 rounded-lg bg-black/60 border border-zinc-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono text-white placeholder-zinc-500 outline-none transition-all"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim() || isChatLoading}
-                  className="h-10 px-3.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-black font-bold text-xs transition-all flex items-center justify-center cursor-pointer shadow-[0_0_10px_rgba(0,255,255,0.3)]"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-            </div>
+                      <div
+                        className={`max-w-[90%] p-3.5 rounded-xl text-xs leading-relaxed font-mono ${
+                          msg.role === 'user'
+                            ? 'bg-cyan-600/20 text-cyan-100 border border-cyan-500/40 rounded-br-none shadow-[0_0_10px_rgba(0,255,255,0.15)]'
+                            : 'bg-[#091329] text-slate-200 border border-zinc-800 rounded-bl-none shadow-md'
+                        }`}
+                      >
+                        <ChatMessageContent text={msg.text} role={msg.role} />
+                        {msg.role === 'assistant' && (
+                          <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1 flex items-center justify-between">
+                            <span>
+                              [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.5-flash'}]
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {isChatLoading && (
+                    <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 p-3 bg-[#091329] border border-cyan-500/30 rounded-xl w-fit">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Querying {activeBotMeta.name} neural bus...</span>
+                    </div>
+                  )}
+
+                  <div ref={chatBottomRef} />
+                </div>
+
+                {/* Chat Prompt Input Bar */}
+                <div className="p-3 bg-[#091126] border-t border-cyan-500/20 shrink-0">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleSendChat();
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      placeholder={`Query ${activeBotMeta.name} (contextNode: ${selectedAgent})...`}
+                      disabled={isChatLoading}
+                      className="flex-1 h-10 px-3 rounded-lg bg-black/60 border border-zinc-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono text-white placeholder-zinc-500 outline-none transition-all"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!chatInput.trim() || isChatLoading}
+                      className="h-10 px-3.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-black font-bold text-xs transition-all flex items-center justify-center cursor-pointer shadow-[0_0_10px_rgba(0,255,255,0.3)]"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            ) : (
+              // Standby View when Drawer is opened without a selected bot
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4 shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+                  <Terminal className="w-8 h-8 animate-pulse" />
+                </div>
+                <h3 className="text-base font-bold text-white tracking-wider mb-2">
+                  TERMINAL STANDBY // SELECT AGENT
+                </h3>
+                <p className="text-xs text-zinc-400 max-w-xs leading-relaxed mb-6 font-mono">
+                  Click any of the 8 living Pixel Bots below to dock them to the central Mainframe and inspect their engineering invariants.
+                </p>
+
+                {/* Bot Quick-Select Grid */}
+                <div className="grid grid-cols-4 gap-2 w-full max-w-xs">
+                  {ALL_AGENT_CODES.map((code) => {
+                    const meta = AGENT_REGISTRY[code];
+                    return (
+                      <button
+                        key={code}
+                        onClick={() => handleSelectBot(code)}
+                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-cyan-500/40 text-xs font-mono text-zinc-300 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer"
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: meta.color }}
+                        />
+                        <span className="font-bold">{code}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
