@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getBrainData } from '../../../lib/brain-parser';
-import { findTopRules, type ScoredRuleMatch } from '../../../lib/embedder';
+import { findTopRules, loadEmbeddings, type ScoredRuleMatch } from '../../../lib/embedder';
+import {
+  classifyTierLightweight,
+  findRuleInVault,
+  type RouterTier,
+  type TierClassification,
+  type VaultRuleMatch,
+} from '../../../lib/tiered-router';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { z } from 'zod';
@@ -551,49 +558,46 @@ async function queryOpenRouter(
   return { text: content.trim(), model };
 }
 
-const CLASSIFIER_SYSTEM_PROMPT = `You are a specialized Task Routing AI for the Cortex Architecture.
-Your sole function is to analyze the user's request and classify its complexity. Choose between 'flash' (SIMPLE) or 'pro' (COMPLEX):
-1. 'flash': Fast, efficient model for simple, well-defined tasks (1-3 steps, rule lookups, single definition).
-2. 'pro': Powerful model for complex, open-ended tasks (4+ steps, strategic design, ambiguity, deep root-cause debugging).`;
+async function queryGroq(
+  prompt: string,
+  apiKey: string,
+  modelName = 'llama-3.3-70b-versatile'
+): Promise<{ text: string; model: string }> {
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  console.log(`[Cortex Chat API] Querying Groq (${modelName}) via ${url}...`);
 
-async function classifyTaskComplexity(
-  query: string,
-  apiKey: string
-): Promise<{ modelChoice: 'flash' | 'pro'; reasoning: string } | null> {
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const classifier = genAI.getGenerativeModel({
-      model: 'gemini-3.1-flash-lite',
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            reasoning: {
-              type: SchemaType.STRING,
-              description: 'A brief, step-by-step explanation for the model choice, referencing the rubric.',
-            },
-            modelChoice: {
-              type: SchemaType.STRING,
-              format: 'enum',
-              enum: ['flash', 'pro'],
-            },
-          },
-          required: ['reasoning', 'modelChoice'],
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are Cortex AI, the procedural judgment engine and 8-Agent SDLC supervisor. Respond with strict engineering rigor, adherence to invariants, and structured markdown.',
         },
-        temperature: 0.1,
-      },
-      systemInstruction: CLASSIFIER_SYSTEM_PROMPT,
-    });
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.6,
+      max_tokens: 4096,
+    }),
+  });
 
-    const res = await classifier.generateContent(query);
-    const parsed = JSON.parse(res.response.text());
-    console.log(`[Cortex Chat API] Task Classifier Decision: ${parsed.modelChoice} - ${parsed.reasoning}`);
-    return parsed;
-  } catch (err: any) {
-    console.warn('[Cortex Chat API] Task Classifier skipped or failed:', err?.message);
-    return null;
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => '');
+    throw new Error(`Groq API error [${res.status} ${res.statusText}]: ${errorText}`);
   }
+
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || '';
+  return { text: content.trim(), model: modelName };
 }
 
 export async function POST(req: Request) {
@@ -644,58 +648,100 @@ export async function POST(req: Request) {
 
     const { query, contextNode, workflowCommand, provider, source } = validation.data;
     const imageUrl = validation.data.imageUrl || undefined;
+    const hasImage = Boolean(imageUrl);
+    const workflow = detectWorkflowCommand(query, workflowCommand);
+
+    // 1. Tiered AI Router (Jev Architecture) - Lightweight Classification Check
+    const tierDecision = classifyTierLightweight(query, Boolean(workflow), hasImage);
+    console.log(
+      `[Cortex Tiered Router] Query: "${query.slice(0, 60)}" -> Tier: ${tierDecision.tier.toUpperCase()} (${tierDecision.reason})`
+    );
+
+    // 2. Tier 1 (Direct Local Lookup): $0 Cost, zero LLM latency
+    if (tierDecision.tier === 'tier1_local' && tierDecision.ruleId) {
+      const match = findRuleInVault(tierDecision.ruleId);
+      if (match) {
+        console.log(
+          `[Cortex Tiered Router] Tier 1 Hit: Serving [${match.ruleId}] from ${match.file} (Cost: $0.00, Latency: <1ms)`
+        );
+
+        const formattedText =
+          source === 'hq'
+            ? `Rule ${match.ruleId} (${match.file}): ${match.text.replace(/^[A-Z0-9_-]+:\s*/, '')}`
+            : `### Rule [${match.ruleId}]\n**Vault Source:** \`${match.file}\` (Line ${match.line})\n\n${match.text}\n\n---\n*⚡ Tier 1: Direct Local Lookup (Markdown Vault • Cost: $0.00 • Latency: <1ms)*`;
+
+        return NextResponse.json(
+          {
+            text: formattedText,
+            model: 'direct-lookup',
+            provider: 'local',
+            tier: 'tier1_local',
+            topRules: [
+              {
+                ruleId: match.ruleId,
+                file: match.file,
+                score: 1.0,
+              },
+            ],
+          },
+          { headers: CORS_HEADERS }
+        );
+      }
+    }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
+    const groqApiKey = process.env.GROQ_API_KEY;
     const nvidiaApiKey =
       process.env.NVIDIA_API_KEY ||
       process.env['NVIDIABuild-Autogen-44'] ||
       process.env.NVIDIA_KEY;
     const openrouterApiKey = process.env.OPENROUTER_API_KEY;
 
-    if (!geminiApiKey && !nvidiaApiKey && !openrouterApiKey) {
+    if (!geminiApiKey && !groqApiKey && !nvidiaApiKey && !openrouterApiKey) {
       return NextResponse.json(
         {
           error: 'No AI API key is configured in the environment.',
-          text: 'Error: Neither GEMINI_API_KEY, NVIDIA_API_KEY, nor OPENROUTER_API_KEY is configured in .env.local.',
+          text: 'Error: Neither GEMINI_API_KEY, GROQ_API_KEY, NVIDIA_API_KEY, nor OPENROUTER_API_KEY is configured in .env.local.',
         },
         { status: 500, headers: CORS_HEADERS }
       );
     }
 
-    const hasImage = Boolean(imageUrl);
     const forcedNvidia =
       hasImage || // Prioritize Nemotron Omni Vision for multimodal attachments
       provider === 'nvidia' ||
       process.env.AI_PROVIDER === 'nvidia' ||
-      (!geminiApiKey && Boolean(nvidiaApiKey));
+      (!geminiApiKey && !groqApiKey && Boolean(nvidiaApiKey));
 
     const forcedOpenRouter =
       provider === 'openrouter' ||
       process.env.AI_PROVIDER === 'openrouter' ||
-      (!geminiApiKey && !nvidiaApiKey && Boolean(openrouterApiKey));
+      (!geminiApiKey && !groqApiKey && !nvidiaApiKey && Boolean(openrouterApiKey));
 
-    // Dynamic Task Routing & Classification
-    const workflow = detectWorkflowCommand(query, workflowCommand);
-    let complexity: 'flash' | 'pro' = 'flash';
-    if (workflow || hasImage) {
-      complexity = 'pro';
-    } else if (geminiApiKey) {
-      const classification = await classifyTaskComplexity(query, geminiApiKey);
-      if (classification?.modelChoice) {
-        complexity = classification.modelChoice;
-      }
+    const forcedGroq =
+      provider === 'groq' ||
+      process.env.AI_PROVIDER === 'groq';
+
+    // Tier-based Model Selection
+    let modelChain: string[];
+    if (tierDecision.tier === 'tier3_heavy') {
+      // Tier 3 (Heavy Model): Route to gemini-4-argon with robust fallback chain
+      const baseTier3 = ['gemini-4-argon', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+      modelChain = process.env.AI_MODEL
+        ? Array.from(new Set(['gemini-4-argon', process.env.AI_MODEL, ...baseTier3]))
+        : baseTier3;
+    } else {
+      // Tier 2 (Fast Model): Route to gemini-2.5-flash or llama-3.3-70b via Groq
+      const baseTier2 = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+      modelChain = process.env.AI_MODEL
+        ? Array.from(new Set(['gemini-2.5-flash', process.env.AI_MODEL, ...baseTier2]))
+        : baseTier2;
     }
-
-    // 1. Define Fallback Chain: ['gemini-3.5-flash', 'gemini-3.1-flash-lite']
-    const baseChain = ['gemini-3.5-flash', 'gemini-3.1-flash-lite'];
-    const modelChain = process.env.AI_MODEL
-      ? Array.from(new Set([process.env.AI_MODEL, ...baseChain]))
-      : baseChain;
 
     console.log(
       `[Cortex Chat API] Routing mode: ${
-        forcedNvidia ? 'NVIDIA NIM' : forcedOpenRouter ? 'OpenRouter' : 'Gemini Chain + Failover'
-      } [Complexity: ${complexity.toUpperCase()}]`
+        forcedNvidia ? 'NVIDIA NIM' : forcedOpenRouter ? 'OpenRouter' : forcedGroq ? 'Groq' : 'Gemini Chain + Failover'
+      } [Tier: ${tierDecision.tier.toUpperCase()}] Target models: ${modelChain.join(', ')}`
     );
 
     let prompt: string;
@@ -769,6 +815,30 @@ ${query}`;
     let succeededProvider = '';
     let lastError: any = null;
 
+    // Direct Groq execution if explicitly targeted or in Tier 2 with Groq provider
+    if ((forcedGroq || (tierDecision.tier === 'tier2_fast' && provider === 'groq')) && groqApiKey) {
+      try {
+        console.log(`[Cortex Chat API] Executing direct Groq request: llama-3.3-70b-versatile...`);
+        const groqRes = await queryGroq(prompt, groqApiKey, 'llama-3.3-70b-versatile');
+        return NextResponse.json(
+          {
+            text: groqRes.text,
+            model: groqRes.model,
+            provider: 'groq',
+            tier: tierDecision.tier,
+            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
+          },
+          { headers: CORS_HEADERS }
+        );
+      } catch (err: any) {
+        lastError = err;
+        console.warn('[Cortex Chat API] Direct Groq request failed:', err?.message);
+        if (!geminiApiKey && !nvidiaApiKey && !openrouterApiKey) {
+          throw err;
+        }
+      }
+    }
+
     // Direct NVIDIA NIM execution if explicitly targeted, image attached, or if Gemini key is absent
     if (forcedNvidia && nvidiaApiKey) {
       try {
@@ -779,6 +849,7 @@ ${query}`;
             text: nimRes.text,
             model: nimRes.model,
             provider: 'nvidia',
+            tier: tierDecision.tier,
             topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
           },
           { headers: CORS_HEADERS }
@@ -802,6 +873,7 @@ ${query}`;
             text: orRes.text,
             model: orRes.model,
             provider: 'openrouter',
+            tier: tierDecision.tier,
             topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
           },
           { headers: CORS_HEADERS }
@@ -878,6 +950,23 @@ ${query}`;
       }
     }
 
+    // Tier 2 Groq Failover: If Gemini failed in Tier 2 and Groq API key is present
+    if (!succeededText && groqApiKey && tierDecision.tier === 'tier2_fast') {
+      console.log(
+        `[Cortex Chat API] Gemini chain exhausted for Tier 2. Activating Groq failover (llama-3.3-70b-versatile)...`
+      );
+      try {
+        const groqRes = await queryGroq(prompt, groqApiKey, 'llama-3.3-70b-versatile');
+        succeededText = groqRes.text;
+        succeededModel = groqRes.model;
+        succeededProvider = 'groq';
+        console.log('[Cortex Chat API] Groq Tier 2 failover succeeded!');
+      } catch (groqErr: any) {
+        lastError = groqErr;
+        console.warn('[Cortex Chat API] Groq Tier 2 failover failed:', groqErr?.message);
+      }
+    }
+
     // Secondary Failover: If Gemini failed / exhausted retries, try NVIDIA NIM
     if (!succeededText && nvidiaApiKey) {
       console.log(
@@ -929,6 +1018,7 @@ ${query}`;
         text: succeededText,
         model: succeededModel,
         provider: succeededProvider,
+        tier: tierDecision.tier,
         topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
       },
       { headers: CORS_HEADERS }
