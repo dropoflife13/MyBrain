@@ -8,6 +8,7 @@ import {
   Activity,
   ArrowRight,
   BookOpen,
+  Bot,
   Brain,
   Check,
   ChevronDown,
@@ -217,6 +218,13 @@ export default function LandingPage() {
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Assess (L-01)</span>
+            </Link>
+            <Link
+              href="/hq"
+              className="hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5 font-semibold text-violet-600 dark:text-violet-400"
+            >
+              <Bot className="w-3.5 h-3.5" />
+              <span>Pixel HQ</span>
             </Link>
             <a href="#faq" className="hidden xl:inline-block hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               FAQ

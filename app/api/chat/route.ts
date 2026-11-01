@@ -42,6 +42,24 @@ function resolveFilePath(relPath: string): string | null {
 }
 
 const FILE_MAP: Record<string, string> = {
+  // Short agent codes
+  DB: 'agents/dbaagent.md',
+  SEC: 'agents/securityagent.md',
+  UX: 'agents/uiuxagent.md',
+  PM: 'agents/productmanageragent.md',
+  SD: 'agents/systemsdesignagent.md',
+  IR: 'agents/integrationagent.md',
+  GR: 'agents/growthagent.md',
+  RS: 'agents/researchagent.md',
+  db: 'agents/dbaagent.md',
+  sec: 'agents/securityagent.md',
+  ux: 'agents/uiuxagent.md',
+  pm: 'agents/productmanageragent.md',
+  sd: 'agents/systemsdesignagent.md',
+  ir: 'agents/integrationagent.md',
+  gr: 'agents/growthagent.md',
+  rs: 'agents/researchagent.md',
+  // Agent file ids
   dbaagent: 'agents/dbaagent.md',
   securityagent: 'agents/securityagent.md',
   uiuxagent: 'agents/uiuxagent.md',
@@ -49,6 +67,7 @@ const FILE_MAP: Record<string, string> = {
   systemsdesignagent: 'agents/systemsdesignagent.md',
   integrationagent: 'agents/integrationagent.md',
   growthagent: 'agents/growthagent.md',
+  researchagent: 'agents/researchagent.md',
   cybersec: 'brain/02-domains/cybersec.md',
   solutions: 'brain/02-domains/solutions.md',
   'business-analysis': 'brain/02-domains/business-analysis.md',
@@ -63,7 +82,6 @@ const FILE_MAP: Record<string, string> = {
   DIGEST: 'brain/07-meta/DIGEST.md',
   'SIX-COMMANDS': 'brain/08-workflows/SIX-COMMANDS.md',
   'six-commands': 'brain/08-workflows/SIX-COMMANDS.md',
-  researchagent: 'agents/researchagent.md',
   psychology: 'brain/02-domains/psychology.md',
   philosophy: 'brain/02-domains/philosophy.md',
   rhetoric: 'brain/02-domains/rhetoric.md',

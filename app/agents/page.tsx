@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
+  Bot,
   Cpu,
   Database,
   ExternalLink,
@@ -176,6 +177,13 @@ export default function AgentsPage() {
         {/* Right CTA + Theme Toggle */}
         <div className="flex items-center gap-2.5">
           <ThemeToggle />
+          <Link
+            href="/hq"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/30 text-xs font-mono transition-all shadow-xl backdrop-blur-xl"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Pixel HQ</span>
+          </Link>
           <Link
             href="/start"
             className="hidden md:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-200 border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl backdrop-blur-xl"

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   BookOpen,
+  Bot,
   Check,
   Compass,
   Cpu,
@@ -137,6 +138,17 @@ export default function CommandPalette({
       icon: <Sparkles className="w-4 h-4 text-amber-400" />,
       href: '/assess',
       keywords: ['assess', 'quiz', 'test', 'l-01', 'launcher', 'elicitation', 'blank'],
+    });
+
+    items.push({
+      id: 'nav-hq',
+      title: 'Pixel Agent HQ (2D Operations Center)',
+      subtitle: '2D retro command center overseeing the 8 Pixel Bots, Tethers & Mainframe',
+      category: 'navigation',
+      badge: 'NAV • PIXEL HQ',
+      icon: <Bot className="w-4 h-4 text-violet-400" />,
+      href: '/hq',
+      keywords: ['hq', 'pixel', 'bots', 'agents', 'room', 'command', 'center', '2d', 'operations', 'qa'],
     });
 
     // 2. Map nodes (Agents + Document Nodes + Synapses)

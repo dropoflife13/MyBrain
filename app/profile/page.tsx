@@ -9,6 +9,7 @@ import {
   ArrowLeft,
   Award,
   BookOpen,
+  Bot,
   Brain,
   CheckCircle2,
   Coins,
@@ -251,6 +252,14 @@ export default function ProfilePage() {
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-cyan-500' : ''}`} />
             <span className="hidden md:inline">Sync</span>
           </button>
+
+          <Link
+            href="/hq"
+            className="h-9 px-3 rounded-xl bg-violet-600/15 hover:bg-violet-600/25 text-violet-700 dark:text-violet-300 border border-violet-500/30 text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(168,85,247,0.2)]"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Pixel HQ</span>
+          </Link>
 
           <Link
             href="/assess"

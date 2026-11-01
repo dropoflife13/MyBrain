@@ -6,6 +6,7 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
+  Bot,
   Check,
   ChevronDown,
   ChevronRight,
@@ -726,6 +727,16 @@ export default function Home() {
 
         {/* Right: Matrix + Search + Vault Switcher + Theme + Auto-Spin */}
         <div className="flex items-center justify-end gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          <Tooltip content="Open 2D Pixel Agent Operations Center" side="bottom">
+            <Link
+              href="/hq"
+              className="h-10 flex items-center justify-center gap-1.5 px-2.5 sm:px-3 rounded-xl bg-white/90 dark:bg-[#09090b]/85 hover:bg-slate-100 dark:hover:bg-zinc-800 text-slate-800 dark:text-zinc-300 hover:text-violet-600 dark:hover:text-violet-400 backdrop-blur-xl border border-slate-300 dark:border-white/10 text-xs font-mono transition-all shadow-xl cursor-pointer shrink-0"
+            >
+              <Bot className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+              <span className="hidden lg:inline">Pixel HQ</span>
+            </Link>
+          </Tooltip>
+
           <Tooltip content="Brain ↔ 8 Agent matrix & resolved contradictions" side="bottom">
             <button
               type="button"
@@ -854,6 +865,27 @@ export default function Home() {
               </div>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-700 dark:text-[#00ffff] font-semibold border border-cyan-500/20 shrink-0">
                 View →
+              </span>
+            </Link>
+
+            {/* 2. Sleek Full-Width Primary Action: Pixel Agent HQ */}
+            <Link
+              href="/hq"
+              className="w-full px-3 py-2.5 rounded-lg flex items-center justify-between text-xs font-mono transition-all cursor-pointer bg-slate-100 dark:bg-white/5 hover:bg-slate-200/80 dark:hover:bg-white/10 border border-slate-200 dark:border-white/10 hover:border-violet-500/40 dark:hover:border-violet-400/35 text-slate-800 dark:text-zinc-200 hover:text-violet-700 dark:hover:text-violet-400 shadow-sm group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1 rounded-md bg-violet-500/10 text-violet-600 dark:text-violet-400 group-hover:scale-105 transition-transform shrink-0">
+                  <Bot className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex flex-col text-left leading-tight min-w-0">
+                  <span className="font-bold truncate">Pixel Agent HQ</span>
+                  <span className="text-[10px] text-slate-500 dark:text-zinc-400 truncate font-normal">
+                    2D Operations Room
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-700 dark:text-violet-400 font-semibold border border-violet-500/20 shrink-0">
+                Enter →
               </span>
             </Link>
 
