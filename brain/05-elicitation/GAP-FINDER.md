@@ -7,16 +7,45 @@ status: active
 
 Owns coverage scoring, Self-Map deltas, next-session choice, and the contradiction queue.
 
-## Coverage matrix (Updated after S-03 Cortex v2.4 Excavation)
+## Coverage matrix (Updated after S-03 Cortex v2.4 Excavation & 29-Domain Anti-Hallucination Audit)
 | Domain | Active rules | Sub-area coverage | Red flags | Patterns | Avg conf | Status |
 |---|---|---|---|---|---|---|
+| **Engineering Core** | | | | | | |
 | cybersec (CS) | 7 (`CS-01..07`) | 6 / 6 (100%) | 4 (`RF-01, 03, 04`) | 1 (`P-01`) | 4.3 | ok |
 | solutions (SO) | 8 (`SO-01..08`) | 6 / 6 (100%) | 1 (`RF-03`) | 2 (`P-02, 05`) | 4.4 | ok |
 | business-analysis (BA) | 7 (`BA-01..07`) | 6 / 6 (100%) | 1 (`RF-04`) | 3 (`P-01, 03, 05`) | 4.7 | ok |
 | ui-frontend (UI) | 9 (`UI-01..09`) | 6 / 6 (100%) | 7 (`RF-02, 05..10`) | 2 (`P-02, 03`) | 4.9 | ok |
+| authorization (AUTH) | 5 (`AUTH-01..05`) | 5 / 5 (100%) | — | — | 4.0 | ok |
+| arbiter (ARB) | 4 (`ARB-01..04`) | 4 / 4 (100%) | — | — | 5.0 | ok |
+| empathy-personas (PM) | Reference framework | 4 / 4 (100%) | — | — | 5.0 | ok |
 | cross (H / OP / TA) | 6 `H` + 15 `OP` + 14 `TA` | — | 10 total `RF` | 5 total `P` | 4.9 | rich |
+| **Humanities & Enterprise** | | | | | | |
+| psychology (PSY) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| philosophy (PHI) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| rhetoric (RHE) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| literature (LIT) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| art (ART) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| education (EDU) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| marketing (MKT) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| management (MGT) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| **Global & Society** | | | | | | |
+| economy (ECO) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| geopolitics (GEO) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| health (HLT) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| law (LAW) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| politics (POL) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| environment (ENV) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| history (HIS) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| crypto (CRY) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| finance (FIN) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| news (NWS) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| business (BIZ) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| **Frontier & Science** | | | | | | |
+| data-science (DS) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| science (SCI) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
+| medicine (MED) | 0 rules | 0 / 6 (0%) | 0 | 0 | — | quarantined |
 
-Thresholds: **thin** < 5 active rules or avg conf < 3 · **ok** 5–12 rules and avg ≥ 3 · **rich** > 12 rules, avg ≥ 4, ≥ 2 red flags.
+Thresholds: **thin** < 5 active rules or avg conf < 3 · **ok** 5–12 rules and avg ≥ 3 · **rich** > 12 rules, avg ≥ 4, ≥ 2 red flags · **quarantined** 0 rules (awaiting elicitation; `RS-03` circuit breaker active).
 
 ## Self-Map deltas
 _All 24 domain sub-areas (6 per domain × 4 domains) plus Cortex v2.4 WebGL/Gate invariants are calibrated at `Self: 3 | Demonstrated: 3` (`S-01`, `S-02`, `S-03`, `A-01..A-06`)._

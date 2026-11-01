@@ -141,6 +141,8 @@ export async function GET() {
       isHighConfidence: a.isHighConfidence,
       isOverclocked: a.isOverclocked,
       isUnverified: a.isUnverified,
+      isUnseeded: a.isUnseeded,
+      status: a.status,
       percentageText: a.percentageText,
       fractionText: a.fractionText,
       rawFractionText: a.rawFractionText,

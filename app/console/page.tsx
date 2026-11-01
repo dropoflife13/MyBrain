@@ -1153,7 +1153,7 @@ export default function Home() {
             >
               <span>Show All</span>
               <span className="text-[10px] text-slate-500 dark:text-zinc-500">
-                {cortexStats.totalAgents || cortexStats.agentList.length} gates
+                {cortexStats.seededAgentList ? cortexStats.seededAgentList.length : (cortexStats.totalAgents || cortexStats.agentList.length)} active gates
               </span>
             </button>
 
@@ -1162,7 +1162,8 @@ export default function Home() {
             {/* Collapsible Clusters: Dynamically mapped from cortexStats.clusters */}
             {Object.entries(cortexStats.clusters).map(([clusterId, cluster]) => {
               const isCollapsed = collapsedClusters[clusterId] ?? (clusterId !== 'Engineering');
-              const clusterAgents = cluster.agents;
+              const clusterAgents = cluster.seededAgents || cluster.agents.filter((a) => !a.isUnseeded);
+              if (clusterAgents.length === 0) return null;
               const clusterStat = cluster;
 
               return (
@@ -1275,6 +1276,66 @@ export default function Home() {
                 </div>
               );
             })}
+
+            {/* Quarantined Draft Domains (Awaiting Elicitation) Accordion */}
+            {cortexStats.unseededAgentList && cortexStats.unseededAgentList.length > 0 && (() => {
+              const isQuarantineCollapsed = collapsedClusters['QuarantinedDrafts'] ?? true;
+              return (
+                <div className="space-y-1.5 pt-3 border-t border-dashed border-slate-300 dark:border-white/10 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleCluster('QuarantinedDrafts')}
+                    className="w-full flex items-center justify-between px-2.5 py-2 text-[11px] font-bold tracking-wider uppercase text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {isQuarantineCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      )}
+                      <span className="truncate">Quarantined Draft Domains</span>
+                    </div>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-semibold shrink-0 ml-1">
+                      {cortexStats.unseededAgentList.length}
+                    </span>
+                  </button>
+
+                  {!isQuarantineCollapsed && (
+                    <div className="space-y-1 pl-1">
+                      <div className="px-2 py-1 text-[10px] text-slate-400 dark:text-zinc-500 italic leading-snug">
+                        0 verified rules. Isolated to prevent RAG hallucinations.
+                      </div>
+                      {cortexStats.unseededAgentList.map((agent) => {
+                        const isActive = activeGate === agent.code;
+                        return (
+                          <Tooltip key={agent.id || agent.code} content={`${agent.fullName || agent.label} (Quarantined • 0 rules)`} side="right" className="w-full">
+                            <button
+                              type="button"
+                              onClick={() => setActiveGate(isActive ? null : (agent.code || null))}
+                              aria-pressed={isActive}
+                              className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs transition-all cursor-pointer border border-dashed opacity-65 grayscale hover:grayscale-0 hover:opacity-100 ${
+                                isActive
+                                  ? 'border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold'
+                                  : 'border-slate-300 dark:border-white/10 text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-white/5'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-zinc-600 shrink-0" />
+                                <span className="font-mono font-bold text-[10px]">{agent.code}</span>
+                                <span className="truncate text-[11px] text-slate-600 dark:text-zinc-300">{agent.label}</span>
+                              </div>
+                              <span className="text-[9px] font-mono px-1 rounded bg-black/5 dark:bg-white/5 text-slate-400 dark:text-zinc-500 shrink-0">
+                                0 rules
+                              </span>
+                            </button>
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </nav>
 
           <div className="px-5 py-3 border-t border-slate-200 dark:border-white/10 text-[10px] text-slate-500 dark:text-zinc-500">

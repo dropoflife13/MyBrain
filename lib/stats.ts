@@ -417,6 +417,8 @@ export interface StatMetric {
   isHighConfidence: boolean; // weightedScore > target
   isOverclocked: boolean; // Alias for isHighConfidence
   isUnverified: boolean; // High rule count (>= 10 rules) with low average confidence (< 2.0)
+  isUnseeded: boolean; // Domain has 0 rules (awaiting elicitation)
+  status: 'seeded' | 'unseeded'; // Tagged status per audit protocol
   percentageText: string; // '100%+' when isHighConfidence, else `${percentage}%`
   fractionText: string; // `${displayScore} / ${target} pts`
   rawFractionText: string; // `${weightedScore} / ${target} pts`
@@ -439,6 +441,8 @@ export interface ClusterGroup {
   name: string;
   description: string;
   agents: StatMetric[];
+  seededAgents: StatMetric[];
+  unseededAgents: StatMetric[];
   dimension: StatMetric;
 }
 
@@ -458,6 +462,8 @@ export interface CortexStatsResult {
   targetWeightedScorePerAgent: number;
   agents: Record<string, StatMetric>;
   agentList: StatMetric[];
+  seededAgentList: StatMetric[];
+  unseededAgentList: StatMetric[];
   dimensions: StatMetric[];
   clusters: Record<ClusterId | string, ClusterGroup>;
   clusterList: ClusterGroup[];
@@ -697,8 +703,10 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     }
 
     const target = TARGET_WEIGHTED_SCORE_PER_AGENT;
-    const percentage = Math.min(100, Math.round((weightedScore / target) * 100));
-    const rawPercentage = Math.round((weightedScore / target) * 100);
+    const isUnseeded = count === 0;
+    const status: 'seeded' | 'unseeded' = isUnseeded ? 'unseeded' : 'seeded';
+    const percentage = isUnseeded ? 0 : Math.min(100, Math.round((weightedScore / target) * 100));
+    const rawPercentage = isUnseeded ? 0 : Math.round((weightedScore / target) * 100);
     const avgConfidence = count > 0 ? Number((weightedScore / count).toFixed(2)) : 0;
     const isHighConfidence = weightedScore > target;
     const isUnverified = count >= 10 && avgConfidence < 2.0;
@@ -725,8 +733,10 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       isHighConfidence,
       isOverclocked: isHighConfidence,
       isUnverified,
-      percentageText: isHighConfidence ? '100%+' : `${percentage}%`,
-      fractionText: `${displayScore} / ${target} pts`,
+      isUnseeded,
+      status,
+      percentageText: isUnseeded ? 'Awaiting Elicitation' : isHighConfidence ? '100%+' : `${percentage}%`,
+      fractionText: isUnseeded ? '0 rules (unseeded)' : `${displayScore} / ${target} pts`,
       rawFractionText: `${weightedScore} / ${target} pts`,
       description: cfg.description,
     };
@@ -814,15 +824,22 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       fractionText: `${displayScore} / ${target} pts`,
       rawFractionText: `${weightedScore} / ${target} pts`,
       description: CLUSTER_DESCRIPTIONS[clusterId] || `${clusterId} multi-agent cognitive cluster.`,
+      status: count === 0 && clusterId !== 'Engineering' ? 'unseeded' : 'seeded',
+      isUnseeded: count === 0 && clusterId !== 'Engineering',
     };
 
     dimensions.push(clusterDim);
+
+    const seededAgents = clusterAgents.filter((a) => !a.isUnseeded);
+    const unseededAgents = clusterAgents.filter((a) => a.isUnseeded);
 
     clusters[clusterId] = {
       id: clusterId as ClusterId,
       name: CLUSTER_NAMES[clusterId] || `${clusterId} Cluster`,
       description: clusterDim.description,
       agents: clusterAgents,
+      seededAgents,
+      unseededAgents,
       dimension: clusterDim,
     };
   }
@@ -855,9 +872,9 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
   // 4. Gap Analysis: Low Mastery (< 30%) & Unverified Knowledge (count >= 10 && avgConfidence < 2.0)
   const blindSpots: BlindSpotMetric[] = [];
 
-  // 4a. Unverified Knowledge Diagnostics per Agent
+  // 4a. Unverified Knowledge Diagnostics per Agent (Seeded only)
   for (const agent of agentList) {
-    if (agent.isUnverified) {
+    if (agent.isUnverified && !agent.isUnseeded) {
       blindSpots.push({
         type: 'unverified',
         stat: agent.fullName || agent.label,
@@ -887,9 +904,9 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     }
   }
 
-  // Also check individual agents below 30% that weren't already flagged as unverified
+  // Also check individual agents below 30% that weren't already flagged as unverified and ARE seeded
   for (const agent of agentList) {
-    if (agent.percentage < 30 && !agent.isUnverified) {
+    if (agent.percentage < 30 && !agent.isUnverified && !agent.isUnseeded) {
       blindSpots.push({
         type: 'low_mastery',
         stat: agent.fullName || agent.label,
@@ -919,6 +936,8 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     targetWeightedScorePerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,
     agents,
     agentList,
+    seededAgentList: agentList.filter((a) => !a.isUnseeded),
+    unseededAgentList: agentList.filter((a) => a.isUnseeded),
     dimensions,
     clusters,
     clusterList,

@@ -107,6 +107,11 @@ export function extractRuleIdFromQuery(query: string): string | null {
   if (match) {
     return match[1].toUpperCase();
   }
+  // 3. Regex match for explicit Rule ID patterns (e.g. LAW-01, FIN-02, CS-99) in short inquiries
+  const directRegexMatch = clean.match(/\b([A-Za-z]{2,5}-\d{2,3})\b/);
+  if (directRegexMatch && clean.split(/\s+/).length <= 7) {
+    return directRegexMatch[1].toUpperCase();
+  }
   return null;
 }
 
@@ -240,6 +245,14 @@ export function classifyTierLightweight(
       return {
         tier: 'tier1_local',
         reason: `Canonical rule [${extractedRuleId}] matched in vault (${vaultMatch.file})`,
+        ruleId: extractedRuleId,
+      };
+    } else {
+      // Prevent Tier 1 Fall-Through: Rule ID matched but does NOT exist in vault.
+      // Do NOT pass to Tier 2 or Tier 3 LLMs to prevent hallucination.
+      return {
+        tier: 'tier1_local',
+        reason: `Rule [${extractedRuleId}] not defined in vault (halting in Tier 1 to prevent LLM hallucination)`,
         ruleId: extractedRuleId,
       };
     }

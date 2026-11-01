@@ -12,6 +12,8 @@ import {
   Bot,
   Brain,
   Briefcase,
+  ChevronDown,
+  ChevronRight,
   Code,
   Coins,
   Compass,
@@ -73,6 +75,8 @@ interface CognitiveStat {
   isHighConfidence?: boolean;
   isOverclocked?: boolean;
   isUnverified?: boolean;
+  isUnseeded?: boolean;
+  status?: 'seeded' | 'unseeded';
   percentageText?: string;
   fractionText?: string;
 }
@@ -96,6 +100,8 @@ interface AgentMastery {
   isHighConfidence?: boolean;
   isOverclocked?: boolean;
   isUnverified?: boolean;
+  isUnseeded?: boolean;
+  status?: 'seeded' | 'unseeded';
   percentageText?: string;
   fractionText?: string;
 }
@@ -186,6 +192,7 @@ export default function ProfilePage() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);
+  const [isQuarantineOpen, setIsQuarantineOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -731,7 +738,9 @@ export default function ProfilePage() {
           </div>
 
           {Object.entries(stats?.clusters || {}).map(([clusterId, clusterData]) => {
-            const clusterAgents = clusterData.agents || [];
+            const clusterAgents = (clusterData.agents || []).filter(
+              (agent) => !agent.isUnseeded && (agent.count > 0 || clusterId === 'Engineering')
+            );
             if (clusterAgents.length === 0) return null;
 
             return (
@@ -870,6 +879,116 @@ export default function ProfilePage() {
               </div>
             );
           })}
+
+          {/* Quarantined Draft Domains (Awaiting Elicitation) Accordion */}
+          {(() => {
+            const allUnseededDomains = (stats?.agentMastery || []).filter(
+              (agent) => agent.isUnseeded || (agent.count === 0 && agent.cluster !== 'Engineering')
+            );
+            if (allUnseededDomains.length === 0) return null;
+
+            return (
+              <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-slate-50/50 dark:bg-zinc-950/40 p-6 sm:p-7 space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setIsQuarantineOpen(!isQuarantineOpen)}
+                  className="w-full flex items-center justify-between text-left group cursor-pointer focus:outline-none"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-800 dark:text-zinc-200 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff] transition-colors flex items-center gap-2.5">
+                        <span>Quarantined Draft Domains (Awaiting Elicitation)</span>
+                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-slate-200 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
+                          {allUnseededDomains.length} Domains
+                        </span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">
+                        Quarantined placeholder domains without verified rules. Isolated to prevent RAG hallucinations until seeded.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="p-2 text-slate-400 dark:text-zinc-500 group-hover:text-cyan-600 dark:group-hover:text-[#00ffff] transition-colors">
+                    {isQuarantineOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {isQuarantineOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="pt-2"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-3">
+                        {allUnseededDomains.map((agent, idx) => {
+                          return (
+                            <div
+                              key={agent.code}
+                              className="p-6 rounded-2xl border border-dashed border-slate-300 dark:border-white/10 bg-white/40 dark:bg-zinc-900/30 opacity-65 grayscale hover:grayscale-0 hover:opacity-100 transition-all shadow-sm space-y-4 flex flex-col justify-between"
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="relative p-2 rounded-xl bg-slate-100 dark:bg-white/[0.04] border border-black/5 dark:border-white/10 shrink-0 flex items-center justify-center">
+                                      <PixelBot
+                                        code={agent.code}
+                                        size={34}
+                                        showNameTag={false}
+                                        knowledge={0}
+                                        bobDelay={idx % 6}
+                                      />
+                                      <div className="absolute -bottom-1 -right-1 p-0.5 rounded bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 shadow-xs">
+                                        {AGENT_ICONS[agent.code] || <Shield className="w-3.5 h-3.5 text-slate-400" />}
+                                      </div>
+                                    </div>
+
+                                    <div className="min-w-0 space-y-0.5">
+                                      <h4 className="text-sm font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1.5 flex-wrap">
+                                        <span>{agent.agent || agent.fullName || agent.label}</span>
+                                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 font-bold uppercase tracking-wider font-mono">
+                                          Unseeded
+                                        </span>
+                                      </h4>
+                                      <div className="text-xs text-slate-500 dark:text-zinc-400 font-mono truncate">
+                                        <span className="font-bold text-slate-600 dark:text-zinc-300">{agent.code}</span> • {agent.file}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <span className="text-xs font-mono font-bold shrink-0 px-2 py-0.5 rounded bg-black/5 dark:bg-white/5 text-slate-500 dark:text-zinc-400">
+                                    0%
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed">
+                                  {agent.description || 'Cognitive domain awaiting procedural knowledge elicitation.'}
+                                </p>
+                              </div>
+
+                              <div className="space-y-2 pt-2 border-t border-dashed border-slate-200 dark:border-white/10">
+                                <div className="w-full h-1.5 bg-slate-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                  <div className="h-full bg-slate-400 dark:bg-zinc-600 rounded-full" style={{ width: '0%' }} />
+                                </div>
+                                <div className="flex justify-between text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
+                                  <span>0 / {agent.target} pts (0 rules)</span>
+                                  <span className="text-amber-600 dark:text-amber-400 font-semibold">Awaiting Elicitation</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Action Callouts Footer */}

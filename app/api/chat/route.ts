@@ -721,6 +721,21 @@ export async function POST(req: Request) {
           },
           { headers: CORS_HEADERS }
         );
+      } else {
+        // Prevent Tier 1 Fall-Through: Rule ID does not exist in vault (RS-03 Anti-Hallucination)
+        console.log(
+          `[Cortex Tiered Router] Tier 1 Prevent Fall-Through: Rule [${tierDecision.ruleId}] not in vault.`
+        );
+        return NextResponse.json(
+          {
+            text: `Rule [${tierDecision.ruleId}] is not defined in the Cortex Vault. Please check the ID or add it to the relevant Markdown file.`,
+            model: 'direct-lookup',
+            provider: 'local',
+            tier: 'tier1_local',
+            topRules: [],
+          },
+          { headers: CORS_HEADERS }
+        );
       }
     }
 
@@ -800,6 +815,25 @@ export async function POST(req: Request) {
       }
     } catch (err: any) {
       console.warn('[Cortex Chat API] Vector RAG retrieval failed, falling back:', err?.message);
+    }
+
+    // 1. RS-03 Epistemic Circuit Breaker: Halt if highest cosine similarity is < 0.28
+    const highestScore = topRules.length > 0 ? topRules[0].score : 0;
+    const isResearchWorkflow = workflow?.cmd === '/research';
+    if ((!workflow || isResearchWorkflow) && highestScore < 0.28) {
+      console.log(
+        `[Cortex Chat API] RS-03 Epistemic Circuit Breaker triggered (highest score: ${highestScore.toFixed(3)} < 0.28). Halting to prevent hallucination.`
+      );
+      return NextResponse.json(
+        {
+          text: 'WARNING: I do not have verified data for this in my local Vault. Hallucination risk is high. Please provide a source or populate the relevant domain.',
+          model: 'epistemic-guard',
+          provider: 'system',
+          tier: tierDecision.tier,
+          topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
+        },
+        { headers: CORS_HEADERS }
+      );
     }
 
     if (workflow) {
