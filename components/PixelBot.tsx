@@ -412,6 +412,8 @@ export interface PixelBotProps {
   isSelected?: boolean;
   isHovered?: boolean;
   isWalking?: boolean;
+  /** Seated at a desk: replaces the idle hover-bob with a tight typing jitter. */
+  isTyping?: boolean;
   isLowKnowledgeOverride?: boolean;
   showNameTag?: boolean;
   showStats?: boolean;
@@ -429,6 +431,7 @@ export default function PixelBot({
   isSelected = false,
   isHovered = false,
   isWalking = false,
+  isTyping = false,
   isLowKnowledgeOverride,
   showNameTag = true,
   showStats = false,
@@ -543,6 +546,15 @@ export default function PixelBot({
                 transition: {
                   repeat: Infinity,
                   duration: 0.5,
+                  ease: 'easeInOut',
+                },
+              }
+            : isTyping
+            ? {
+                y: [0, -1.5, 0, -1, 0],
+                transition: {
+                  repeat: Infinity,
+                  duration: 0.5 + bobDelay * 0.03,
                   ease: 'easeInOut',
                 },
               }

@@ -19,18 +19,11 @@ import PixelBot, {
   AgentCode,
   AGENT_REGISTRY,
 } from '../../components/PixelBot';
-import SpeechBubble, {
-  IDLE_SPEECH_MESSAGES,
-  WORKING_SPEECH_OPTIONS,
-  OfficeWaypointKey,
-  PixelWorkstation,
-  PixelOfficeProp,
-} from '../../components/SpeechBubble';
+import SpaceStation from '../../components/hq/SpaceStation';
 import ChatMessageContent from '../../components/ChatMessageContent';
 import ExportClaudeModal from '../../components/ExportClaudeModal';
 import VoiceInput, { VoiceTTSButton, VoiceModeBadge } from '../../components/VoiceInput';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { useTheme } from 'next-themes';
 
 interface AgentStats {
   percentage: number;
@@ -53,44 +46,10 @@ interface ChatMessage {
 // 9 Core Engineering & Governance Bots (8 Core Agents + Judgment Arbiter)
 const ALL_AGENT_CODES: AgentCode[] = ['PM', 'UX', 'GR', 'SD', 'IR', 'DB', 'SEC', 'RS', 'ARB'];
 
-// Base Workstation Coordinates as percentages of the usable arena [x%, y%]
-const STATION_COORDINATES: Record<AgentCode, { x: number; y: number }> = {
-  ARB: { x: 50, y: 18 }, // Top Center (Supreme Court Arbiter Bench)
-  PM: { x: 18, y: 26 },  // Top Left (Interrogation Desk)
-  UX: { x: 13, y: 53 },  // Mid Left (Design Studio Desk)
-  GR: { x: 20, y: 79 },  // Bottom Left (Growth Pitch Desk)
-  DB: { x: 37, y: 85 },  // Bottom Center-Left (Vault Ledger Desk)
-  SEC: { x: 63, y: 85 }, // Bottom Center-Right (Sentinel Firewall Desk)
-  SD: { x: 80, y: 79 },  // Bottom Right (Systems Blueprint Desk)
-  IR: { x: 87, y: 53 },  // Mid Right (Sync Bus Desk)
-  RS: { x: 82, y: 26 },  // Top Right (Research Archive Desk)
-};
-
-// Shared Isometric Office Waypoints (Printer, Research Board, Coffee Machine)
-const SHARED_WAYPOINTS: Record<Exclude<OfficeWaypointKey, 'desk'>, { x: number; y: number }> = {
-  printer: { x: 33, y: 40 },
-  research_board: { x: 67, y: 40 },
-  coffee_machine: { x: 50, y: 73 },
-};
-
-type BotRoutineAction = 'working' | 'fetching_research' | 'printing' | 'coffee_break';
-
-interface BotRoutineState {
-  action: BotRoutineAction;
-  waypoint: OfficeWaypointKey;
-  bubbleText: string | null;
-  isWalking: boolean;
-}
-
-// Central Mainframe coordinates (center of the room)
-const MAINFRAME_COORDS = { x: 50, y: 50 };
-
 // Width of the slide-out terminal drawer on desktop viewports
 const TERMINAL_DRAWER_WIDTH = 480;
 
 export default function PixelAgentHQPage() {
-  const { resolvedTheme } = useTheme();
-  const isLight = resolvedTheme === 'light';
   const [statsMap, setStatsMap] = useState<Record<AgentCode, AgentStats>>({
     DB: { percentage: 95, count: 14, avgConfidence: 4.8, health: 98, isLowKnowledge: false },
     SEC: { percentage: 92, count: 15, avgConfidence: 4.7, health: 95, isLowKnowledge: false },
@@ -110,74 +69,6 @@ export default function PixelAgentHQPage() {
   // Terminal & Selection State (strictly null when closed)
   const [selectedAgent, setSelectedAgent] = useState<AgentCode | null>(null);
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(false);
-  const [hoveredBotCode, setHoveredBotCode] = useState<AgentCode | null>(null);
-
-  // Arena viewport measurement
-  const arenaRef = useRef<HTMLDivElement>(null);
-  const [arenaDimensions, setArenaDimensions] = useState({ width: 1200, height: 720 });
-
-  // Refs for DOM-driven SVG Tethers via requestAnimationFrame (zero React state lag)
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  const mainframeAnchorRef = useRef<HTMLDivElement | null>(null);
-  const botAnchorRefs = useRef<Record<AgentCode, HTMLDivElement | null>>({
-    PM: null,
-    UX: null,
-    GR: null,
-    SD: null,
-    IR: null,
-    DB: null,
-    SEC: null,
-    RS: null,
-    ARB: null,
-  });
-  const baseLineRefs = useRef<Record<AgentCode, SVGLineElement | null>>({
-    PM: null,
-    UX: null,
-    GR: null,
-    SD: null,
-    IR: null,
-    DB: null,
-    SEC: null,
-    RS: null,
-    ARB: null,
-  });
-  const pulseLineRefs = useRef<Record<AgentCode, SVGLineElement | null>>({
-    PM: null,
-    UX: null,
-    GR: null,
-    SD: null,
-    IR: null,
-    DB: null,
-    SEC: null,
-    RS: null,
-    ARB: null,
-  });
-
-  // Wandering micro-offsets around current desk when working (updated every 4 seconds via setInterval)
-  const [wanderOffsets, setWanderOffsets] = useState<Record<AgentCode, { x: number; y: number }>>({
-    PM: { x: 0, y: 0 },
-    UX: { x: 0, y: 0 },
-    GR: { x: 0, y: 0 },
-    DB: { x: 0, y: 0 },
-    SEC: { x: 0, y: 0 },
-    SD: { x: 0, y: 0 },
-    IR: { x: 0, y: 0 },
-    RS: { x: 0, y: 0 },
-    ARB: { x: 0, y: 0 },
-  });
-
-  // Living Isometric Office Routine State Machine per Bot (desk, printer, research_board, coffee_machine)
-  const [botRoutines, setBotRoutines] = useState<Record<AgentCode, BotRoutineState>>({
-    PM: { action: 'working', waypoint: 'desk', bubbleText: 'Planning...', isWalking: false },
-    UX: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
-    GR: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
-    DB: { action: 'working', waypoint: 'desk', bubbleText: 'Indexing...', isWalking: false },
-    SEC: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
-    SD: { action: 'working', waypoint: 'desk', bubbleText: 'Architecting...', isWalking: false },
-    IR: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
-    RS: { action: 'working', waypoint: 'desk', bubbleText: null, isWalking: false },
-    ARB: { action: 'working', waypoint: 'desk', bubbleText: 'Adjudicating...', isWalking: false },
-  });
 
   // Chat state per agent
   const [chatMessages, setChatMessages] = useState<Record<AgentCode, ChatMessage[]>>({
@@ -194,27 +85,6 @@ export default function PixelAgentHQPage() {
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  // Measure arena container dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (arenaRef.current) {
-        setArenaDimensions({
-          width: arenaRef.current.clientWidth,
-          height: arenaRef.current.clientHeight,
-        });
-      }
-    };
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    const ro = new ResizeObserver(updateDimensions);
-    if (arenaRef.current) ro.observe(arenaRef.current);
-
-    return () => {
-      window.removeEventListener('resize', updateDimensions);
-      ro.disconnect();
-    };
-  }, []);
 
   // Fetch live stats from /api/stats
   const fetchStats = useCallback(async () => {
@@ -259,231 +129,6 @@ export default function PixelAgentHQPage() {
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
-
-  // PART 1.3: Desk Micro-Shift Logic — setInterval every 4 seconds for bots working at their desk
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWanderOffsets((prev) => {
-        const next: Record<AgentCode, { x: number; y: number }> = { ...prev };
-        ALL_AGENT_CODES.forEach((code) => {
-          if (code === selectedAgent) {
-            next[code] = { x: 0, y: 0 };
-          } else {
-            // Subtle posture shift around the bot's workstation desk (-10px to +10px)
-            next[code] = {
-              x: Math.round(Math.random() * 20 - 10),
-              y: Math.round(Math.random() * 14 - 7),
-            };
-          }
-        });
-        return next;
-      });
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [selectedAgent]);
-
-  // PART 3: Isometric Office Routine State Machine (Every 10-15 seconds, bots execute routines between desk, printer, research_board, coffee_machine)
-  useEffect(() => {
-    let isMounted = true;
-    const activeTimers: Array<ReturnType<typeof setTimeout>> = [];
-    let mainLoopTimer: ReturnType<typeof setTimeout> | null = null;
-
-    const triggerOfficeRoutines = () => {
-      if (!isMounted) return;
-      const availableBots = ALL_AGENT_CODES.filter((c) => c !== selectedAgent);
-      if (availableBots.length > 0) {
-        const shuffled = [...availableBots].sort(() => 0.5 - Math.random());
-        const travelerBot = shuffled[0];
-        const deskWorkers = shuffled.slice(1, 4);
-
-        // Pick an errand for the traveler bot: fetching_research, printing, or coffee_break
-        const errandRoll = Math.random();
-        const chosenErrand: {
-          action: BotRoutineAction;
-          waypoint: Exclude<OfficeWaypointKey, 'desk'>;
-          pauseBubble: string;
-        } =
-          errandRoll < 0.42
-            ? { action: 'fetching_research', waypoint: 'research_board', pauseBubble: '📄 Reading...' }
-            : errandRoll < 0.82
-            ? { action: 'printing', waypoint: 'printer', pauseBubble: '🖨️ Printing...' }
-            : { action: 'coffee_break', waypoint: 'coffee_machine', pauseBubble: '☕ Recharging...' };
-
-        // 1. Update desk workers with fresh typing/thinking bubbles, and start traveler walking to waypoint
-        setBotRoutines((prev) => {
-          const next = { ...prev };
-
-          // Clear old desk bubbles first so the room doesn't get cluttered
-          ALL_AGENT_CODES.forEach((c) => {
-            if (next[c].waypoint === 'desk') {
-              next[c] = { ...next[c], bubbleText: null };
-            }
-          });
-
-          // Give 2-3 desk workers a contextual working bubble ("Analyzing...", "Compiling...", "Reading docs...")
-          deskWorkers.forEach((c) => {
-            if (next[c].waypoint === 'desk') {
-              const options = WORKING_SPEECH_OPTIONS[c] || [IDLE_SPEECH_MESSAGES[c]];
-              const picked = options[Math.floor(Math.random() * options.length)];
-              next[c] = {
-                action: 'working',
-                waypoint: 'desk',
-                bubbleText: picked,
-                isWalking: false,
-              };
-            }
-          });
-
-          // Send travelerBot to the chosen waypoint
-          next[travelerBot] = {
-            action: chosenErrand.action,
-            waypoint: chosenErrand.waypoint,
-            bubbleText: null,
-            isWalking: true,
-          };
-
-          return next;
-        });
-
-        // 2. Upon arriving at waypoint (~1.3s), pause for 3 seconds with action speech bubble ("📄 Reading..." or "🖨️ Printing...")
-        const arriveTimer = setTimeout(() => {
-          setBotRoutines((prev) => {
-            if (selectedAgent === travelerBot) return prev;
-            return {
-              ...prev,
-              [travelerBot]: {
-                ...prev[travelerBot],
-                isWalking: false,
-                bubbleText: chosenErrand.pauseBubble,
-              },
-            };
-          });
-        }, 1300);
-        activeTimers.push(arriveTimer);
-
-        // 3. After pausing for 3 seconds (at t = 4.5s), walk back to their base desk
-        const returnTimer = setTimeout(() => {
-          setBotRoutines((prev) => {
-            if (selectedAgent === travelerBot) return prev;
-            return {
-              ...prev,
-              [travelerBot]: {
-                action: 'working',
-                waypoint: 'desk',
-                bubbleText: null,
-                isWalking: true,
-              },
-            };
-          });
-        }, 4500);
-        activeTimers.push(returnTimer);
-
-        // 4. Settle back at desk (~5.8s) and resume working
-        const settleTimer = setTimeout(() => {
-          setBotRoutines((prev) => {
-            if (selectedAgent === travelerBot) return prev;
-            const options = WORKING_SPEECH_OPTIONS[travelerBot] || [IDLE_SPEECH_MESSAGES[travelerBot]];
-            return {
-              ...prev,
-              [travelerBot]: {
-                action: 'working',
-                waypoint: 'desk',
-                bubbleText: options[0],
-                isWalking: false,
-              },
-            };
-          });
-        }, 5800);
-        activeTimers.push(settleTimer);
-
-        // 5. Fade out desk speech bubbles after 6.5s so bubbles cycle cleanly
-        const clearDeskBubblesTimer = setTimeout(() => {
-          setBotRoutines((prev) => {
-            const next = { ...prev };
-            deskWorkers.forEach((c) => {
-              if (next[c].waypoint === 'desk') {
-                next[c] = { ...next[c], bubbleText: null };
-              }
-            });
-            return next;
-          });
-        }, 6500);
-        activeTimers.push(clearDeskBubblesTimer);
-      }
-
-      // Schedule next routine cycle in 10 to 14 seconds
-      if (!isMounted) return;
-      const nextDelay = Math.floor(Math.random() * 4000) + 10000;
-      mainLoopTimer = setTimeout(triggerOfficeRoutines, nextDelay);
-    };
-
-    const initialTimer = setTimeout(triggerOfficeRoutines, 3500);
-    activeTimers.push(initialTimer);
-
-    return () => {
-      isMounted = false;
-      if (mainLoopTimer) clearTimeout(mainLoopTimer);
-      activeTimers.forEach((t) => clearTimeout(t));
-      activeTimers.length = 0;
-    };
-  }, [selectedAgent]);
-
-  // PART 1.4: requestAnimationFrame loop that reads getBoundingClientRect() and updates SVG <line> DOM nodes directly
-  useEffect(() => {
-    let animationFrameId: number;
-
-    const updateTetherLines = () => {
-      const svgEl = svgRef.current;
-      const mainframeEl = mainframeAnchorRef.current;
-
-      if (svgEl && mainframeEl) {
-        const svgRect = svgEl.getBoundingClientRect();
-        const mfRect = mainframeEl.getBoundingClientRect();
-
-        const mx = mfRect.left + mfRect.width / 2 - svgRect.left;
-        const my = mfRect.top + mfRect.height / 2 - svgRect.top;
-
-        for (let i = 0; i < ALL_AGENT_CODES.length; i++) {
-          const code = ALL_AGENT_CODES[i];
-          const botEl = botAnchorRefs.current[code];
-          const baseLine = baseLineRefs.current[code];
-          const pulseLine = pulseLineRefs.current[code];
-
-          if (botEl) {
-            const botRect = botEl.getBoundingClientRect();
-            const bx = botRect.left + botRect.width / 2 - svgRect.left;
-            const by = botRect.top + botRect.height / 2 - svgRect.top;
-
-            const x1Str = bx.toFixed(1);
-            const y1Str = by.toFixed(1);
-            const x2Str = mx.toFixed(1);
-            const y2Str = my.toFixed(1);
-
-            if (baseLine) {
-              baseLine.setAttribute('x1', x1Str);
-              baseLine.setAttribute('y1', y1Str);
-              baseLine.setAttribute('x2', x2Str);
-              baseLine.setAttribute('y2', y2Str);
-            }
-            if (pulseLine) {
-              pulseLine.setAttribute('x1', x1Str);
-              pulseLine.setAttribute('y1', y1Str);
-              pulseLine.setAttribute('x2', x2Str);
-              pulseLine.setAttribute('y2', y2Str);
-            }
-          }
-        }
-      }
-
-      animationFrameId = window.requestAnimationFrame(updateTetherLines);
-    };
-
-    animationFrameId = window.requestAnimationFrame(updateTetherLines);
-    return () => {
-      window.cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
 
   // Select a bot & dock to Mainframe
   const handleSelectBot = (code: AgentCode) => {
@@ -607,24 +252,6 @@ export default function PixelAgentHQPage() {
 
   const activeBotMeta = selectedAgent ? AGENT_REGISTRY[selectedAgent] : null;
 
-  // Compute usable arena width so bots and workstations never overlap the slide-out chat panel
-  const usableArenaWidth = useMemo(() => {
-    if (isTerminalOpen && arenaDimensions.width >= 768) {
-      return Math.max(420, arenaDimensions.width - TERMINAL_DRAWER_WIDTH);
-    }
-    return arenaDimensions.width;
-  }, [isTerminalOpen, arenaDimensions.width]);
-
-  // Center Mainframe coordinates in pixels (shifts smoothly into open arena area when drawer opens)
-  const centerPixelX = (MAINFRAME_COORDS.x / 100) * usableArenaWidth;
-  const mainframePixelY = (MAINFRAME_COORDS.y / 100) * arenaDimensions.height;
-  // Docked bot stands right in front of the central Mainframe docking pad
-  const dockedBotPixelY = Math.min(arenaDimensions.height - 85, mainframePixelY + 56);
-
-  // Helper to clamp bot coordinates safely inside the visible arena
-  const clampX = (x: number) => Math.max(68, Math.min(usableArenaWidth - 68, x));
-  const clampY = (y: number) => Math.max(82, Math.min(arenaDimensions.height - 78, y));
-
   return (
     <div className="relative w-screen h-screen max-h-screen bg-slate-50 text-slate-900 dark:bg-[#02050e] dark:text-slate-100 flex flex-col font-mono overflow-hidden select-none transition-colors duration-300">
       {/* 1. Retro CRT Scanline & Phosphor Overlay */}
@@ -655,7 +282,7 @@ export default function PixelAgentHQPage() {
             <span className="text-sm font-extrabold tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
               <Eye className="w-4 h-4 text-cyan-400 animate-pulse" />
               <span>ARCHITECT HUD</span>
-              <span className="text-zinc-500">//</span>
+              <span className="text-zinc-500">{'//'}</span>
               <span className="text-cyan-400">SPACE STATION HQ</span>
             </span>
 
@@ -759,377 +386,43 @@ export default function PixelAgentHQPage() {
         </div>
       </header>
 
-      {/* 3. MAIN ARENA: ISOMETRIC SPACE STATION / OFFICE GAME DECK */}
-      <main
-        ref={arenaRef}
-        className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden bg-slate-100 dark:bg-[#02050e] transition-colors duration-300"
-      >
-        {/* PART 2.1: Isometric Space Station / Office Grid Floor (transform: rotateX(60deg)) */}
-        <div
-          className="absolute inset-0 overflow-hidden pointer-events-none"
-          style={{ perspective: '900px' }}
-        >
-          {/* Deep space radial atmosphere */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-100 to-slate-200 dark:from-[#0a193d]/45 dark:via-[#030714] dark:to-[#010309] transition-colors duration-300" />
-
-          {/* Isometric Floor Plane with rotateX(60deg) */}
-          <div
-            className="absolute -inset-x-[25%] -top-[15%] -bottom-[35%] origin-center"
-            style={{
-              transform: 'rotateX(60deg)',
-              backgroundImage: `
-                linear-gradient(to right, rgba(0, 255, 255, 0.18) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 255, 255, 0.18) 1px, transparent 1px),
-                linear-gradient(45deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px),
-                linear-gradient(-45deg, rgba(56, 189, 248, 0.06) 1px, transparent 1px)
-              `,
-              backgroundSize: '48px 48px, 48px 48px, 96px 96px, 96px 96px',
-              maskImage: 'radial-gradient(ellipse at center, rgba(0,0,0,1) 42%, transparent 88%)',
-              WebkitMaskImage:
-                'radial-gradient(ellipse at center, rgba(0,0,0,1) 42%, transparent 88%)',
-            }}
-          />
-
-          {/* Subtle Isometric Floor Sector Border Frame */}
-          <div
-            className="absolute inset-x-[12%] top-[10%] bottom-[6%] border-2 border-cyan-500/15 rounded-3xl"
-            style={{
-              transform: 'rotateX(60deg)',
-              boxShadow: 'inset 0 0 60px rgba(0, 255, 255, 0.07)',
-            }}
-          />
-        </div>
-
-        {/* Top Space Station Telemetry Readout */}
-        <div
-          className="absolute top-3 left-6 hidden md:flex items-center justify-between text-[10px] text-slate-300 pointer-events-none uppercase tracking-wider z-10 transition-all duration-300"
-          style={{ width: `${Math.max(300, usableArenaWidth - 48)}px` }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-cyan-400 font-bold">
-              <Radio className="w-3 h-3 animate-pulse" />
-              <span>STATION ORBIT // ISOMETRIC OFFICE DECK 09</span>
-            </span>
-            <span className="text-slate-500">•</span>
-            <span>9 CORE WORKSTATIONS ONLINE (8 AGENTS + ARBITER)</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span>CLICK BOT TO DOCK • ESC TO CLOSE</span>
-          </div>
-        </div>
-
-        {/* Radar Sweep & Concentric Energy Core Behind Mainframe */}
-        <motion.div
-          animate={{ x: centerPixelX, y: mainframePixelY }}
-          transition={{ type: 'spring', stiffness: 50, damping: 15, mass: 1 }}
-          style={{ position: 'absolute', left: 0, top: 0 }}
-          className="z-0 pointer-events-none"
-        >
-          <div className="-translate-x-1/2 -translate-y-1/2 relative">
-            <div className="w-[260px] h-[260px] rounded-full border border-cyan-500/15 absolute -translate-x-1/2 -translate-y-1/2" />
-            <div className="w-[400px] h-[400px] rounded-full border border-cyan-500/10 border-dashed absolute -translate-x-1/2 -translate-y-1/2" />
-            <div className="w-[540px] h-[540px] rounded-full border border-cyan-500/5 absolute -translate-x-1/2 -translate-y-1/2" />
-
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
-              className="w-[460px] h-[460px] rounded-full absolute -translate-x-1/2 -translate-y-1/2"
-              style={{
-                background:
-                  'conic-gradient(from 0deg, transparent 0deg, transparent 275deg, rgba(0, 255, 255, 0.14) 360deg)',
-              }}
-            />
-            <div className="w-56 h-56 rounded-full bg-cyan-500/10 blur-3xl absolute -translate-x-1/2 -translate-y-1/2" />
-          </div>
-        </motion.div>
-
-        {/* 4. PART 1.4: SVG TETHER LAYER (Updated directly in DOM via requestAnimationFrame + useRef) */}
-        <svg
-          ref={svgRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-10"
-        >
-          {ALL_AGENT_CODES.map((code) => {
-            const meta = AGENT_REGISTRY[code];
-            const isLow = statsMap[code]?.isLowKnowledge;
-            const isSelected = selectedAgent === code;
-
-            return (
-              <g key={`tether-group-${code}`}>
-                {/* Base glowing tether line (coords driven at 60fps by requestAnimationFrame) */}
-                <line
-                  ref={(el) => {
-                    baseLineRefs.current[code] = el;
-                  }}
-                  x1={centerPixelX}
-                  y1={mainframePixelY}
-                  x2={centerPixelX}
-                  y2={mainframePixelY}
-                  stroke={isLow ? '#facc15' : meta.color}
-                  strokeWidth={isSelected ? 3.5 : 1.5}
-                  strokeOpacity={isSelected ? 0.9 : 0.32}
-                  style={{
-                    filter: isSelected ? `drop-shadow(0 0 8px ${meta.colorLight})` : undefined,
-                  }}
-                />
-
-                {/* Animated dashed signal pulse line */}
-                <line
-                  ref={(el) => {
-                    pulseLineRefs.current[code] = el;
-                  }}
-                  x1={centerPixelX}
-                  y1={mainframePixelY}
-                  x2={centerPixelX}
-                  y2={mainframePixelY}
-                  stroke={isSelected ? '#ffffff' : isLow ? '#fef08a' : meta.colorLight}
-                  strokeWidth={isSelected ? 2.5 : 1.2}
-                  strokeDasharray={isSelected ? '6 10' : '3 14'}
-                  strokeLinecap="round"
-                  strokeOpacity={isSelected ? 0.95 : 0.55}
-                />
-              </g>
-            );
-          })}
-        </svg>
-
-        {/* 5. CENTRAL MAINFRAME TERMINAL (CORTEX BRAIN CONNECTION) */}
-        <motion.div
-          animate={{ x: centerPixelX, y: mainframePixelY }}
-          transition={{ type: 'spring', stiffness: 50, damping: 15, mass: 1 }}
-          style={{ position: 'absolute', left: 0, top: 0 }}
-          className="z-10 pointer-events-auto"
-        >
-          <div
-            ref={mainframeAnchorRef}
-            className="-translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
-          >
-            <div
-              className="relative group cursor-pointer"
-              onClick={() => {
-                if (isTerminalOpen) {
-                  handleCloseTerminal();
-                } else {
-                  setIsTerminalOpen(true);
-                }
-              }}
-            >
-              {/* Outer Cyan Cyber Ring */}
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
-                className="w-32 h-32 rounded-full border border-dashed border-cyan-500/40 p-2 flex items-center justify-center relative"
-                style={{
-                  filter: 'drop-shadow(0 0 18px rgba(0, 255, 255, 0.35))',
-                }}
-              >
-                <div className="w-full h-full rounded-full border border-cyan-400/20" />
-              </motion.div>
-
-              {/* Mainframe Monitor Screen Box */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <div className="w-22 h-22 rounded-2xl bg-[#060c1c] border-2 border-cyan-500/60 p-2 shadow-[0_0_25px_rgba(0,255,255,0.4)] flex flex-col items-center justify-between text-center relative overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/10 via-transparent to-cyan-500/10 pointer-events-none" />
-
-                  <div className="flex items-center justify-between w-full text-[8px] text-cyan-400 font-bold">
-                    <span>BUS: 9</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-                  </div>
-
-                  <div className="flex flex-col items-center">
-                    <img
-                      src="/cortex-logo-cyan.svg"
-                      alt="Cortex Brain"
-                      className="w-6 h-6 object-contain drop-shadow-[0_0_8px_rgba(0,255,255,0.7)] animate-pulse"
-                    />
-                    <span className="text-[9px] font-bold tracking-wider text-white mt-0.5 uppercase">
-                      MAINFRAME
-                    </span>
-                  </div>
-
-                  <span className="text-[7px] text-cyan-400/80 font-mono tracking-tighter">
-                    {selectedAgent ? `DOCKED: [${selectedAgent}]` : 'ROOT BUS READY'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Docking Bay Floor Pad */}
-              <div className="absolute -bottom-7 left-1/2 -translate-x-1/2 w-28 h-7 rounded-[100%] bg-cyan-500/15 border border-cyan-400/40 flex items-center justify-center shadow-[0_0_15px_rgba(0,255,255,0.25)]">
-                <span className="text-[7px] font-bold text-cyan-300 tracking-widest uppercase">
-                  {selectedAgent ? `PORT [${selectedAgent}] ACTIVE` : 'DOCKING PAD'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* 6A. SHARED ISOMETRIC OFFICE WAYPOINT STATIONS (PRINTER, RESEARCH BOARD, COFFEE MACHINE) */}
-        {(Object.entries(SHARED_WAYPOINTS) as Array<[Exclude<OfficeWaypointKey, 'desk'>, { x: number; y: number }]>).map(
-          ([waypointKey, coords]) => {
-            const propX = clampX((coords.x / 100) * usableArenaWidth);
-            const propY = clampY((coords.y / 100) * arenaDimensions.height);
-
-            return (
-              <motion.div
-                key={`office-prop-${waypointKey}`}
-                animate={{ x: propX, y: propY - 16 }}
-                transition={{ type: 'spring', stiffness: 50, damping: 15, mass: 1 }}
-                style={{ position: 'absolute', left: 0, top: 0 }}
-                className="z-10 pointer-events-none"
-              >
-                <div className="-translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                  <PixelOfficeProp type={waypointKey} />
-                </div>
-              </motion.div>
-            );
-          }
-        )}
-
-        {/* 6B. PART 2.1: PIXEL WORKSTATION DESKS AT EACH BOT'S BASE POSITION */}
-        {ALL_AGENT_CODES.map((code) => {
-          const station = STATION_COORDINATES[code];
-          const meta = AGENT_REGISTRY[code];
-          const stat = statsMap[code];
-          const isLow = stat.isLowKnowledge;
-
-          const baseX = clampX((station.x / 100) * usableArenaWidth);
-          const baseY = clampY((station.y / 100) * arenaDimensions.height);
-
-          return (
-            <motion.div
-              key={`workstation-${code}`}
-              animate={{ x: baseX, y: baseY - 18 }}
-              transition={{ type: 'spring', stiffness: 50, damping: 15, mass: 1 }}
-              style={{ position: 'absolute', left: 0, top: 0 }}
-              className="z-10 pointer-events-auto cursor-pointer group"
-              onClick={() => handleSelectBot(code)}
-            >
-              <div className="-translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                <PixelWorkstation
-                  code={code}
-                  color={meta.color}
-                  colorLight={meta.colorLight}
-                  isLowKnowledge={isLow}
-                />
-              </div>
-            </motion.div>
-          );
-        })}
-
-        {/* 7. PERSISTENT LIVING BOTS WITH OFFICE ROUTINE WAYPOINTS, SPRING PHYSICS & SPEECH BUBBLES */}
-        {ALL_AGENT_CODES.map((code, idx) => {
-          const station = STATION_COORDINATES[code];
-          const meta = AGENT_REGISTRY[code];
-          const stat = statsMap[code];
-          const routine = botRoutines[code];
-          const isSelected = selectedAgent === code;
-          const isLow = stat.isLowKnowledge;
-          const isProcessing = isSelected && isChatLoading;
-
-          // Base home desk coordinates in pixels
-          const baseX = clampX((station.x / 100) * usableArenaWidth);
-          const baseY = clampY((station.y / 100) * arenaDimensions.height);
-
-          // Resolve waypoint coordinates if the bot is on an office routine errand (printer, research_board, coffee_machine)
-          const waypointCoords =
-            routine?.waypoint && routine.waypoint !== 'desk'
-              ? SHARED_WAYPOINTS[routine.waypoint]
-              : null;
-
-          const targetRoutineX = waypointCoords
-            ? clampX((waypointCoords.x / 100) * usableArenaWidth)
-            : clampX(baseX + (wanderOffsets[code]?.x || 0));
-
-          const targetRoutineY = waypointCoords
-            ? clampY((waypointCoords.y / 100) * arenaDimensions.height + 12)
-            : clampY(baseY + (wanderOffsets[code]?.y || 0));
-
-          // Current target X & Y:
-          // - If selected: glide to Central Mainframe docking position
-          // - If unselected: glide to current routine waypoint (desk, printer, research_board, or coffee_machine)
-          const currentX = isSelected ? centerPixelX : targetRoutineX;
-          const currentY = isSelected ? dockedBotPixelY : targetRoutineY;
-
-          // Speech bubble text:
-          // - When selected & answering: "Processing..." with animated dots
-          // - When executing office routine or working at desk: routine.bubbleText
-          const idleBubbleText = !isSelected ? routine?.bubbleText : null;
-
-          return (
-            <motion.div
-              key={code}
-              animate={{
-                x: currentX,
-                y: currentY,
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 42,
-                damping: 15,
-                mass: 1,
-              }}
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-              }}
-              className="z-20 pointer-events-auto cursor-pointer"
-              onClick={() => handleSelectBot(code)}
-              onMouseEnter={() => setHoveredBotCode(code)}
-              onMouseLeave={() => setHoveredBotCode(null)}
-            >
-              {/* Inner centering wrapper so Framer Motion exclusively owns outer transform */}
-              <div
-                ref={(el) => {
-                  botAnchorRefs.current[code] = el;
-                }}
-                className="-translate-x-1/2 -translate-y-1/2 relative flex flex-col items-center"
-              >
-                {/* Pixel Speech Bubble */}
-                <SpeechBubble
-                  text={idleBubbleText}
-                  isProcessing={isProcessing}
-                  accentColor={meta.colorLight}
-                />
-
-                {/* PixelBot Sprite */}
-                <PixelBot
-                  code={code}
-                  size={isSelected ? 68 : 56}
-                  knowledge={stat.percentage}
-                  health={stat.health}
-                  isSelected={isSelected}
-                  isHovered={hoveredBotCode === code}
-                  isWalking={!isSelected && Boolean(routine?.isWalking)}
-                  isLowKnowledgeOverride={isLow}
-                  bobDelay={idx}
-                  showNameTag={true}
-                  showStats={true}
-                  showHealthBar={true}
-                />
-              </div>
-            </motion.div>
-          );
-        })}
+      {/* 3. MAIN ARENA: 2D SPACE STATION (Reactor / Command Deck / Workstations) */}
+      <main className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden bg-[#02040b]">
+        <SpaceStation
+          statsMap={statsMap}
+          selectedAgent={selectedAgent}
+          isChatLoading={isChatLoading}
+          isTerminalOpen={isTerminalOpen}
+          drawerWidth={TERMINAL_DRAWER_WIDTH}
+          onSelectBot={handleSelectBot}
+          onToggleTerminal={() => {
+            if (isTerminalOpen) {
+              handleCloseTerminal();
+            } else {
+              setIsTerminalOpen(true);
+            }
+          }}
+        />
 
         {/* Quick HUD Guide Tip (Bottom Left Corner) */}
-        <div className="absolute bottom-4 left-6 hidden md:flex flex-col gap-1 text-[11px] font-mono text-slate-600 dark:text-zinc-400 bg-white/80 dark:bg-black/65 backdrop-blur-md p-3 rounded-xl border border-slate-200 dark:border-zinc-800 z-20 pointer-events-none shadow-md dark:shadow-none">
-          <span className="text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1.5">
+        <div className="absolute bottom-4 left-6 hidden md:flex flex-col gap-1 text-[11px] font-mono text-zinc-400 bg-black/65 backdrop-blur-md p-3 rounded-xl border border-cyan-500/20 z-20 pointer-events-none">
+          <span className="text-cyan-400 font-bold flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>ISOMETRIC SPACE STATION HQ:</span>
+            <span>SPACE STATION HQ:</span>
           </span>
-          <span>• Click any Bot or Workstation Desk to dock &amp; chat</span>
-          <span>• Press Esc or click [X] to undock &amp; glide back to desk</span>
+          <span>• Click any bot, desk, or the reactor to open comms</span>
+          <span>• Press Esc or click [X] to close the terminal</span>
         </div>
 
-        {/* PART 1.1: Floating "Open Terminal" Button — Hidden when terminal is already open */}
+        {/* Floating "Open Terminal" Button — hidden when terminal is already open */}
         {!isTerminalOpen && (
           <button
             type="button"
             onClick={() => setIsTerminalOpen(true)}
-            className="fixed bottom-5 right-5 z-30 px-3.5 py-2.5 rounded-xl bg-white/95 dark:bg-[#081124]/90 hover:bg-slate-100 dark:hover:bg-[#0c1833] border border-slate-300 dark:border-cyan-500/40 text-cyan-700 dark:text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-lg dark:shadow-[0_0_20px_rgba(0,255,255,0.25)] backdrop-blur-md transition-all cursor-pointer group"
+            className="fixed bottom-5 right-5 z-30 px-3.5 py-2.5 rounded-xl bg-[#081124]/90 hover:bg-[#0c1833] border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,255,0.25)] backdrop-blur-md transition-all cursor-pointer group"
             title="Open Mainframe Terminal Panel"
           >
-            <Terminal className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:rotate-12 transition-transform" />
+            <Terminal className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
             <span>Open Terminal</span>
           </button>
         )}
