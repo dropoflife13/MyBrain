@@ -217,3 +217,4 @@ export default function RulePeeler() {
     </div>
   );
 }
+
