@@ -231,7 +231,7 @@ sources_scanned: ${articles.length}
 - **Classification:** [Factual Consensus | Emerging Shift | Speculative Hypothesis | HISTORICAL CONTEXT]
 - **Sources:** [Exact Title](URL) (Source: [Source], Date: [YYYY-MM-DD])
 - **Key Finding & Empirical Evidence:** [Concrete technical takeaways, benchmark metrics, or architectural invariants]
-- **Cortex Invariant Impact:** [Which agent or domain this informs, e.g. `SD`, `DB`, `SEC`, `RS`, `UX`]
+- **Cortex Invariant Impact:** [Which agent or domain this informs, e.g. \`SD\`, \`DB\`, \`SEC\`, \`RS\`, \`UX\`]
 
 ### CST-${compactDate}-02: [Second Key Trend Title]
 - **Domain:** [AI | WebDev | Security | Systems]
