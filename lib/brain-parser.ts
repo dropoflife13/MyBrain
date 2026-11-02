@@ -854,7 +854,8 @@ The "Golden Path" AI-assisted Software Factory workflow. Rather than reactive qu
 - **ARB-02** (The Conflict Fallback): WHEN rules from two domains contradict (e.g., BIZ says "move fast" but SEC says "verify everything") → DO default to the most restrictive rule (Security > Growth) and explain the trade-off | conf: 5
 - **ARB-03** (Fact vs. Opinion): WHEN summarizing NWS (News) or LIT (Literature) → DO cite the source and the author's bias. Never present a news opinion as objective fact | conf: 5
 - **ARB-04** (The Precautionary Principle): WHEN dealing with SCI (Science) or MED (Medicine) → DO explicitly state if the information is peer-reviewed consensus or theoretical. Never give medical advice | conf: 5
-- **ARB-05** (Trend Verification): WHEN ingesting automated research from the Research Radar → DO verify the source URL and publication date. If the article is older than 30 days, mark it as [HISTORICAL CONTEXT]. Never mix unverified blog opinions with peer-reviewed consensus | conf: 5`,
+- **ARB-05** (Trend Verification): WHEN ingesting automated research from the Research Radar → DO verify the source URL and publication date. If the article is older than 30 days, mark it as [HISTORICAL CONTEXT]. Never mix unverified blog opinions with peer-reviewed consensus | conf: 5
+- **ARB-06** (Seeding Boundaries): WHEN generating automated research for empty domains → DO restrict the AI to timeless, foundational principles (e.g., "Laws require jurisdiction"). Never generate specific volatile statistics (e.g., "Inflation is 4.5%") as a permanent rule | conf: 5`,
   },
   // --- Inner Ring (Radius ~80): Humanities & Enterprise Cluster ---
   {

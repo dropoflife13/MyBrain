@@ -39,7 +39,7 @@ Active rules from the brain feed directly into the execution checklists in `agen
 | Business Analysis | BA | [[business-analysis]] | 7 (`BA-01..07`) | 4.7 | ok (6/6 sub-areas) |
 | UI & Frontend | UI | [[ui-frontend]] | 9 (`UI-01..09`) | 4.9 | ok (6/6 sub-areas) |
 | Authorization | AUTH | [[authorization]] | 5 (`AUTH-01..05`) | 4.0 | ok (PDP/PEP, ABAC, Policy-as-Code) |
-| Judgment Arbiter | ARB | [[arbiter]] | 5 (`ARB-01..05`) | 5.0 | ok (Domain separation, conflict fallback, precaution, trend verification) |
+| Judgment Arbiter | ARB | [[arbiter]] | 6 (`ARB-01..06`) | 5.0 | ok (Domain separation, conflict fallback, precaution, trend verification, seeding boundaries) |
 | Empathy & Personas | PM | [[empathy-personas]] | Reference framework | - | Empathy Map & Target Personas (`PM-14`, `PM-15`) |
 | Cross-Domain Heuristics | H / P / RF | [[HEURISTICS]] · [[PATTERNS]] · [[RED-FLAGS]] | 6 H · 5 P · 10 RF | 4.9 | rich |
 | Psychology | PSY | [[psychology]] | 0 (draft) | - | Human behavior, biases, cognitive science |
