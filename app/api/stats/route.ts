@@ -21,16 +21,10 @@ function resolveDirectories(): { brainDir: string | null; agentsDir: string | nu
   const brainCandidates = [
     path.join(root, 'brain'),
     path.join(root, 'public', 'brain'),
-    path.join(root, 'brain-web', 'brain'),
-    path.resolve(__dirname, '../../../brain'),
-    path.resolve(__dirname, '../../../../brain'),
   ];
   const agentsCandidates = [
     path.join(root, 'agents'),
     path.join(root, 'public', 'agents'),
-    path.join(root, 'brain-web', 'agents'),
-    path.resolve(__dirname, '../../../agents'),
-    path.resolve(__dirname, '../../../../agents'),
   ];
 
   let brainDir: string | null = null;

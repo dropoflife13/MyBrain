@@ -18,12 +18,16 @@ import { z } from 'zod';
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless environments
 function resolveFilePath(relPath: string): string | null {
   const rootDir = process.cwd();
-  const filename = path.basename(relPath);
+  const normalized = relPath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const filename = path.basename(normalized);
+  const subFromBrain = normalized.startsWith('brain/')
+    ? normalized.slice('brain/'.length)
+    : normalized;
   const candidates = [
-    path.join(rootDir, relPath),
+    path.join(rootDir, 'brain', subFromBrain),
     path.join(rootDir, 'agents', filename),
     path.join(rootDir, 'public', 'agents', filename),
-    path.join(rootDir, 'public', relPath),
+    path.join(rootDir, 'public', 'brain', subFromBrain),
     path.join(rootDir, 'brain', '04-agents', filename),
     path.join(rootDir, 'public', 'brain', '04-agents', filename),
     path.join(rootDir, 'brain', '02-domains', filename),
@@ -34,13 +38,6 @@ function resolveFilePath(relPath: string): string | null {
     path.join(rootDir, 'public', 'brain', '03-heuristics', filename),
     path.join(rootDir, 'brain', '07-meta', filename),
     path.join(rootDir, 'public', 'brain', '07-meta', filename),
-    path.join(rootDir, 'brain-web', relPath),
-    path.join(rootDir, 'brain-web', 'agents', filename),
-    path.join(rootDir, 'brain-web', 'public', 'agents', filename),
-    path.join(rootDir, 'brain-web', 'brain', '04-agents', filename),
-    path.resolve(__dirname, '../../../', relPath),
-    path.resolve(__dirname, '../../../../', relPath),
-    path.resolve(rootDir, '.next', 'server', relPath),
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;

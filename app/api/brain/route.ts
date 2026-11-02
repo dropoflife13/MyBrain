@@ -25,21 +25,18 @@ export async function OPTIONS() {
 // Resolve file paths reliably across local dev, monorepos, and Vercel serverless lambda environments
 function resolveFilePath(relPath: string): string | null {
   const rootDir = process.cwd();
-  const filename = path.basename(relPath);
+  const normalized = relPath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const filename = path.basename(normalized);
+  const subFromBrain = normalized.startsWith('brain/')
+    ? normalized.slice('brain/'.length)
+    : normalized;
   const candidates = [
-    path.join(rootDir, relPath),
+    path.join(rootDir, 'brain', subFromBrain),
     path.join(rootDir, 'agents', filename),
     path.join(rootDir, 'public', 'agents', filename),
-    path.join(rootDir, 'public', relPath),
+    path.join(rootDir, 'public', 'brain', subFromBrain),
     path.join(rootDir, 'brain', '04-agents', filename),
     path.join(rootDir, 'public', 'brain', '04-agents', filename),
-    path.join(rootDir, 'brain-web', relPath),
-    path.join(rootDir, 'brain-web', 'agents', filename),
-    path.join(rootDir, 'brain-web', 'public', 'agents', filename),
-    path.join(rootDir, 'brain-web', 'brain', '04-agents', filename),
-    path.resolve(__dirname, '../../../', relPath),
-    path.resolve(__dirname, '../../../../', relPath),
-    path.resolve(rootDir, '.next', 'server', relPath),
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
@@ -56,11 +53,6 @@ export async function GET() {
       path.join(rootDir, 'agents'),
       path.join(rootDir, 'public', 'agents'),
       path.join(rootDir, 'brain', '04-agents'),
-      path.join(rootDir, 'brain-web', 'agents'),
-      path.join(rootDir, 'brain-web', 'public', 'agents'),
-      path.join(rootDir, 'brain-web', 'brain', '04-agents'),
-      path.resolve(__dirname, '../../../agents'),
-      path.resolve(__dirname, '../../../../agents'),
     ].some((d) => fs.existsSync(d));
 
     // Enforce BN-00: Verify all 7 Core Agent files exist
@@ -192,11 +184,6 @@ export async function POST() {
     path.join(rootDir, 'agents'),
     path.join(rootDir, 'public', 'agents'),
     path.join(rootDir, 'brain', '04-agents'),
-    path.join(rootDir, 'brain-web', 'agents'),
-    path.join(rootDir, 'brain-web', 'public', 'agents'),
-    path.join(rootDir, 'brain-web', 'brain', '04-agents'),
-    path.resolve(__dirname, '../../../agents'),
-    path.resolve(__dirname, '../../../../agents'),
   ].some((d) => fs.existsSync(d));
 
   const missingAgents: string[] = [];

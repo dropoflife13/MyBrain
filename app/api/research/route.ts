@@ -21,10 +21,7 @@ function getDomainsDir(): string | null {
   const rootDir = process.cwd();
   const candidates = [
     path.join(rootDir, 'brain', '02-domains'),
-    path.join(rootDir, 'brain-web', 'brain', '02-domains'),
-    path.resolve(__dirname, '../../../../brain/02-domains'),
-    path.resolve(__dirname, '../../../../../brain/02-domains'),
-    path.resolve(rootDir, '.next', 'server', 'brain', '02-domains'),
+    path.join(rootDir, 'public', 'brain', '02-domains'),
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;

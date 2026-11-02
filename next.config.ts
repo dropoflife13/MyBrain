@@ -8,6 +8,32 @@ const nextConfig: NextConfig = {
     '/api/brain': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
     '/api/chat': ['./agents/**/*', './brain/**/*', './public/**/*', './brain-embeddings.json'],
   },
+  outputFileTracingExcludes: {
+    '*': [
+      '.next/**/*',
+      './.next/**/*',
+      '.next/lock',
+      './.next/lock',
+      '.git/**/*',
+      './.git/**/*',
+    ],
+    '/**': [
+      '.next/**/*',
+      './.next/**/*',
+      '.next/lock',
+      './.next/lock',
+      '.git/**/*',
+      './.git/**/*',
+    ],
+    '/api/**/*': [
+      '.next/**/*',
+      './.next/**/*',
+      '.next/lock',
+      './.next/lock',
+      '.git/**/*',
+      './.git/**/*',
+    ],
+  },
   turbopack: {
     root: __dirname,
   },

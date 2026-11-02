@@ -60,12 +60,17 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
 function resolveFilePath(relPath: string): string | null {
   const rootDir = process.cwd();
-  const filename = path.basename(relPath);
+  const normalized = relPath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const filename = path.basename(normalized);
+  const subFromBrain = normalized.startsWith('brain/')
+    ? normalized.slice('brain/'.length)
+    : normalized;
   const candidates = [
-    path.join(rootDir, relPath),
-    path.join(rootDir, 'public', relPath),
+    path.join(rootDir, 'brain', subFromBrain),
+    path.join(rootDir, 'agents', filename),
+    path.join(rootDir, 'public', 'brain', subFromBrain),
+    path.join(rootDir, 'public', 'agents', filename),
     path.join(rootDir, 'public', filename),
-    path.join(rootDir, 'brain-web', relPath),
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) return c;
@@ -86,7 +91,14 @@ function getMarkdownFiles(
   const results: string[] = [];
   if (depth > maxDepth) return results;
 
-  const fullDir = path.resolve(process.cwd(), dir);
+  const normalizedDir = dir.replace(/\\/g, '/').replace(/^\.\//, '');
+  const fullDir = normalizedDir.startsWith('agents')
+    ? path.join(process.cwd(), 'agents', normalizedDir.slice('agents'.length))
+    : path.join(
+        process.cwd(),
+        'brain',
+        normalizedDir.startsWith('brain/') ? normalizedDir.slice('brain/'.length) : normalizedDir
+      );
   if (!fs.existsSync(fullDir)) return results;
 
   let realDir: string;
