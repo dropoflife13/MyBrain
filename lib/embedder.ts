@@ -75,19 +75,58 @@ function resolveFilePath(relPath: string): string | null {
 
 /**
  * Recursively retrieves all markdown files from a target directory.
+ * Includes depth limit (maxDepth = 6) and visited realpath tracking to prevent infinite loops on circular symlinks.
  */
-function getMarkdownFiles(dir: string): string[] {
+function getMarkdownFiles(
+  dir: string,
+  depth = 0,
+  maxDepth = 6,
+  visited: Set<string> = new Set()
+): string[] {
   const results: string[] = [];
+  if (depth > maxDepth) return results;
+
   const fullDir = path.resolve(process.cwd(), dir);
   if (!fs.existsSync(fullDir)) return results;
 
-  const entries = fs.readdirSync(fullDir, { withFileTypes: true });
+  let realDir: string;
+  try {
+    realDir = fs.realpathSync(fullDir);
+  } catch {
+    return results;
+  }
+
+  if (visited.has(realDir)) return results;
+  visited.add(realDir);
+
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(fullDir, { withFileTypes: true });
+  } catch {
+    return results;
+  }
+
   for (const entry of entries) {
     const res = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results.push(...getMarkdownFiles(res));
-    } else if (entry.name.endsWith('.md')) {
-      results.push(res.replace(/\\/g, '/'));
+    try {
+      if (entry.isSymbolicLink()) {
+        const fullEntryPath = path.resolve(fullDir, entry.name);
+        const realEntryPath = fs.realpathSync(fullEntryPath);
+        const stat = fs.statSync(realEntryPath);
+        if (stat.isDirectory()) {
+          if (!visited.has(realEntryPath)) {
+            results.push(...getMarkdownFiles(res, depth + 1, maxDepth, visited));
+          }
+        } else if (entry.name.endsWith('.md')) {
+          results.push(res.replace(/\\/g, '/'));
+        }
+      } else if (entry.isDirectory()) {
+        results.push(...getMarkdownFiles(res, depth + 1, maxDepth, visited));
+      } else if (entry.name.endsWith('.md')) {
+        results.push(res.replace(/\\/g, '/'));
+      }
+    } catch {
+      // Ignore unreadable entries
     }
   }
   return results;

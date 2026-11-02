@@ -282,10 +282,12 @@ export default function PixelAgentHQPage() {
 
   // PART 3: Isometric Office Routine State Machine (Every 10-15 seconds, bots execute routines between desk, printer, research_board, coffee_machine)
   useEffect(() => {
+    let isMounted = true;
     const activeTimers: Array<ReturnType<typeof setTimeout>> = [];
-    let mainLoopTimer: ReturnType<typeof setTimeout>;
+    let mainLoopTimer: ReturnType<typeof setTimeout> | null = null;
 
     const triggerOfficeRoutines = () => {
+      if (!isMounted) return;
       const availableBots = ALL_AGENT_CODES.filter((c) => c !== selectedAgent);
       if (availableBots.length > 0) {
         const shuffled = [...availableBots].sort(() => 0.5 - Math.random());
@@ -408,6 +410,7 @@ export default function PixelAgentHQPage() {
       }
 
       // Schedule next routine cycle in 10 to 14 seconds
+      if (!isMounted) return;
       const nextDelay = Math.floor(Math.random() * 4000) + 10000;
       mainLoopTimer = setTimeout(triggerOfficeRoutines, nextDelay);
     };
@@ -416,8 +419,10 @@ export default function PixelAgentHQPage() {
     activeTimers.push(initialTimer);
 
     return () => {
-      clearTimeout(mainLoopTimer);
+      isMounted = false;
+      if (mainLoopTimer) clearTimeout(mainLoopTimer);
       activeTimers.forEach((t) => clearTimeout(t));
+      activeTimers.length = 0;
     };
   }, [selectedAgent]);
 

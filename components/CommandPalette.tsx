@@ -70,17 +70,21 @@ export default function CommandPalette({
 
   // Focus preservation (UX-07)
   useEffect(() => {
+    let focusTimer: ReturnType<typeof setTimeout> | null = null;
     if (isOpen) {
       prevActiveElementRef.current = document.activeElement as HTMLElement | null;
       setQuery('');
       setDebouncedQuery('');
       setSelectedIndex(0);
-      setTimeout(() => {
+      focusTimer = setTimeout(() => {
         inputRef.current?.focus();
       }, 50);
     } else {
       prevActiveElementRef.current?.focus();
     }
+    return () => {
+      if (focusTimer) clearTimeout(focusTimer);
+    };
   }, [isOpen]);
 
   // Build searchable index from nodes and navigation targets

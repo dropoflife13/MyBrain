@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Activity,
@@ -232,6 +232,13 @@ export default function Home() {
     [graphData]
   );
   const [isCheckingGate, setIsCheckingGate] = useState<boolean>(false);
+  const checkingGateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (checkingGateTimerRef.current) clearTimeout(checkingGateTimerRef.current);
+    };
+  }, []);
 
   // Centralized Dynamic Knowledge Mastery stats via lib/stats.ts (target = 20 rules/agent)
   const cortexStats = useMemo(() => {
@@ -293,7 +300,7 @@ export default function Home() {
       })
       .catch(() => {})
       .finally(() => {
-        setTimeout(() => setIsCheckingGate(false), 350);
+        checkingGateTimerRef.current = setTimeout(() => setIsCheckingGate(false), 350);
       });
   };
 

@@ -956,18 +956,32 @@ ${query}`;
       }
     }
 
-    // Try Gemini model chain with Exponential Backoff + Jitter
+    // Try Gemini model chain with Exponential Backoff + Jitter (bounded by global MAX_TOTAL_GEMINI_ATTEMPTS = 3)
     if (geminiApiKey && !succeededText) {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
+      let totalGeminiAttempts = 0;
+      const MAX_TOTAL_GEMINI_ATTEMPTS = 3;
 
       modelLoop: for (let mIndex = 0; mIndex < modelChain.length; mIndex++) {
+        if (totalGeminiAttempts >= MAX_TOTAL_GEMINI_ATTEMPTS) {
+          console.warn(
+            `[Cortex Chat API] Total Gemini attempts capped at ${MAX_TOTAL_GEMINI_ATTEMPTS}. Breaking model chain to activate failover.`
+          );
+          break modelLoop;
+        }
+
         const currentModelName = modelChain[mIndex];
-        const maxRetries = 2; // Up to 2 retries (3 attempts total) per model
+        const maxRetries = 1; // At most 1 retry per model, bounded globally
 
         for (let attempt = 0; attempt <= maxRetries; attempt++) {
+          if (totalGeminiAttempts >= MAX_TOTAL_GEMINI_ATTEMPTS) {
+            break modelLoop;
+          }
+          totalGeminiAttempts++;
+
           try {
             console.log(
-              `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1})`
+              `[Cortex Chat API] Attempting model: ${currentModelName} (attempt ${attempt + 1}/${maxRetries + 1}, total: ${totalGeminiAttempts}/${MAX_TOTAL_GEMINI_ATTEMPTS})`
             );
             const model = genAI.getGenerativeModel({ model: currentModelName });
 
@@ -997,15 +1011,27 @@ ${query}`;
           } catch (err: any) {
             lastError = err;
             const status = err?.status || err?.statusCode || (isHighDemandError(err) ? 503 : 500);
+            const errMsg = String(err?.message || '').toLowerCase();
+            const isHardQuota = errMsg.includes('resource_exhausted') || errMsg.includes('quota') || status === 429;
+
             console.warn(
               `[Cortex Chat API] Model ${currentModelName} attempt ${attempt + 1} failed [status: ${status}]: ${err?.message}`
             );
+
+            // If hard quota exhaustion (429/resource_exhausted), retrying the same model with sleep is futile.
+            // Break model retry loop immediately to advance to the next model or failover provider.
+            if (isHardQuota) {
+              console.warn(
+                `[Cortex Chat API] Hard rate limit / quota exhaustion on ${currentModelName}. Bypassing intra-model retries to failover.`
+              );
+              break;
+            }
 
             if (attempt < maxRetries && isHighDemandError(err)) {
               // Exponential backoff with jitter: (500ms * 2^attempt) + random(0-500ms)
               const backoff = 500 * Math.pow(2, attempt) + Math.random() * 500;
               console.log(
-                `[Cortex Chat API] High demand / rate limit (503/429) detected. Waiting ${Math.round(backoff)}ms before retry ${attempt + 2}...`
+                `[Cortex Chat API] High demand (503) detected. Waiting ${Math.round(backoff)}ms before retry ${attempt + 2}...`
               );
               await delay(backoff);
             } else {
