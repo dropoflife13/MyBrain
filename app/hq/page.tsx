@@ -497,7 +497,7 @@ export default function PixelAgentHQPage() {
         role: 'assistant',
         text: `Hey Architect! ${meta.name} docked and online. What do you need verified?`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        model: 'gemini-3.5-flash',
+        model: 'gemini-3.8-flash',
         provider: 'google',
       };
       return {
@@ -1287,7 +1287,7 @@ export default function PixelAgentHQPage() {
                         {msg.role === 'assistant' && (
                           <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1.5 flex items-center justify-between gap-2">
                             <span>
-                              [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.5-flash'}]
+                              [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.8-flash'}]
                             </span>
                             <VoiceTTSButton text={msg.text} />
                           </div>

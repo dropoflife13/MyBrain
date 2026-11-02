@@ -438,34 +438,37 @@ Output strictly as a valid JSON array of 6 question objects. Do NOT include mark
       });
     };
 
-    // Attempt Gemini Generation
+    // Attempt Gemini Generation (Primary: gemini-3.8-flash, Secondary: gemini-3.1-flash-lite)
     if (geminiApiKey) {
-      try {
-        const genAI = new GoogleGenerativeAI(geminiApiKey);
-        const model = genAI.getGenerativeModel({
-          model: 'gemini-3.5-flash',
-          generationConfig: {
-            temperature: 0.3,
-            responseMimeType: 'application/json',
-          },
-        });
-
-        const result = await model.generateContent(prompt);
-        const text = result.response.text().trim();
-        const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
-        const parsed = JSON.parse(cleaned);
-
-        if (Array.isArray(parsed) && parsed.length >= 6) {
-          const sanitized = sanitizeGeneratedQuestions(parsed.slice(0, 6));
-          return NextResponse.json({
-            questions: sanitized,
-            isFallback: false,
-            model: 'gemini-3.5-flash',
-            persona,
+      const geminiModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+      for (const geminiModel of geminiModels) {
+        try {
+          const genAI = new GoogleGenerativeAI(geminiApiKey);
+          const model = genAI.getGenerativeModel({
+            model: geminiModel,
+            generationConfig: {
+              temperature: 0.3,
+              responseMimeType: 'application/json',
+            },
           });
+
+          const result = await model.generateContent(prompt);
+          const text = result.response.text().trim();
+          const cleaned = text.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+          const parsed = JSON.parse(cleaned);
+
+          if (Array.isArray(parsed) && parsed.length >= 6) {
+            const sanitized = sanitizeGeneratedQuestions(parsed.slice(0, 6));
+            return NextResponse.json({
+              questions: sanitized,
+              isFallback: false,
+              model: geminiModel,
+              persona,
+            });
+          }
+        } catch (err: any) {
+          console.warn(`[Cortex Quiz API] Gemini (${geminiModel}) generation failed:`, err?.message);
         }
-      } catch (err: any) {
-        console.warn('[Cortex Quiz API] Gemini quiz generation failed:', err?.message);
       }
     }
 

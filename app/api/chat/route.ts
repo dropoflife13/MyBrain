@@ -543,7 +543,7 @@ async function queryOpenRouter(
 ): Promise<{ text: string; model: string }> {
   const isVision = Boolean(imageUrl);
   const defaultModel = isVision
-    ? 'google/gemini-2.5-flash'
+    ? 'google/gemini-3.8-flash'
     : (process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.3-70b-instruct');
   const model = modelName || defaultModel;
   const url = 'https://openrouter.ai/api/v1/chat/completions';
@@ -776,15 +776,15 @@ export async function POST(req: Request) {
     let modelChain: string[];
     if (tierDecision.tier === 'tier3_heavy') {
       // Tier 3 (Heavy Model): Route to gemini-4-argon with robust fallback chain
-      const baseTier3 = ['gemini-4-argon', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+      const baseTier3 = ['gemini-4-argon', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
       modelChain = process.env.AI_MODEL
         ? Array.from(new Set(['gemini-4-argon', process.env.AI_MODEL, ...baseTier3]))
         : baseTier3;
     } else {
-      // Tier 2 (Fast Model): Route to gemini-2.5-flash or llama-3.3-70b via Groq
-      const baseTier2 = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+      // Tier 2 (Fast Model): Route to gemini-3.8-flash or llama-3.3-70b via Groq
+      const baseTier2 = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
       modelChain = process.env.AI_MODEL
-        ? Array.from(new Set(['gemini-2.5-flash', process.env.AI_MODEL, ...baseTier2]))
+        ? Array.from(new Set(['gemini-3.8-flash', process.env.AI_MODEL, ...baseTier2]))
         : baseTier2;
     }
 

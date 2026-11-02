@@ -256,7 +256,7 @@ sources_scanned: ${articles.length}
 
   // 1. Try Gemini first
   if (geminiApiKey) {
-    const candidateModels = ['gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.0-flash'];
+    const candidateModels = ['gemini-3.8-flash', 'gemini-3.1-flash-lite'];
     for (const modelName of candidateModels) {
       try {
         const genAI = new GoogleGenerativeAI(geminiApiKey);
