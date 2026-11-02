@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What is the "Golden Path"?',
     answer:
-      'It is an 8-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research). Every command is strictly gated by the 14 domains.',
+      'It is an 8-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research). Every command is strictly gated by the 29 domains and the Judgment Arbiter.',
   },
   {
     question: 'Do I need a database for this?',
@@ -55,7 +55,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What happens if I delete a core Agent file?',
     answer:
-      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. The 14 domains depend on these execution gates to enforce invariants across Engineering, Humanities, and World clusters. We fail loudly, not silently.',
+      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. Pre-flight security invariant ensuring all 8 core agents and the Judgment Arbiter are present before boot. The 29 domains depend on these execution gates to enforce invariants across Engineering, Humanities, Global Society, and Frontier Science clusters. We fail loudly, not silently.',
   },
   {
     question: 'Can I use this for non-coding projects?',
@@ -118,7 +118,7 @@ export default function LandingPage() {
   const handleCopyPluginSnippet = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard
-        .writeText('# Add a new agent to the suite\necho "# Legal Agent" > agents/legalagent.md')
+        .writeText('# Add a new domain to the cluster\necho "# Law & Jurisprudence" > brain/02-domains/law.md')
         .catch(() => {});
       setCopiedPluginSnippet(true);
       setTimeout(() => setCopiedPluginSnippet(false), 2200);
@@ -277,7 +277,7 @@ export default function LandingPage() {
           {/* Sub-headline with High-Contrast Legibility */}
           <p className="text-lg md:text-xl text-slate-700 dark:text-white/85 max-w-2xl mx-auto mb-10 leading-relaxed font-sans font-medium drop-shadow-md">
             A 3D, AI-powered knowledge vault that doesn&apos;t just store your notes—it enforces your
-            engineering standards.
+            engineering standards across 29 domains and 4 clusters.
           </p>
 
           {/* Giant Glowing CTA Button */}
@@ -294,12 +294,12 @@ export default function LandingPage() {
           <div className="flex items-center gap-4 mt-12 text-xs font-mono text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-              14 Domains &amp; 8 Agents
+              29 Domains &amp; 4 Clusters
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
-              175+ Synaptic Coordinates
+              200+ Synaptic Coordinates
             </span>
             <span>•</span>
             <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
@@ -347,14 +347,14 @@ export default function LandingPage() {
                   The Synaptic Constellation
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  A 175+ node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
+                  A 200+ node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
                   boundary (<code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">breaks:</code>) is mathematically
-                  anchored in 3D orbit around the central cognitive hub.
+                  anchored in 3D orbit around the central cognitive hub. Visualizes 4 distinct clusters: Engineering Core, Humanities, Global Society, and Frontier Science.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  175+ SYNAPTIC NODES • PROCEDURAL GL
+                  200+ SYNAPTIC NODES • 4 SPATIAL CLUSTERS
                 </Badge>
               </div>
             </div>
@@ -378,13 +378,13 @@ export default function LandingPage() {
                   </Link>
                 </div>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  14 specialized domains across Engineering (8 Agents), Humanities (3), and World (4). They inspect PRs, database schemas, and API contracts in Gate Mode, outputting blocking{' '}
+                  29 specialized domains across 4 clusters. Governed by 8 Core Agents and the Judgment Arbiter, they inspect PRs and API contracts in Gate Mode, outputting blocking{' '}
                   <code className="text-red-500 font-mono font-bold">GATE: FAIL</code> on violations.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  14 EXECUTION DOMAINS • ZERO SLOP
+                  29 EXECUTION DOMAINS • ZERO SLOP
                 </Badge>
               </div>
             </div>
@@ -399,7 +399,7 @@ export default function LandingPage() {
                   The BN-00 Invariant Fail-Safe
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Pre-flight security invariant. If anyone forks the repository and deletes even one
+                  Pre-flight security invariant ensuring all 8 agents and the Arbiter are present before boot. If anyone forks the repository and deletes even one
                   agent gatekeeper, the system halts with a sci-fi system crash overlay. It refuses to
                   operate in headless mode.
                 </p>
@@ -467,7 +467,7 @@ export default function LandingPage() {
                     </h4>
                     <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
                       Attach the vault to Claude Code, Cursor, or Antigravity via{' '}
-                      <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code>. The 14 Domains will immediately enforce Tier 0
+                      <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code>. The 29 Domains will immediately enforce Tier 0
                       Operating Principles and gate every ticket before touching files.
                     </p>
                   </div>
@@ -612,7 +612,7 @@ export default function LandingPage() {
                   Govern Future Projects
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 14 Domains (Engineering, Humanities, World) will immediately enforce your rules on day one.
+                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 29 Domains (Engineering, Humanities, Global, Science) will immediately enforce your rules on day one.
                 </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
@@ -732,11 +732,15 @@ export default function LandingPage() {
               <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
                 .md
               </code>{' '}
-              file into the{' '}
+              file into{' '}
+              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
+                brain/02-domains/
+              </code>{' '}
+              or{' '}
               <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
                 agents/
               </code>{' '}
-              folder to instantly spawn a new gatekeeper node in the 3D space.
+              to instantly spawn a new node in the 3D space, automatically clustered into one of the 4 spatial regions (Engineering Core, Humanities, Global Society, or Frontier Science) based on its prefix.
             </p>
 
             {/* Code Snippet Box with Copy Button */}
@@ -767,11 +771,11 @@ export default function LandingPage() {
 
               <pre className="p-4 text-xs sm:text-sm text-zinc-200 overflow-x-auto leading-relaxed">
                 <code>
-                  <span className="text-zinc-500"># Add a new agent to the suite</span>
+                  <span className="text-zinc-500"># Add a new domain to the cluster</span>
                   {'\n'}
                   <span className="text-cyan-400 font-semibold">echo</span>{' '}
-                  <span className="text-amber-300">&quot;# Legal Agent&quot;</span> &gt;{' '}
-                  <span className="text-emerald-400">agents/legalagent.md</span>
+                  <span className="text-amber-300">&quot;# Law &amp; Jurisprudence&quot;</span> &gt;{' '}
+                  <span className="text-emerald-400">brain/02-domains/law.md</span>
                 </code>
               </pre>
             </div>
@@ -876,20 +880,19 @@ export default function LandingPage() {
                 </Button>
               </div>
 
-              {/* Strict Pre-Flight Gate Warning (BN-00: 8 Agents Required) */}
+              {/* Strict Pre-Flight Gate Warning (BN-00: 8 Agents & Arbiter Required) */}
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-400/30 text-xs font-mono text-red-200 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-red-300 uppercase tracking-wider">
                     ⚠ STRICT CLONE RULE (GATE: BN-00)
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-200 border border-red-400/30">
-                    8 AGENTS REQUIRED
+                    8 AGENTS + ARBITER
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">
                   You <strong className="text-white">cannot start</strong> or assess a Brain Vault unless all{' '}
-                  <span className="text-[#00ffff]">8 Core Agents (PM, UX, GR, SD, IR, DB, SEC, RS)</span> are present in{' '}
-                  <code className="text-white">/agents</code>. Deleting any agent triggers{' '}
+                  <span className="text-[#00ffff]">8 Core Agents (PM, UX, GR, SD, IR, DB, SEC, RS) and the Judgment Arbiter</span> are present. Deleting any agent triggers{' '}
                   <code className="text-red-300">GATE: FAIL BN-00</code> and halts initialization.
                 </p>
               </div>

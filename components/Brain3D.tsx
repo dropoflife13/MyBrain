@@ -377,18 +377,21 @@ export default function Brain3D({
 
     const getClusterColor = (cluster?: string, light = isLight, nodeId?: string): number => {
       if (nodeId === 'arbiter') {
-        return light ? 0xe11d48 : 0xf43f5e; // Crimson Rose Gold for the Judgment Arbiter
+        return light ? 0xbe123c : 0xf43f5e; // Crimson Rose Gold for the Judgment Arbiter
+      }
+      if (light) {
+        return 0x1e3a8a; // In light mode, nodes to navy blue (#1e3a8a)
       }
       if (cluster === 'Humanities') {
-        return light ? 0x9333ea : 0xd946ef; // Inner Ring: Cosmic Magenta / Purple
+        return 0xd946ef; // Inner Ring: Cosmic Magenta / Purple
       }
       if (cluster === 'World') {
-        return light ? 0x059669 : 0x10b981; // Outer Ring (Global & Society): Emerald Green
+        return 0x10b981; // Outer Ring (Global & Society): Emerald Green
       }
       if (cluster === 'Science') {
-        return light ? 0xd97706 : 0xf59e0b; // Outer Ring (Frontier & Science): Solar Gold
+        return 0xf59e0b; // Outer Ring (Frontier & Science): Solar Gold
       }
-      return light ? 0x0284c7 : 0x00ffff; // Galactic Core (Engineering & 8 Core Agents): Electric Cyan
+      return 0x00ffff; // Galactic Core (Engineering & 8 Core Agents): Electric Cyan
     };
 
     const ruleColor = isLight ? 0x1e3a8a : 0xe2e8f0;
@@ -423,7 +426,7 @@ export default function Brain3D({
 
       const nodeColor = isHub
         ? isLight
-          ? 0x0284c7
+          ? 0x1e3a8a
           : 0xffffff
         : getClusterColor(node.cluster, isLight, String(node.id));
 
@@ -556,7 +559,7 @@ export default function Brain3D({
         const isActive = isHovered || isSelected;
         const nodeColor = isHub
           ? light
-            ? 0x0284c7
+            ? 0x1e3a8a
             : 0xffffff
           : getClusterColor(node.cluster, light, id);
 

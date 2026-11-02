@@ -145,7 +145,7 @@ export default function ExportClaudeModal({
                     Export CLAUDE.md & .cursorrules
                   </h2>
                   <Badge variant="default" className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-300 border-emerald-500/30">
-                    8 CORE AGENTS SYNCED
+                    8 AGENTS + ARBITER SYNCED
                   </Badge>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 truncate mt-0.5">

@@ -56,7 +56,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans bg-slate-50 dark:bg-[#050505] text-slate-900 dark:text-white transition-colors duration-300">
+      <body className="min-h-full flex flex-col font-sans bg-slate-50 text-slate-900 dark:bg-[#050505] dark:text-slate-50 transition-colors duration-300">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

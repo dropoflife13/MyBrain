@@ -30,6 +30,7 @@ import ChatMessageContent from '../../components/ChatMessageContent';
 import ExportClaudeModal from '../../components/ExportClaudeModal';
 import VoiceInput, { VoiceTTSButton, VoiceModeBadge } from '../../components/VoiceInput';
 import { ThemeToggle } from '../../components/ThemeToggle';
+import { useTheme } from 'next-themes';
 
 interface AgentStats {
   percentage: number;
@@ -88,6 +89,8 @@ const MAINFRAME_COORDS = { x: 50, y: 50 };
 const TERMINAL_DRAWER_WIDTH = 480;
 
 export default function PixelAgentHQPage() {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
   const [statsMap, setStatsMap] = useState<Record<AgentCode, AgentStats>>({
     DB: { percentage: 95, count: 14, avgConfidence: 4.8, health: 98, isLowKnowledge: false },
     SEC: { percentage: 92, count: 15, avgConfidence: 4.7, health: 95, isLowKnowledge: false },
@@ -623,7 +626,7 @@ export default function PixelAgentHQPage() {
   const clampY = (y: number) => Math.max(82, Math.min(arenaDimensions.height - 78, y));
 
   return (
-    <div className="relative w-screen h-screen max-h-screen bg-[#02050e] text-slate-100 flex flex-col font-mono overflow-hidden select-none">
+    <div className="relative w-screen h-screen max-h-screen bg-slate-50 text-slate-900 dark:bg-[#02050e] dark:text-slate-100 flex flex-col font-mono overflow-hidden select-none transition-colors duration-300">
       {/* 1. Retro CRT Scanline & Phosphor Overlay */}
       {crtEffect && (
         <div
@@ -637,7 +640,7 @@ export default function PixelAgentHQPage() {
       )}
 
       {/* 2. ARCHITECT / QA MONITORING HUD (TOP BAR) */}
-      <header className="sticky top-0 z-40 bg-[#060a16]/95 backdrop-blur-md border-b border-cyan-500/25 px-4 sm:px-6 py-2.5 shadow-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#060a16]/95 backdrop-blur-md border-b border-slate-200 dark:border-cyan-500/25 px-4 sm:px-6 py-2.5 shadow-sm dark:shadow-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-3 shrink-0">
         {/* Left: Architect Title & System Status */}
         <div className="flex items-center gap-3">
           <Link
@@ -649,7 +652,7 @@ export default function PixelAgentHQPage() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <span className="text-sm font-extrabold tracking-wider text-white flex items-center gap-2">
+            <span className="text-sm font-extrabold tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
               <Eye className="w-4 h-4 text-cyan-400 animate-pulse" />
               <span>ARCHITECT HUD</span>
               <span className="text-zinc-500">//</span>
@@ -690,7 +693,7 @@ export default function PixelAgentHQPage() {
                     ? 'bg-white text-black border-white shadow-[0_0_10px_rgba(255,255,255,0.7)]'
                     : isLow
                     ? 'bg-yellow-500/15 text-yellow-300 border-yellow-500/40 hover:bg-yellow-500/25 animate-pulse'
-                    : 'bg-zinc-900/80 text-zinc-300 border-zinc-800 hover:border-cyan-500/40 hover:text-cyan-300'
+                    : 'bg-slate-100 dark:bg-zinc-900/80 text-slate-700 dark:text-zinc-300 border-slate-200 dark:border-zinc-800 hover:border-cyan-500/40 hover:text-cyan-700 dark:hover:text-cyan-300'
                 }`}
               >
                 <span
@@ -716,7 +719,7 @@ export default function PixelAgentHQPage() {
             onClick={fetchStats}
             disabled={isLoadingStats}
             title="Refresh Live Vault Telemetry"
-            className="h-8 px-2.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/60 text-xs text-zinc-300 hover:text-cyan-400 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
+            className="h-8 px-2.5 rounded-lg bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700/60 text-xs text-slate-700 dark:text-zinc-300 hover:text-cyan-700 dark:hover:text-cyan-400 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-40"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStats ? 'animate-spin text-cyan-400' : ''}`} />
             <span className="hidden sm:inline">Sync</span>
@@ -727,8 +730,8 @@ export default function PixelAgentHQPage() {
             title="Toggle CRT Scanlines"
             className={`h-8 px-2.5 rounded-lg text-xs font-mono border transition-all cursor-pointer flex items-center gap-1.5 ${
               crtEffect
-                ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30 font-bold'
-                : 'bg-zinc-900 text-zinc-400 border-zinc-800'
+                ? 'bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border-cyan-500/30 font-bold'
+                : 'bg-slate-100 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-800'
             }`}
           >
             <Radio className="w-3.5 h-3.5" />
@@ -759,7 +762,7 @@ export default function PixelAgentHQPage() {
       {/* 3. MAIN ARENA: ISOMETRIC SPACE STATION / OFFICE GAME DECK */}
       <main
         ref={arenaRef}
-        className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden bg-[#02050e]"
+        className="relative flex-1 w-full h-[calc(100vh-61px)] max-h-[calc(100vh-61px)] overflow-hidden bg-slate-100 dark:bg-[#02050e] transition-colors duration-300"
       >
         {/* PART 2.1: Isometric Space Station / Office Grid Floor (transform: rotateX(60deg)) */}
         <div
@@ -767,7 +770,7 @@ export default function PixelAgentHQPage() {
           style={{ perspective: '900px' }}
         >
           {/* Deep space radial atmosphere */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0a193d]/45 via-[#030714] to-[#010309]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-100/60 via-slate-100 to-slate-200 dark:from-[#0a193d]/45 dark:via-[#030714] dark:to-[#010309] transition-colors duration-300" />
 
           {/* Isometric Floor Plane with rotateX(60deg) */}
           <div
@@ -1109,8 +1112,8 @@ export default function PixelAgentHQPage() {
         })}
 
         {/* Quick HUD Guide Tip (Bottom Left Corner) */}
-        <div className="absolute bottom-4 left-6 hidden md:flex flex-col gap-1 text-[11px] font-mono text-zinc-400 bg-black/65 backdrop-blur-md p-3 rounded-xl border border-zinc-800 z-20 pointer-events-none">
-          <span className="text-cyan-400 font-bold flex items-center gap-1.5">
+        <div className="absolute bottom-4 left-6 hidden md:flex flex-col gap-1 text-[11px] font-mono text-slate-600 dark:text-zinc-400 bg-white/80 dark:bg-black/65 backdrop-blur-md p-3 rounded-xl border border-slate-200 dark:border-zinc-800 z-20 pointer-events-none shadow-md dark:shadow-none">
+          <span className="text-cyan-600 dark:text-cyan-400 font-bold flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" />
             <span>ISOMETRIC SPACE STATION HQ:</span>
           </span>
@@ -1123,10 +1126,10 @@ export default function PixelAgentHQPage() {
           <button
             type="button"
             onClick={() => setIsTerminalOpen(true)}
-            className="fixed bottom-5 right-5 z-30 px-3.5 py-2.5 rounded-xl bg-[#081124]/90 hover:bg-[#0c1833] border border-cyan-500/40 text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,255,0.25)] backdrop-blur-md transition-all cursor-pointer group"
+            className="fixed bottom-5 right-5 z-30 px-3.5 py-2.5 rounded-xl bg-white/95 dark:bg-[#081124]/90 hover:bg-slate-100 dark:hover:bg-[#0c1833] border border-slate-300 dark:border-cyan-500/40 text-cyan-700 dark:text-cyan-300 font-mono text-xs flex items-center gap-2 shadow-lg dark:shadow-[0_0_20px_rgba(0,255,255,0.25)] backdrop-blur-md transition-all cursor-pointer group"
             title="Open Mainframe Terminal Panel"
           >
-            <Terminal className="w-4 h-4 text-cyan-400 group-hover:rotate-12 transition-transform" />
+            <Terminal className="w-4 h-4 text-cyan-600 dark:text-cyan-400 group-hover:rotate-12 transition-transform" />
             <span>Open Terminal</span>
           </button>
         )}
@@ -1141,10 +1144,10 @@ export default function PixelAgentHQPage() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-            className="fixed top-[61px] right-0 bottom-0 w-full sm:w-[480px] bg-[#070d1d]/95 backdrop-blur-xl border-l border-cyan-500/30 flex flex-col z-40 shadow-[-12px_0_35px_rgba(0,0,0,0.85)] max-h-[calc(100vh-61px)] overflow-hidden"
+            className="fixed top-[61px] right-0 bottom-0 w-full sm:w-[480px] bg-white/95 dark:bg-[#070d1d]/95 backdrop-blur-xl border-l border-slate-200 dark:border-cyan-500/30 flex flex-col z-40 shadow-xl dark:shadow-[-12px_0_35px_rgba(0,0,0,0.85)] max-h-[calc(100vh-61px)] overflow-hidden"
           >
             {/* PART 1.1: Sleek Top-Right "X" Close Button (Always accessible in both Docked & Standby states) */}
-            <div className="p-4 border-b border-cyan-500/25 bg-[#091126] flex items-center justify-between shrink-0">
+            <div className="p-4 border-b border-slate-200 dark:border-cyan-500/25 bg-slate-50 dark:bg-[#091126] flex items-center justify-between shrink-0">
               {selectedAgent && activeBotMeta ? (
                 <div className="flex items-center gap-3 min-w-0">
                   <div
@@ -1165,28 +1168,28 @@ export default function PixelAgentHQPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-bold text-white tracking-wide truncate">
+                      <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide truncate">
                         {activeBotMeta.name}
                       </h2>
                       <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold border shrink-0 ${activeBotMeta.badgeBg}`}>
                         {activeBotMeta.code}
                       </span>
                     </div>
-                    <p className="text-[11px] text-zinc-400 truncate">
+                    <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
                       {activeBotMeta.role} • {activeBotMeta.invariants.split(':')[0]}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                  <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-600 dark:text-cyan-400">
                     <Terminal className="w-4 h-4" />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-white tracking-wide">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">
                       MAINFRAME TERMINAL
                     </h2>
-                    <p className="text-[10px] text-zinc-400">
+                    <p className="text-[10px] text-slate-500 dark:text-zinc-400">
                       Select an agent workstation to open neural comms
                     </p>
                   </div>
@@ -1199,7 +1202,7 @@ export default function PixelAgentHQPage() {
                 onClick={handleCloseTerminal}
                 aria-label="Close terminal panel"
                 title="Close terminal and return bot to workstation (Esc)"
-                className="p-2 rounded-lg bg-zinc-800/90 hover:bg-red-500/20 text-zinc-300 hover:text-red-300 border border-zinc-700 hover:border-red-500/40 transition-all cursor-pointer shrink-0"
+                className="p-2 rounded-lg bg-slate-200 dark:bg-zinc-800/90 hover:bg-red-500/20 text-slate-700 dark:text-zinc-300 hover:text-red-600 dark:hover:text-red-300 border border-slate-300 dark:border-zinc-700 hover:border-red-500/40 transition-all cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1209,21 +1212,21 @@ export default function PixelAgentHQPage() {
               // Active Docked Bot Terminal Body
               <div className="flex-1 flex flex-col h-full max-h-full overflow-hidden">
                 {/* Bot Vital Telemetry Bar */}
-                <div className="px-4 py-2 bg-black/40 border-b border-zinc-800 flex items-center justify-between gap-2 text-[11px] font-mono text-zinc-400 shrink-0 flex-wrap">
+                <div className="px-4 py-2 bg-slate-100 dark:bg-black/40 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between gap-2 text-[11px] font-mono text-slate-600 dark:text-zinc-400 shrink-0 flex-wrap">
                   <div className="flex items-center gap-2">
                     <span>Knowledge:</span>
                     <span
                       className={`font-bold ${
                         statsMap[selectedAgent].isLowKnowledge
-                          ? 'text-yellow-400 animate-pulse'
-                          : 'text-cyan-400'
+                          ? 'text-yellow-600 dark:text-yellow-400 animate-pulse'
+                          : 'text-cyan-700 dark:text-cyan-400'
                       }`}
                     >
                       {statsMap[selectedAgent].percentage}%
                     </span>
                     <span>•</span>
                     <span>Health:</span>
-                    <span className="text-emerald-400 font-bold">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                       {statsMap[selectedAgent].health}%
                     </span>
                   </div>
@@ -1233,11 +1236,11 @@ export default function PixelAgentHQPage() {
                 </div>
 
                 {/* Quick Invariant Prompt Shortcuts */}
-                <div className="px-4 py-2 bg-[#081022] border-b border-zinc-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
+                <div className="px-4 py-2 bg-slate-50 dark:bg-[#081022] border-b border-slate-200 dark:border-zinc-800 flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
                   <button
                     type="button"
                     onClick={() => handleSendChat(activeBotMeta.samplePrompt)}
-                    className="px-2.5 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
                   >
                     ⚡ {activeBotMeta.samplePrompt.slice(0, 36)}...
                   </button>
@@ -1246,7 +1249,7 @@ export default function PixelAgentHQPage() {
                     onClick={() =>
                       handleSendChat(`List your top invariants and explain why they must not be violated.`)
                     }
-                    className="px-2.5 py-1 rounded bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 border border-zinc-700 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded bg-slate-100 dark:bg-zinc-800/80 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
                   >
                     📜 Core Invariants
                   </button>
@@ -1255,7 +1258,7 @@ export default function PixelAgentHQPage() {
                     onClick={() =>
                       handleSendChat(`/implement a minimal reference implementation enforcing ${activeBotMeta.code} rules`)
                     }
-                    className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
+                    className="px-2.5 py-1 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer shrink-0"
                   >
                     🚀 /implement
                   </button>
@@ -1270,7 +1273,7 @@ export default function PixelAgentHQPage() {
                         msg.role === 'user' ? 'items-end' : 'items-start'
                       }`}
                     >
-                      <div className="text-[10px] font-mono text-zinc-500 mb-1 flex items-center gap-1.5">
+                      <div className="text-[10px] font-mono text-slate-500 dark:text-zinc-500 mb-1 flex items-center gap-1.5">
                         <span>{msg.role === 'user' ? 'Architect / QA' : activeBotMeta.name}</span>
                         <span>•</span>
                         <span>{msg.timestamp}</span>
@@ -1279,13 +1282,13 @@ export default function PixelAgentHQPage() {
                       <div
                         className={`max-w-[90%] p-3.5 rounded-xl text-xs leading-relaxed font-mono ${
                           msg.role === 'user'
-                            ? 'bg-cyan-600/20 text-cyan-100 border border-cyan-500/40 rounded-br-none shadow-[0_0_10px_rgba(0,255,255,0.15)]'
-                            : 'bg-[#091329] text-slate-200 border border-zinc-800 rounded-bl-none shadow-md'
+                            ? 'bg-cyan-600/15 dark:bg-cyan-600/20 text-cyan-950 dark:text-cyan-100 border border-cyan-500/40 rounded-br-none shadow-sm dark:shadow-[0_0_10px_rgba(0,255,255,0.15)]'
+                            : 'bg-slate-100 dark:bg-[#091329] text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-zinc-800 rounded-bl-none shadow-sm'
                         }`}
                       >
                         <ChatMessageContent text={msg.text} role={msg.role} />
                         {msg.role === 'assistant' && (
-                          <div className="text-[10px] text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1.5 flex items-center justify-between gap-2">
+                          <div className="text-[10px] text-slate-500 dark:text-gray-500 font-mono mt-2 border-t border-black/10 dark:border-white/10 pt-1.5 flex items-center justify-between gap-2">
                             <span>
                               [via {msg.provider ? msg.provider.toUpperCase() : 'GOOGLE'} • {msg.model || 'gemini-3.8-flash'}]
                             </span>
@@ -1297,7 +1300,7 @@ export default function PixelAgentHQPage() {
                   ))}
 
                   {isChatLoading && (
-                    <div className="flex items-center gap-2 text-xs font-mono text-cyan-400 p-3 bg-[#091329] border border-cyan-500/30 rounded-xl w-fit">
+                    <div className="flex items-center gap-2 text-xs font-mono text-cyan-700 dark:text-cyan-400 p-3 bg-slate-100 dark:bg-[#091329] border border-cyan-500/30 rounded-xl w-fit">
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                       <span>Querying {activeBotMeta.name} neural bus...</span>
                     </div>
@@ -1307,7 +1310,7 @@ export default function PixelAgentHQPage() {
                 </div>
 
                 {/* Chat Prompt Input Bar */}
-                <div className="p-3 bg-[#091126] border-t border-cyan-500/20 shrink-0">
+                <div className="p-3 bg-slate-50 dark:bg-[#091126] border-t border-slate-200 dark:border-cyan-500/20 shrink-0">
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
@@ -1321,7 +1324,7 @@ export default function PixelAgentHQPage() {
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder={`Query ${activeBotMeta.name} (contextNode: ${selectedAgent})...`}
                       disabled={isChatLoading}
-                      className="flex-1 h-10 px-3 rounded-lg bg-black/60 border border-zinc-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 text-xs font-mono text-white placeholder-zinc-500 outline-none transition-all"
+                      className="flex-1 h-10 px-3 rounded-lg bg-white dark:bg-black/60 border border-slate-300 dark:border-zinc-700 focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-1 focus:ring-cyan-500 text-xs font-mono text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-zinc-500 outline-none transition-all"
                     />
                     <VoiceInput
                       disabled={isChatLoading}
@@ -1333,7 +1336,7 @@ export default function PixelAgentHQPage() {
                     <button
                       type="submit"
                       disabled={!chatInput.trim() || isChatLoading}
-                      className="h-10 px-3.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-black font-bold text-xs transition-all flex items-center justify-center cursor-pointer shadow-[0_0_10px_rgba(0,255,255,0.3)]"
+                      className="h-10 px-3.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 text-white dark:text-black font-bold text-xs transition-all flex items-center justify-center cursor-pointer shadow-md dark:shadow-[0_0_10px_rgba(0,255,255,0.3)]"
                     >
                       <Send className="w-4 h-4" />
                     </button>
@@ -1343,13 +1346,13 @@ export default function PixelAgentHQPage() {
             ) : (
               // Standby View when Drawer is opened without a selected bot
               <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-4 shadow-[0_0_20px_rgba(0,255,255,0.2)]">
+                <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-600 dark:text-cyan-400 mb-4 shadow-md dark:shadow-[0_0_20px_rgba(0,255,255,0.2)]">
                   <Terminal className="w-8 h-8 animate-pulse" />
                 </div>
-                <h3 className="text-base font-bold text-white tracking-wider mb-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-wider mb-2">
                   TERMINAL STANDBY // SELECT AGENT
                 </h3>
-                <p className="text-xs text-slate-200 max-w-xs leading-relaxed mb-6 font-mono">
+                <p className="text-xs text-slate-600 dark:text-slate-200 max-w-xs leading-relaxed mb-6 font-mono">
                   Click any of the 9 Core Pixel Bots (8 Engineering Agents + the Judgment Arbiter) or select a badge below to dock them to the central Mainframe.
                 </p>
 
@@ -1362,7 +1365,7 @@ export default function PixelAgentHQPage() {
                         key={code}
                         type="button"
                         onClick={() => handleSelectBot(code)}
-                        className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-cyan-500/40 text-xs font-mono text-zinc-300 hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer"
+                        className="p-2 rounded-lg bg-slate-100 dark:bg-zinc-900 hover:bg-slate-200 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 hover:border-cyan-500/40 text-xs font-mono text-slate-700 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white flex flex-col items-center gap-1 transition-all cursor-pointer shadow-sm dark:shadow-none"
                       >
                         <span
                           className="w-2 h-2 rounded-full"

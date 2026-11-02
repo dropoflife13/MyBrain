@@ -184,7 +184,7 @@ export default function AgentsPage() {
         {/* Center Title Pill */}
         <div className="hidden sm:flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/80 dark:bg-[#09090b]/85 border border-slate-300 dark:border-white/10 text-xs font-mono shadow-xl backdrop-blur-xl">
           <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-          <span className="font-bold text-slate-900 dark:text-white">THE 8-AGENT SUITE</span>
+          <span className="font-bold text-slate-900 dark:text-white">8 AGENTS + JUDGMENT ARBITER</span>
           <span className="text-slate-400 dark:text-zinc-500">•</span>
           <span className="text-slate-500 dark:text-zinc-400">RULE BN-00 GOVERNANCE</span>
         </div>

@@ -511,7 +511,7 @@ export default function ProfilePage() {
                           if (active && payload && payload.length) {
                             const data = payload[0].payload;
                             return (
-                              <div className="bg-[#09090b]/95 border border-cyan-500/40 p-3 rounded-xl shadow-xl font-mono text-xs text-white">
+                              <div className="bg-white/95 dark:bg-[#09090b]/95 border border-cyan-500/40 p-3 rounded-xl shadow-xl font-mono text-xs text-slate-900 dark:text-white">
                                 <div className="flex items-center justify-between gap-3 mb-1">
                                   <span className="text-cyan-400 font-bold">{data.subject}</span>
                                   {data.isHighConfidence && (
