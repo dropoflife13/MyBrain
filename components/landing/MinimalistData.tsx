@@ -150,7 +150,7 @@ export default function MinimalistData() {
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/10 border-t border-slate-200 dark:border-white/10">
         <Chart
           title="Token Cost Optimization"
-          caption="Illustrative"
+          caption="[ SIMULATED TELEMETRY ]"
           mode="line"
           values={[100, 82, 66, 48, 34, 24, 18]}
           max={100}
@@ -158,7 +158,7 @@ export default function MinimalistData() {
         />
         <Chart
           title="Knowledge Expansion"
-          caption="Domains seeded"
+          caption="[ SIMULATED TELEMETRY ]"
           mode="bars"
           values={[4, 6, 8, 11, 14, 22, 29]}
           max={29}
@@ -168,3 +168,4 @@ export default function MinimalistData() {
     </div>
   );
 }
+

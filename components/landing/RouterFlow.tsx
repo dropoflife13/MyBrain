@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { motion } from 'framer-motion';
 
 /** Circuit-trace paths in a 1000 x 360 viewBox. */
 const TRACES = {
@@ -15,12 +16,12 @@ const TRACES = {
 const label = 'font-mono fill-slate-800 dark:fill-white';
 const sub = 'font-mono fill-slate-500 dark:fill-zinc-400';
 const box =
-  'fill-white dark:fill-black stroke-slate-300 dark:stroke-white/25';
-const trace = 'stroke-slate-400 dark:stroke-white/30';
+  'fill-white dark:fill-black stroke-slate-400 dark:stroke-white/25';
+const trace = 'stroke-slate-500 dark:stroke-white/30';
 
 function Pulse({ path, dur, begin }: { path: string; dur: number; begin: number }) {
   return (
-    <circle r={3.5} className="fill-cyan-500 dark:fill-cyan-300 drop-shadow-[0_0_6px_#22d3ee]">
+    <circle r={3.5} className="fill-blue-700 dark:fill-cyan-300 drop-shadow-[0_0_6px_#22d3ee]">
       <animateMotion dur={`${dur}s`} begin={`${begin}s`} repeatCount="indefinite" path={path} />
     </circle>
   );
@@ -28,17 +29,17 @@ function Pulse({ path, dur, begin }: { path: string; dur: number; begin: number 
 
 export default function RouterFlow() {
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full"><div className="hidden md:block">
       <svg
         viewBox="0 0 1000 360"
-        className="w-full min-w-[640px] h-auto"
+        className="w-full h-auto"
         fill="none"
         role="img"
         aria-label="Tiered router flow: user query goes through the router to Tier 1 local lookup, Tier 2 fast LLM, or Tier 3 heavy LLM"
       >
         <defs>
           <marker id="rf-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0 0 L10 5 L0 10 z" className="fill-slate-400 dark:fill-white/50" />
+            <path d="M0 0 L10 5 L0 10 z" className="fill-slate-500 dark:fill-white/50" />
           </marker>
         </defs>
 
@@ -61,7 +62,7 @@ export default function RouterFlow() {
           [560, 70],
           [560, 290],
         ].map(([cx, cy]) => (
-          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={2.5} className="fill-slate-400 dark:fill-white/50" />
+          <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r={2.5} className="fill-slate-500 dark:fill-white/50" />
         ))}
 
         {/* Pulses travelling along the traces */}
@@ -116,6 +117,60 @@ export default function RouterFlow() {
           ESCALATE
         </text>
       </svg>
+      </div>
+
+      {/* Mobile: vertical flow, no horizontal overflow */}
+      <div className="md:hidden flex flex-col items-center font-mono">
+        <div className={mBox}>User Query</div>
+        <VLine />
+        <div className="relative w-28 h-28 flex items-center justify-center">
+          <div className="absolute inset-3 rotate-45 border border-slate-400 dark:border-white/25 bg-white dark:bg-black shadow-[0_0_14px_rgba(34,211,238,0.35)]" />
+          <span className="relative text-[10px] uppercase tracking-widest text-slate-800 dark:text-white text-center leading-tight">
+            Tiered
+            <br />
+            Router
+          </span>
+        </div>
+        <VLine />
+        {[
+          { t: 'Tier 1 · Local', s: 'Rule ID lookup · $0' },
+          { t: 'Tier 2 · Fast LLM', s: 'Simple questions' },
+          { t: 'Tier 3 · Heavy LLM', s: 'Workflows & reasoning' },
+        ].map((n, i) => (
+          <React.Fragment key={n.t}>
+            {i > 0 && <VLine dashed label="escalate" />}
+            <div className={`${mBox} items-start text-left`}>
+              <span className="text-xs uppercase tracking-widest text-slate-800 dark:text-white">{n.t}</span>
+              <span className="text-[10px] text-slate-500 dark:text-zinc-400 mt-1">{n.s}</span>
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
     </div>
   );
 }
+
+const mBox =
+  'w-full max-w-xs flex flex-col items-center justify-center rounded-xl border border-slate-400 dark:border-white/25 bg-white dark:bg-black px-4 py-3 text-xs uppercase tracking-widest text-slate-800 dark:text-white';
+
+function VLine({ dashed, label }: { dashed?: boolean; label?: string }) {
+  return (
+    <div className="relative h-10 flex items-center">
+      <div
+        className={`h-full border-l ${dashed ? 'border-dashed' : ''} border-slate-500 dark:border-white/30`}
+      />
+      <motion.span
+        className="absolute left-0 -translate-x-1/2 w-2 h-2 rounded-full bg-blue-700 dark:bg-cyan-300 shadow-[0_0_8px_#22d3ee]"
+        animate={{ top: ['0%', '100%'] }}
+        transition={{ duration: 1.4, repeat: Infinity, ease: 'linear' }}
+      />
+      {label && (
+        <span className="absolute left-3 text-[9px] uppercase tracking-widest text-slate-500 dark:text-zinc-400">
+          {label}
+        </span>
+      )}
+    </div>
+  );
+}
+
+

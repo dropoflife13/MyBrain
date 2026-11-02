@@ -46,27 +46,23 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What is the "Golden Path"?',
     answer:
-      'It is an 8-step software development lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research). Every command is strictly gated by the 29 domains and the Judgment Arbiter.',
+      'An 8-step lifecycle (/grill → /pitch → /to-spec → /to-tickets → /implement → /review → /harden → /research), every step gated by the 29 domains and the Judgment Arbiter.',
   },
   {
     question: 'Do I need a database for this?',
-    answer:
-      'No. The Cortex uses a Local-First architecture. Your Markdown files in the brain/ and agents/ folders are the database. It is 100% serverless and free to host.',
+    answer: 'No, your Markdown files in brain/ and agents/ are the database.',
   },
   {
     question: 'What happens if I delete a core Agent file?',
-    answer:
-      'The system triggers Rule BN-00. The 3D graph crashes and displays a "System Halted" screen until you restore the missing gatekeeper. Pre-flight security invariant ensuring all 8 core agents and the Judgment Arbiter are present before boot. The 29 domains depend on these execution gates to enforce invariants across Engineering, Humanities, Global Society, and Frontier Science clusters. We fail loudly, not silently.',
+    answer: 'Rule BN-00 halts the console until all 8 core agents and the Judgment Arbiter are restored.',
   },
   {
     question: 'Can I use this for non-coding projects?',
-    answer:
-      'Absolutely. You can swap out the dbaagent.md for a legalagent.md and use the 3D brain to govern any complex decision-making process.',
+    answer: 'Yes, swap dbaagent.md for legalagent.md to govern any decision process.',
   },
   {
     question: 'How do I deploy this to the web?',
-    answer:
-      'Push your code to GitHub and connect it to Vercel. The /start guide covers the exact step-by-step process to get your own custom URL.',
+    answer: 'Push to GitHub and connect Vercel; the /start guide has the steps.',
     hasDownloadButton: true,
   },
 ];
@@ -376,15 +372,14 @@ export default function LandingPage() {
         <section id="how-it-works" className="px-6 max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
-              // Operational Journey
+              {'//'} Operational Journey
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-950 dark:text-white">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
               How High-Agency Engineers Encode Judgment
             </h2>
             <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
-              Separate your human trade-offs from generative AI. You provide the judgment; AI
-              enforces the gates.
-            </p>
+                You provide the judgment; AI enforces the gates.
+              </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -409,10 +404,8 @@ export default function LandingPage() {
                       Assess Yourself (Excavation)
                     </h4>
                     <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                      Run <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">THE-TEST.md</code> and the 3 Fast
-                      Excavation Micro-Triggers (Artifact Archaeology, Visceral Cringe Test, and 30s
-                      Trade-Off Triads) to discover what you truly care about.
-                    </p>
+                Run <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">THE-TEST.md</code> to surface the rules you already follow.
+              </p>
                   </div>
                 </div>
 
@@ -425,10 +418,8 @@ export default function LandingPage() {
                       Connect Any AI Agent
                     </h4>
                     <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                      Attach the vault to Claude Code, Cursor, or Antigravity via{' '}
-                      <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code>. The 29 Domains will immediately enforce Tier 0
-                      Operating Principles and gate every ticket before touching files.
-                    </p>
+                Attach the vault via <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code> and the 29 Domains gate every ticket.
+              </p>
                   </div>
                 </div>
 
@@ -441,10 +432,8 @@ export default function LandingPage() {
                       Enforce Invariants &amp; Grow
                     </h4>
                     <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                      Promote tested rules (<code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">conf &ge; 3</code>)
-                      into domain files. Every verified rule lights up a new glowing node in your
-                      3D constellation.
-                    </p>
+                Promote tested rules (<code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">conf &ge; 3</code>) and a new node lights up.
+              </p>
                   </div>
                 </div>
               </div>
@@ -480,9 +469,8 @@ export default function LandingPage() {
                     </a>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-zinc-400 font-sans">
-                    Explore the complete Next.js 16 App Router implementation, custom Three.js WebGL
-                    runtime, and the Multi-Agent Gate Suite markdown files.
-                  </p>
+                Browse the Next.js app, Three.js runtime, and agent markdown.
+              </p>
                 </div>
 
                 {/* See The Crash */}
@@ -497,11 +485,8 @@ export default function LandingPage() {
                     </Badge>
                   </div>
                   <p className="text-xs text-slate-700 dark:text-zinc-300 font-sans">
-                    Want to see it halt? In your local clone, rename{' '}
-                    <code className="text-red-500 font-mono font-bold">agents/securityagent.md</code> to{' '}
-                    <code className="text-red-500 font-mono font-bold">.bak</code>. Watch the 3D console vanish and
-                    render a sci-fi system crash screen with scanlines and blinking cursor.
-                  </p>
+                Rename <code className="text-red-500 font-mono font-bold">agents/securityagent.md</code> to <code className="text-red-500 font-mono font-bold">.bak</code> and watch BN-00 halt the console.
+              </p>
                 </div>
               </div>
 
@@ -529,15 +514,14 @@ export default function LandingPage() {
         <section id="why-cortex" className="px-6 max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
-              // The Core Philosophy
+              {'//'} The Core Philosophy
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-950 dark:text-white">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
               The Second Brain That Doesn&apos;t Forget.
             </h2>
             <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
-              A lifelong repository for your judgment: (1) assess yourself, (2) extract hidden knowledge,
-              (3) permanently store it, and (4) apply it to all future projects so you never lose your edge.
-            </p>
+                A lifelong repository for your judgment.
+              </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -551,8 +535,8 @@ export default function LandingPage() {
                   Extract Hidden Knowledge
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  The built-in diagnostic assessments force you to articulate the rules you already follow but never wrote down. Discover your own tacit expertise.
-                </p>
+                Surface the rules you follow but never wrote down.
+              </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
@@ -571,8 +555,8 @@ export default function LandingPage() {
                   Govern Future Projects
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Connect the <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> folder to any new codebase. Your 29 Domains (Engineering, Humanities, Global, Science) will immediately enforce your rules on day one.
-                </p>
+                Connect <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> to any codebase and your 29 Domains enforce on day one.
+              </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
@@ -591,8 +575,8 @@ export default function LandingPage() {
                   Permanent Memory
                 </h3>
                 <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Memory fades; Markdown doesn&apos;t. Every rule you learn is permanently stored in your vault, ready to be queried via AI when you inevitably forget the details.
-                </p>
+                Memory fades; Markdown doesn&apos;t.
+              </p>
               </div>
               <div className="pt-4 border-t border-slate-200 dark:border-white/10">
                 <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
@@ -607,9 +591,9 @@ export default function LandingPage() {
         <section id="faq" className="px-6 max-w-4xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
-              // Frequently Asked Questions
+              {'//'} Frequently Asked Questions
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-950 dark:text-white">
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
               Everything You Need to Know
             </h2>
           </div>
@@ -675,7 +659,7 @@ export default function LandingPage() {
               <div className="space-y-1">
                 <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>// Modular Architecture</span>
+                  <span>{'//'} Modular Architecture</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-950 dark:text-white font-mono">
                   Extend the Cortex
@@ -687,27 +671,15 @@ export default function LandingPage() {
             </div>
 
             <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-              The system is designed to grow. Drop a new{' '}
-              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
-                .md
-              </code>{' '}
-              file into{' '}
-              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
-                brain/02-domains/
-              </code>{' '}
-              or{' '}
-              <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">
-                agents/
-              </code>{' '}
-              to instantly spawn a new node in the 3D space, automatically clustered into one of the 4 spatial regions (Engineering Core, Humanities, Global Society, or Frontier Science) based on its prefix.
-            </p>
+                Drop a <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">.md</code> into <code className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-zinc-800 text-cyan-600 dark:text-cyan-300 font-mono text-xs font-semibold">brain/02-domains/</code> and it auto-clusters into one of 4 regions by prefix.
+              </p>
 
             {/* Code Snippet Box with Copy Button */}
             <div className="relative rounded-xl bg-zinc-950 border border-white/10 overflow-hidden font-mono shadow-2xl">
               <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/90 border-b border-white/10 text-xs text-zinc-400">
                 <div className="flex items-center gap-2">
                   <Terminal className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="text-[11px] text-zinc-300">Terminal // Add Agent Node</span>
+                  <span className="text-[11px] text-zinc-300">Terminal {'//'} Add Domain Node</span>
                 </div>
                 <button
                   type="button"
@@ -859,7 +831,7 @@ export default function LandingPage() {
               {/* 3-Step Self-Assessment Pipeline */}
               <div className="p-3.5 rounded-xl bg-zinc-900/70 border border-white/10 text-xs font-mono text-zinc-300 space-y-2">
                 <div className="text-[11px] text-[#00ffff] uppercase tracking-wider font-semibold">
-                  // How You Build Your Own Cortex (Self-Assessment Loop):
+                  {'//'} How You Build Your Own Cortex (Self-Assessment Loop):
                 </div>
                 <div className="flex items-start gap-2.5">
                   <span className="px-1.5 py-0.5 rounded bg-cyan-400/15 text-[#00ffff] text-[10px] font-bold">

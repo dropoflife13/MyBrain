@@ -66,7 +66,7 @@ function Layer({ x, y, w, h, floatDelay, tag, title, blurb, icon, children }: La
       <motion.div
         whileHover={{ y: -12, scale: 1.015 }}
         transition={{ type: 'spring', stiffness: 220, damping: 18 }}
-        className="h-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl p-5 shadow-xl dark:shadow-[0_0_40px_rgba(0,255,255,0.06)] flex flex-col justify-between cursor-default"
+        className="h-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white/85 dark:bg-white/[0.04] backdrop-blur-xl p-5 shadow-xl dark:shadow-[0_0_40px_rgba(0,255,255,0.06)] flex flex-col justify-between cursor-default"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -111,9 +111,9 @@ export default function ExplodedView() {
                 strokeWidth={1.25}
                 strokeDasharray="2 7"
                 strokeLinecap="round"
-                className="stroke-slate-400 dark:stroke-cyan-300/60"
+                className="stroke-slate-600 dark:stroke-cyan-300/60"
               />
-              <circle r={3.5} className="fill-cyan-500 dark:fill-cyan-300 drop-shadow-[0_0_6px_#22d3ee]">
+              <circle r={3.5} className="fill-blue-700 dark:fill-cyan-300 drop-shadow-[0_0_6px_#22d3ee]">
                 <animateMotion dur={`${3 + i * 0.6}s`} repeatCount="indefinite" path={d} begin={`${i * 0.5}s`} />
               </circle>
             </g>
@@ -216,6 +216,21 @@ export default function ExplodedView() {
 
       {/* Mobile: simple stacked fallback */}
       <div className="md:hidden space-y-3">
+        {/* Core orb sits above the stacked layers */}
+        <div className="flex flex-col items-center pb-4">
+          <div className="relative w-24 h-24">
+            <motion.div
+              className="absolute inset-[-14%] rounded-full border border-dashed border-cyan-500/40 dark:border-cyan-300/40"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+            />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-700 shadow-[0_0_50px_rgba(34,211,238,0.5)] flex items-center justify-center">
+              <Brain className="w-1/2 h-1/2 text-white" strokeWidth={1.5} />
+            </div>
+          </div>
+          <div className={`${monoLabel} mt-4 text-slate-600 dark:text-zinc-300`}>Cortex Core</div>
+          <div className="h-8 border-l border-dashed border-slate-500 dark:border-cyan-300/60 mt-2" />
+        </div>
         {[
           { tag: 'Layer 01', title: 'The Brain Vault', items: VAULT_FILES },
           { tag: 'Layer 02', title: 'The 29 Domains', items: [...DOMAIN_TAGS.slice(0, 8), '+21'] },
@@ -240,3 +255,4 @@ export default function ExplodedView() {
     </div>
   );
 }
+
