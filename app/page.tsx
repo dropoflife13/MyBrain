@@ -33,6 +33,8 @@ import { BrainDocNode, getBrainData } from '../lib/brain-parser';
 import ExplodedView from '../components/landing/ExplodedView';
 import MinimalistData from '../components/landing/MinimalistData';
 import RouterFlow from '../components/landing/RouterFlow';
+import RulePeeler from '../components/landing/RulePeeler';
+import ExecutionPipeline from '../components/landing/ExecutionPipeline';
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
@@ -291,18 +293,41 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-center gap-4 mt-12 text-xs font-mono uppercase tracking-widest text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-              29 Domains &amp; 4 Clusters
+              29 Domains Active
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
-              200+ Synaptic Coordinates
+              280 Synaptic Invariants
             </span>
             <span>•</span>
-            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-semibold">
+            <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
               <Activity className="w-3.5 h-3.5" />
-              60 FPS WebGL
+              Arbiter: Gate Mode
             </span>
+          </div>
+
+          {/* CLI Quick Action Pill */}
+          <div className="mt-6 flex items-center gap-2 p-1.5 px-3 rounded-full border border-slate-300 dark:border-white/10 bg-white/70 dark:bg-black/60 backdrop-blur-md text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-sm">
+            <span className="text-cyan-600 dark:text-cyan-400 font-bold">$</span>
+            <span>npx cortex gate --verify-all</span>
+            <button
+              onClick={() => {
+                if (navigator?.clipboard) {
+                  navigator.clipboard.writeText('npx cortex gate --verify-all');
+                  setCopiedPrompt(true);
+                  setTimeout(() => setCopiedPrompt(false), 2000);
+                }
+              }}
+              className="ml-2 hover:text-cyan-600 dark:hover:text-white transition-colors"
+              title="Copy Command"
+            >
+              {copiedPrompt ? (
+                <Check className="w-3 h-3 text-emerald-500" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
           </div>
 
           {/* Down Scroll Indicator */}
@@ -368,223 +393,38 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* SECTION 2: HOW IT WORKS (Two Columns) */}
+        {/* SECTION 2: HOW IT WORKS (Circuit-Trace Execution Pipeline) */}
         <section id="how-it-works" className="px-6 max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
               {'//'} Operational Journey
             </div>
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
-              How High-Agency Engineers Encode Judgment
+              The Golden Path Execution Pipeline
             </h2>
             <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
-                You provide the judgment; AI enforces the gates.
-              </p>
+              From Socratic excavation to deterministic sandbox verification.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Column 1: For Practitioners & Users */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 md:p-10 space-y-6 shadow-xl dark:shadow-2xl">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-cyan-300 border border-cyan-500/20 dark:border-cyan-400/20 uppercase font-bold">
-                  User Protocol
-                </span>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white font-mono">
-                  For Builders &amp; Creators
-                </h3>
-              </div>
-
-              <div className="space-y-6 text-xs md:text-sm font-sans text-slate-700 dark:text-zinc-300">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
-                    01
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white font-mono text-sm mb-1">
-                      Assess Yourself (Excavation)
-                    </h4>
-                    <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Run <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">THE-TEST.md</code> to surface the rules you already follow.
-              </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
-                    02
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white font-mono text-sm mb-1">
-                      Connect Any AI Agent
-                    </h4>
-                    <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Attach the vault via <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">CLAUDE.md</code> and the 29 Domains gate every ticket.
-              </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-300 font-mono font-bold flex items-center justify-center shrink-0">
-                    03
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white font-mono text-sm mb-1">
-                      Enforce Invariants &amp; Grow
-                    </h4>
-                    <p className="text-slate-600 dark:text-zinc-400 leading-relaxed">
-                Promote tested rules (<code className="text-emerald-600 dark:text-emerald-400 font-mono font-bold">conf &ge; 3</code>) and a new node lights up.
-              </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Column 2: For Engineers & Reviewers */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 md:p-10 space-y-6 shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-6">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20 uppercase font-bold">
-                    Reviewer Protocol
-                  </span>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white font-mono">
-                    For Reviewers &amp; Architects
-                  </h3>
-                </div>
-
-                {/* Inspect The Code */}
-                <div className="p-4 rounded-xl bg-slate-100 dark:bg-zinc-950/70 border border-slate-200 dark:border-white/10 space-y-3 font-mono">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                      <Terminal className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                      Codebase &amp; Specs
-                    </span>
-                    <a
-                      href="https://github.com/dropoflife13/MyBrain"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 font-bold"
-                    >
-                      <span>GitHub</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-zinc-400 font-sans">
-                Browse the Next.js app, Three.js runtime, and agent markdown.
-              </p>
-                </div>
-
-                {/* See The Crash */}
-                <div className="p-4 rounded-xl bg-red-500/5 dark:bg-red-950/30 border border-red-500/30 space-y-3 font-mono">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-red-600 dark:text-red-300 uppercase tracking-wider flex items-center gap-2 font-bold">
-                      <ShieldAlert className="w-4 h-4 text-red-500" />
-                      The Chaos Test (BN-00)
-                    </span>
-                    <Badge variant="destructive" className="text-[10px] font-bold">
-                      LIVE INVARIANT
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-slate-700 dark:text-zinc-300 font-sans">
-                Rename <code className="text-red-500 font-mono font-bold">agents/securityagent.md</code> to <code className="text-red-500 font-mono font-bold">.bak</code> and watch BN-00 halt the console.
-              </p>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10 flex items-center justify-between">
-                <Link
-                  href="/agents"
-                  className="text-xs font-mono text-slate-500 dark:text-zinc-400 hover:underline"
-                >
-                  View Agents Directory &rarr;
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleOpenMind}
-                  className="inline-flex items-center gap-2 text-xs font-mono text-cyan-600 dark:text-cyan-400 hover:text-cyan-500 dark:hover:text-cyan-300 font-bold"
-                >
-                  <span>Launch Live 3D Console</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <ExecutionPipeline />
         </section>
 
-        {/* SECTION: WHY CORTEX? */}
+        {/* SECTION: WHY CORTEX? (Interactive Invariant Peeler) */}
         <section id="why-cortex" className="px-6 max-w-6xl mx-auto space-y-12">
           <div className="text-center space-y-3">
             <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
               {'//'} The Core Philosophy
             </div>
             <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
-              The Second Brain That Doesn&apos;t Forget.
+              Anatomy of an Enforced Invariant
             </h2>
             <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
-                A lifelong repository for your judgment.
-              </p>
+              Every rule is mathematically anchored: trigger, action, axiomatic rationale, and boundary.
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1: Extract Hidden Knowledge */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-                  <Sparkles className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                  Extract Hidden Knowledge
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                Surface the rules you follow but never wrote down.
-              </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  DIAGNOSTIC EXCAVATION
-                </Badge>
-              </div>
-            </div>
-
-            {/* Card 2: Govern Future Projects */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-                  <Workflow className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                  Govern Future Projects
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                Connect <code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">agents/</code> to any codebase and your 29 Domains enforce on day one.
-              </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  CROSS-CODEBASE ENFORCEMENT
-                </Badge>
-              </div>
-            </div>
-
-            {/* Card 3: Permanent Memory */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-                  <Brain className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                  Permanent Memory
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                Memory fades; Markdown doesn&apos;t.
-              </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  LOCAL-FIRST PERSISTENCE
-                </Badge>
-              </div>
-            </div>
-          </div>
+          <RulePeeler />
         </section>
 
         {/* SECTION 3: FAQ (Accordion Style) */}
