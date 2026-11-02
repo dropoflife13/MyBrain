@@ -16,7 +16,7 @@ Owns coverage scoring, Self-Map deltas, next-session choice, and the contradicti
 | business-analysis (BA) | 7 (`BA-01..07`) | 6 / 6 (100%) | 1 (`RF-04`) | 3 (`P-01, 03, 05`) | 4.7 | ok |
 | ui-frontend (UI) | 9 (`UI-01..09`) | 6 / 6 (100%) | 7 (`RF-02, 05..10`) | 2 (`P-02, 03`) | 4.9 | ok |
 | authorization (AUTH) | 5 (`AUTH-01..05`) | 5 / 5 (100%) | — | — | 4.0 | ok |
-| arbiter (ARB) | 4 (`ARB-01..04`) | 4 / 4 (100%) | — | — | 5.0 | ok |
+| arbiter (ARB) | 5 (`ARB-01..05`) | 5 / 5 (100%) | — | — | 5.0 | ok |
 | empathy-personas (PM) | Reference framework | 4 / 4 (100%) | — | — | 5.0 | ok |
 | cross (H / OP / TA) | 6 `H` + 15 `OP` + 14 `TA` | — | 10 total `RF` | 5 total `P` | 4.9 | rich |
 | **Humanities & Enterprise** | | | | | | |

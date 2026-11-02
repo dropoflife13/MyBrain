@@ -415,7 +415,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 shrink-0 text-[11px] font-mono">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 shrink-0 text-[11px] font-mono">
               <div className="px-3 py-2 rounded-xl bg-white/70 dark:bg-white/5 border border-rose-500/25 text-slate-800 dark:text-slate-200">
                 <span className="text-rose-600 dark:text-rose-400 font-bold block">ARB-01</span>
                 <span>Domain Separation</span>
@@ -431,6 +431,10 @@ export default function ProfilePage() {
               <div className="px-3 py-2 rounded-xl bg-white/70 dark:bg-white/5 border border-rose-500/25 text-slate-800 dark:text-slate-200">
                 <span className="text-amber-600 dark:text-amber-400 font-bold block">ARB-04</span>
                 <span>Precautionary Rule</span>
+              </div>
+              <div className="px-3 py-2 rounded-xl bg-white/70 dark:bg-white/5 border border-rose-500/25 text-slate-800 dark:text-slate-200 col-span-2 sm:col-span-1">
+                <span className="text-cyan-600 dark:text-cyan-400 font-bold block">ARB-05</span>
+                <span>Trend Verification</span>
               </div>
             </div>
           </div>

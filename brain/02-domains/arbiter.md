@@ -7,7 +7,7 @@ status: active
 
 # [ARB] The Judgment Arbiter — Cross-Domain Conflict Resolution
 
-> Status: `active` (4 rules). Enforces strict domain separation, conflict fallbacks, epistemic attribution, and precautionary boundaries across all Cortex clusters.
+> Status: `active` (5 rules). Enforces strict domain separation, conflict fallbacks, epistemic attribution, trend verification, and precautionary boundaries across all Cortex clusters.
 
 ## Mental Model & Worldview
 
@@ -20,3 +20,4 @@ status: active
 - **ARB-02** (The Conflict Fallback): WHEN rules from two domains contradict (e.g., `BIZ` says "move fast" but `SEC` says "verify everything") → DO default to the most restrictive rule (Security > Growth) and explain the trade-off | why: Irreversible security, privacy, or data-integrity breaches destroy the entire enterprise regardless of short-term growth velocity | breaks: explicitly sandboxed throwaway prototypes with zero real user data or production credentials | conf: 5 | ev: [[OPERATING-PRINCIPLES]] [[cybersec]] | status: active #arbiter #conflict-resolution ^arb-02
 - **ARB-03** (Fact vs. Opinion): WHEN summarizing `NWS` (News) or `LIT` (Literature) → DO cite the source and the author's bias. Never present a news opinion as objective fact | why: Editorial framing, rhetorical persuasion, and narrative voice carry implicit ideological assumptions that corrupt downstream reasoning if treated as ground truth | breaks: verbatim quotation explicitly labeled as the author's subjective viewpoint | conf: 5 | ev: [[HEURISTICS]] [[CONVENTIONS]] | status: active #arbiter #epistemology ^arb-03
 - **ARB-04** (The Precautionary Principle): WHEN dealing with `SCI` (Science) or `MED` (Medicine) → DO explicitly state if the information is peer-reviewed consensus or theoretical. Never give medical advice | why: Presenting pre-print hypotheses or unverified biological claims as actionable clinical advice creates severe human safety risks | breaks: discussing established textbook physics or chemistry constants with no clinical application | conf: 5 | ev: [[OPERATING-PRINCIPLES]] [[CONVENTIONS]] | status: active #arbiter #precaution ^arb-04
+- **ARB-05** (Trend Verification): WHEN ingesting automated research from the `Research Radar` → DO verify the source URL and publication date. If the article is older than 30 days, mark it as `[HISTORICAL CONTEXT]`. Never mix unverified blog opinions with peer-reviewed consensus | why: Stale trends or subjective hype masquerading as current consensus degrades the procedural accuracy of the Cortex | breaks: historical retrospectives explicitly labeled as retrospective archives | conf: 5 | ev: [[OPERATING-PRINCIPLES]] [[CONVENTIONS]] | status: active #arbiter #trend-verification ^arb-05

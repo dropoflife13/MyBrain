@@ -173,7 +173,7 @@ export const AGENT_REGISTRY: Record<AgentCode, AgentMeta> = {
     badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
     borderColor: 'border-rose-500',
     textColor: 'text-rose-400',
-    invariants: 'ARB-01 to ARB-04: Domain Separation, Conflict Fallback, Fact vs. Opinion, Precautionary Principle',
+    invariants: 'ARB-01 to ARB-05: Domain Separation, Conflict Fallback, Fact vs. Opinion, Precautionary Principle, Trend Verification',
     description: 'The Supreme Court of the Cortex. Resolves conflicts between domains and enforces your core invariants when rules contradict.',
     samplePrompt: 'Resolve a conflict between aggressive growth metrics (GR/MKT) and clinical safety invariants (MED/HLT).',
   },
