@@ -51,29 +51,50 @@ body {
   font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Custom Sci-Fi Glowing HUD Scrollbar */
-* {
+/* Custom Sci-Fi Glowing HUD Scrollbar (Theme-Adaptive for Chrome & Webkit) */
+:root {
   scrollbar-width: thin;
-  scrollbar-color: #00FFFF #050505;
+  scrollbar-color: #0284c7 #f1f5f9;
 }
 
+.dark {
+  scrollbar-color: #00ffff #050505;
+}
+
+/* Chrome, Edge, Safari Webkit */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark ::-webkit-scrollbar-track {
   background: #050505;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #00FFFF;
-  border-radius: 0px;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  background: #0284c7;
+  border-radius: 9999px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #00ffff;
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.55);
+  border: 1px solid rgba(0, 255, 255, 0.4);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #22d3ee;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+  background: #0369a1;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.85);
 }
