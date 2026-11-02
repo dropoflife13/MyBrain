@@ -144,8 +144,9 @@ Generate 3 fundamental, non-controversial engineering or analytical invariants f
 Cite a real-world source (e.g., a standard, a law, or a widely accepted framework).
 Do not hallucinate current events, stick to timeless principles.
 
-You MUST strictly adhere to Cortex Vault rule standards (CV-02) and ARB-06 (Seeding Boundaries):
+You MUST strictly adhere to Cortex Vault rule standards (CV-02), ARB-06 (Seeding Boundaries), and ARB-07 (First-Principles Grounding):
 - ARB-06: Restrict to timeless, foundational principles (e.g., "Laws require jurisdiction"). Never generate specific volatile statistics (e.g., "Inflation is 4.5%") as a permanent rule.
+- ARB-07: Restrict non-engineering domains (Law, Finance, Psychology, etc.) to timeless, foundational axioms (e.g., "The risk-return trade-off"). Never generate specific numerical claims, current market data, or legal advice, and always include an explicit \`breaks:\` condition.
 - Each rule line MUST be a single line following this exact grammar:
 - **${p}-01** (Short Title): WHEN <condition> → DO <action> | why: <concise timeless rationale citing standard or source> | breaks: <exception scenario or false positive> | conf: 4 | ev: [[CONVENTIONS]] [[OPERATING-PRINCIPLES]] | status: active #${d} #foundations ^${lowP}-01
 - **${p}-02** (Short Title): WHEN <condition> → DO <action> | why: <rationale> | breaks: <exception scenario> | conf: 4 | ev: [[CONVENTIONS]] [[OPERATING-PRINCIPLES]] | status: active #${d} #foundations ^${lowP}-02

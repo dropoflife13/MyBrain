@@ -867,16 +867,27 @@ ${query}
 Respond in clean, highly structured GitHub-flavored markdown with strict engineering rigor.`;
     } else {
       const fileContent = contextNode ? getFileContentForNode(contextNode) : '';
+      const strictGroundingDirective = `STRICT GROUNDING & ARB-07 DIRECTIVE:
+- DO NOT USE INFORMATION THAT IS NOT IN THE SEARCH RESULTS.
+- ARB-07 (First-Principles Grounding): When querying a non-engineering domain (Law, Finance, Economy, Psychology, Philosophy, Medicine, Science, Crypto, Art, Literature, etc.), restrict answers strictly to timeless, foundational axioms in the search results. Never generate specific numerical claims, current market data, clinical diagnoses, or legal advice. If a retrieved rule has a \`breaks:\` condition, you MUST explicitly state that \`breaks:\` condition to the user.`;
+
       if (topRulesPrompt) {
         prompt = `You are Cortex AI, representing agent ${contextNode || 'hub'} in the procedural judgment engine.
-Answer the user's question with strict engineering rigor, adhering to these top 3 mathematically triangulated rules retrieved via Semantic Vector RAG (all-MiniLM-L6-v2):
+${strictGroundingDirective}
+
+Answer the user's question with strict engineering rigor, adhering ONLY to these top 3 mathematically triangulated rules retrieved via Semantic Vector RAG (all-MiniLM-L6-v2):
 
 ${topRulesPrompt}
 ${fileContent ? `\n\nAGENT CONTEXT & INVARIANTS:\n${fileContent}\n` : ''}
 User Question:
 ${query}`;
       } else {
-        prompt = `You are answering based on these rules: \n\n ${fileContent} \n\n User Question: ${query}`;
+        prompt = `You are answering based ONLY on these rules:
+${strictGroundingDirective}
+
+${fileContent}
+
+User Question: ${query}`;
       }
     }
 
@@ -895,16 +906,9 @@ ${query}`;
       try {
         console.log(`[Cortex Chat API] Executing direct Groq request: llama-3.3-70b-versatile...`);
         const groqRes = await queryGroq(prompt, groqApiKey, 'llama-3.3-70b-versatile');
-        return NextResponse.json(
-          {
-            text: groqRes.text,
-            model: groqRes.model,
-            provider: 'groq',
-            tier: tierDecision.tier,
-            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
-          },
-          { headers: CORS_HEADERS }
-        );
+        succeededText = groqRes.text;
+        succeededModel = groqRes.model;
+        succeededProvider = 'groq';
       } catch (err: any) {
         lastError = err;
         console.warn('[Cortex Chat API] Direct Groq request failed:', err?.message);
@@ -915,20 +919,13 @@ ${query}`;
     }
 
     // Direct NVIDIA NIM execution if explicitly targeted, image attached, or if Gemini key is absent
-    if (forcedNvidia && nvidiaApiKey) {
+    if (!succeededText && forcedNvidia && nvidiaApiKey) {
       try {
         console.log(`[Cortex Chat API] Executing direct NVIDIA NIM request ${hasImage ? '(Multimodal Vision)' : ''}...`);
         const nimRes = await queryNvidiaNim(prompt, nvidiaApiKey, undefined, imageUrl);
-        return NextResponse.json(
-          {
-            text: nimRes.text,
-            model: nimRes.model,
-            provider: 'nvidia',
-            tier: tierDecision.tier,
-            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
-          },
-          { headers: CORS_HEADERS }
-        );
+        succeededText = nimRes.text;
+        succeededModel = nimRes.model;
+        succeededProvider = 'nvidia';
       } catch (err: any) {
         lastError = err;
         console.warn('[Cortex Chat API] Direct NVIDIA NIM request failed:', err?.message);
@@ -939,20 +936,13 @@ ${query}`;
     }
 
     // Direct OpenRouter execution if explicitly targeted
-    if (forcedOpenRouter && openrouterApiKey) {
+    if (!succeededText && forcedOpenRouter && openrouterApiKey) {
       try {
         console.log(`[Cortex Chat API] Executing direct OpenRouter request ${hasImage ? '(Multimodal Vision)' : ''}...`);
         const orRes = await queryOpenRouter(prompt, openrouterApiKey, undefined, imageUrl);
-        return NextResponse.json(
-          {
-            text: orRes.text,
-            model: orRes.model,
-            provider: 'openrouter',
-            tier: tierDecision.tier,
-            topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
-          },
-          { headers: CORS_HEADERS }
-        );
+        succeededText = orRes.text;
+        succeededModel = orRes.model;
+        succeededProvider = 'openrouter';
       } catch (err: any) {
         lastError = err;
         console.warn('[Cortex Chat API] Direct OpenRouter request failed:', err?.message);
@@ -1114,12 +1104,90 @@ ${query}`;
       );
     }
 
+    // 2. RAG Triad Faithfulness Check & Tri-Loop Verification (Generate -> Verify -> Correct)
+    // Enforces ARB-07 & strict grounding on non-workflow RAG queries
+    let faithfulnessVerified = true;
+    if (!workflow && source !== 'hq' && topRules.length > 0 && !hasImage) {
+      const CRITICAL_PREFIXES = new Set([
+        'LAW', 'FIN', 'ECO', 'MED', 'CRY', 'PSY', 'PHI', 'SCI', 'DS', 'ART', 'LIT', 'POL', 'GEO', 'HLT', 'NWS', 'BIZ', 'EDU', 'ENV', 'HIS', 'MGT', 'MKT', 'RHE', 'ARB',
+      ]);
+      const touchesCriticalDomain = topRules.some((r) => {
+        const prefix = r.ruleId.split('-')[0]?.toUpperCase() || '';
+        return CRITICAL_PREFIXES.has(prefix);
+      });
+
+      const verifyPrompt = `You are the Cortex RAG Triad Faithfulness & ARB-07 Verifier executing Tri-Loop Verification (Generate -> Verify -> Correct).
+
+PROVIDED VAULT CONTEXT (SEARCH RESULTS):
+${topRulesPrompt}
+
+USER QUESTION:
+${query}
+
+GENERATED DRAFT ANSWER:
+${succeededText}
+
+VERIFICATION CHECKLIST:
+1. Faithfulness Check (RAG Triad): Is every claim in this answer directly supported by the provided context?
+2. ARB-07 (First-Principles Grounding): If this touches a non-engineering domain (Law, Finance, Economy, Psychology, Medicine, Science, Crypto, etc.), does the answer restrict itself to timeless, foundational axioms without inventing specific volatile statistics, current market data, clinical diagnoses, or legal advice?
+3. Breaks Condition Disclosure (ARB-07): If any cited rule in the provided context contains a "breaks:" condition, does the answer explicitly state when the rule breaks?
+
+OUTPUT INSTRUCTIONS:
+- If the draft passes all 3 checks, reply with the exact single word: VERIFIED
+- If the draft completely fabricates claims unrelated to the context, reply with the exact single word: HALLUCINATION
+- If the draft is mostly grounded in the context but needs minor correction (e.g., removing an unsupported claim or appending the missing "breaks:" condition from the rule), reply with "CORRECTED:" followed immediately by the corrected, strictly grounded markdown answer.`;
+
+      try {
+        let verifyRaw = '';
+        if (groqApiKey) {
+          const vRes = await queryGroq(verifyPrompt, groqApiKey, 'llama-3.3-70b-versatile');
+          verifyRaw = vRes.text.trim();
+        } else if (geminiApiKey && touchesCriticalDomain) {
+          const genAI = new GoogleGenerativeAI(geminiApiKey);
+          const vModel = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+          const vRes = await vModel.generateContent(verifyPrompt);
+          verifyRaw = vRes.response.text().trim();
+        }
+
+        if (verifyRaw) {
+          if (verifyRaw.startsWith('HALLUCINATION')) {
+            console.warn('[Cortex Chat API] RAG Triad Faithfulness Check flagged ungrounded hallucination.');
+            faithfulnessVerified = false;
+            succeededText =
+              'WARNING: I do not have verified data for this in my local Vault. Hallucination risk is high. Please provide a source or populate the relevant domain.';
+          } else if (verifyRaw.startsWith('CORRECTED:')) {
+            const corrected = verifyRaw.slice('CORRECTED:'.length).trim();
+            if (corrected.length > 20) {
+              console.log('[Cortex Chat API] Tri-Loop Verification applied grounded correction to draft.');
+              succeededText = corrected;
+            }
+          }
+        }
+      } catch (verifyErr: any) {
+        console.warn('[Cortex Chat API] Faithfulness verification pass skipped:', verifyErr?.message);
+      }
+
+      // Deterministic ARB-07 safeguard: if a critical-domain top rule has a `breaks:` clause and the draft omitted it, append it explicitly
+      if (faithfulnessVerified && touchesCriticalDomain && !/breaks:/i.test(succeededText)) {
+        const breaksNotes = topRules
+          .map((r) => {
+            const m = r.text.match(/\|\s*breaks:\s*([^|]+)/i);
+            return m ? `- **${r.ruleId} Boundary (\`breaks:\`)**: ${m[1].trim()}` : null;
+          })
+          .filter(Boolean);
+        if (breaksNotes.length > 0) {
+          succeededText += `\n\n---\n**ARB-07 First-Principles Boundary (\`breaks:\` conditions):**\n${breaksNotes.join('\n')}`;
+        }
+      }
+    }
+
     return NextResponse.json(
       {
         text: succeededText,
         model: succeededModel,
         provider: succeededProvider,
         tier: tierDecision.tier,
+        faithfulnessVerified,
         topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
       },
       { headers: CORS_HEADERS }
