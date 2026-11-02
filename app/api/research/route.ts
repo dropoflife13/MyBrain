@@ -177,7 +177,8 @@ async function fetchLatestTrends(topics: string[]): Promise<RawArticle[]> {
     );
   }
 
-  return collected.slice(0, 10);
+  const MAX_ARTICLES_SAFETY_LIMIT = 5;
+  return collected.slice(0, MAX_ARTICLES_SAFETY_LIMIT);
 }
 
 /**
@@ -414,7 +415,8 @@ async function handleResearchPipeline(req: Request) {
     console.log(`[Research Radar] Initiating daily trend scan for ${dateStr}...`);
 
     // Step 1 (Fetch): Query Hacker News & arXiv for latest technical developments
-    const articles = await fetchLatestTrends(PREDEFINED_TOPICS);
+    const rawArticles = await fetchLatestTrends(PREDEFINED_TOPICS);
+    const articles = rawArticles.slice(0, 5);
     console.log(`[Research Radar] Fetched ${articles.length} primary articles and preprints.`);
 
     // Step 2 (Synthesize): Synthesize through Research Agent rules (RS-01..04, ARB-05)
