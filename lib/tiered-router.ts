@@ -215,11 +215,13 @@ export function classifyTierLightweight(
     lower.startsWith('/grill') ||
     lower.startsWith('/research') ||
     lower.includes('/implement') ||
-    lower.includes('/harden')
+    lower.includes('/harden') ||
+    lower.includes('failed the following deterministic test') ||
+    lower.includes('deterministic test error')
   ) {
     return {
       tier: 'tier3_heavy',
-      reason: 'Heavy command detected (/implement or /harden)',
+      reason: 'Heavy workflow or deterministic debug command detected',
     };
   }
 

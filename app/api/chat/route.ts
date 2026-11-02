@@ -260,7 +260,7 @@ const WORKFLOW_COMMANDS: Record<string, WorkflowStepConfig> = {
     name: 'Production-Grade Implementation',
     agents: ['agents/dbaagent.md', 'agents/securityagent.md', 'agents/integrationagent.md'],
     instruction:
-      'You are executing the /implement step of the Golden Path SDLC (Layer 6 Sandbox Execution). Write production-ready, runnable code for the requested feature or Ticket. Strictly obey DB rules (DB-13 atomic conditionals, append-only, RLS default deny), Security rules (SEC-14 server-side redaction, STRIDE, client never sees service_role), and Integration rules. Provide complete, runnable code in markdown code blocks (e.g. ```typescript or ```javascript or ```python) including a self-contained execution test or main driver with console outputs, so the operator can immediately run it in the Cortex Code Sandbox.',
+      'You are executing the /implement step of the Golden Path SDLC (Layer 6 Sandbox Execution). Write production-ready, runnable code for the requested feature or Ticket. Strictly obey DB rules (DB-13 atomic conditionals, append-only, RLS default deny), Security rules (SEC-14 server-side redaction, STRIDE, client never sees service_role), and Integration rules. Provide complete, runnable code in markdown code blocks (e.g. ```typescript or ```javascript or ```python) including a self-contained execution test or main driver with console outputs, so the operator can immediately run it in the Cortex Code Sandbox. If this prompt includes a deterministic test failure or linter error, analyze the error trace, identify the exact bug or unbalanced delimiter, and return the complete corrected code with self-contained tests that pass.',
   },
   review: {
     cmd: '/review',
@@ -316,6 +316,12 @@ function detectWorkflowCommand(query: string, commandProp?: string): WorkflowSte
   }
   if (q.includes('/code-review')) return WORKFLOW_COMMANDS['review'];
   if (q.includes('/grill-with-docs')) return WORKFLOW_COMMANDS['grill'];
+  if (
+    q.includes('failed the following deterministic test') ||
+    q.includes('deterministic test error')
+  ) {
+    return WORKFLOW_COMMANDS['implement'];
+  }
   return null;
 }
 
@@ -820,7 +826,10 @@ export async function POST(req: Request) {
     // 1. RS-03 Epistemic Circuit Breaker: Halt if highest cosine similarity is < 0.28
     const highestScore = topRules.length > 0 ? topRules[0].score : 0;
     const isResearchWorkflow = workflow?.cmd === '/research';
-    if ((!workflow || isResearchWorkflow) && highestScore < 0.28) {
+    const isDebugPrompt =
+      query.includes('failed the following deterministic test') ||
+      query.includes('Deterministic Test Error');
+    if ((!workflow || isResearchWorkflow) && !isDebugPrompt && highestScore < 0.28) {
       console.log(
         `[Cortex Chat API] RS-03 Epistemic Circuit Breaker triggered (highest score: ${highestScore.toFixed(3)} < 0.28). Halting to prevent hallucination.`
       );

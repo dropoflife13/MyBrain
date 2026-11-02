@@ -53,6 +53,7 @@ import {
   verifySevenAgentsGate,
 } from '../../lib/brain-parser';
 import { calculateCortexStats } from '../../lib/stats';
+import { runDeterministicValidation } from '../../lib/deterministic-validator';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 
@@ -525,8 +526,56 @@ export default function Home() {
       });
 
       const data = await res.json().catch(() => null);
-      const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
+      let aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
       const isImplement = query.toLowerCase().startsWith('/implement') || query.toLowerCase().includes('/implement');
+      let finalModel = data?.model;
+      let finalProvider = data?.provider;
+
+      // Deterministic-First Validation & LLM-Fallback Loop for /implement
+      if (isImplement && res.ok && aiText) {
+        let validation = await runDeterministicValidation(aiText, 'typescript');
+        let retryCount = 0;
+        const maxRetries = 2;
+
+        while (!validation.passed && retryCount < maxRetries) {
+          retryCount++;
+          const debugPrompt = `The code you provided failed the following deterministic test. Analyze the error and provide a corrected version.
+
+Original Code:
+\`\`\`${validation.language || 'typescript'}
+${validation.code || ''}
+\`\`\`
+
+Deterministic Test Error (${validation.stage.toUpperCase()}):
+${validation.error || 'Execution check failed.'}
+
+Strict Invariants to Maintain:
+- Fix the error completely so it executes without any syntax, runtime, or assertion errors.
+- Return the corrected code inside a markdown code block.`;
+
+          const debugRes = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: debugPrompt,
+              contextNode: selectedNode?.id ? String(selectedNode.id) : 'DB',
+              workflowCommand: '/implement',
+            }),
+          });
+          const debugData = await debugRes.json().catch(() => null);
+          aiText = sanitizeAiMessage(debugData, !debugRes.ok ? new Error(`Status ${debugRes.status}`) : undefined);
+          finalModel = debugData?.model || finalModel;
+          finalProvider = debugData?.provider || finalProvider;
+
+          validation = await runDeterministicValidation(aiText, 'typescript');
+        }
+
+        if (validation.passed) {
+          aiText = `${aiText}\n\n---\n✅ **Deterministic Validation Passed** (Exit Code: 0 • ${validation.durationMs || 0}ms)${
+            validation.stdout ? `\n\`\`\`text\n${validation.stdout.trim().slice(0, 300)}\n\`\`\`` : ''
+          }`;
+        }
+      }
 
       setChatMessages((prev) => [
         ...prev,
@@ -534,8 +583,8 @@ export default function Home() {
           id: `ai-${Date.now()}`,
           role: 'assistant' as const,
           text: aiText,
-          model: data?.model,
-          provider: data?.provider,
+          model: finalModel,
+          provider: finalProvider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isImplementCommand: isImplement,
           topRules: Array.isArray(data?.topRules) ? data.topRules : undefined,
@@ -589,8 +638,56 @@ export default function Home() {
       });
 
       const data = await res.json().catch(() => null);
-      const aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
+      let aiText = sanitizeAiMessage(data, !res.ok ? new Error(`Status ${res.status}`) : undefined);
       const isImplement = pill.cmd === '/implement' || userPrompt.toLowerCase().includes('/implement');
+      let finalModel = data?.model;
+      let finalProvider = data?.provider;
+
+      // Deterministic-First Validation & LLM-Fallback Loop for /implement
+      if (isImplement && res.ok && aiText) {
+        let validation = await runDeterministicValidation(aiText, 'typescript');
+        let retryCount = 0;
+        const maxRetries = 2;
+
+        while (!validation.passed && retryCount < maxRetries) {
+          retryCount++;
+          const debugPrompt = `The code you provided failed the following deterministic test. Analyze the error and provide a corrected version.
+
+Original Code:
+\`\`\`${validation.language || 'typescript'}
+${validation.code || ''}
+\`\`\`
+
+Deterministic Test Error (${validation.stage.toUpperCase()}):
+${validation.error || 'Execution check failed.'}
+
+Strict Invariants to Maintain:
+- Fix the error completely so it executes without any syntax, runtime, or assertion errors.
+- Return the corrected code inside a markdown code block.`;
+
+          const debugRes = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              query: debugPrompt,
+              contextNode: 'DB',
+              workflowCommand: '/implement',
+            }),
+          });
+          const debugData = await debugRes.json().catch(() => null);
+          aiText = sanitizeAiMessage(debugData, !debugRes.ok ? new Error(`Status ${debugRes.status}`) : undefined);
+          finalModel = debugData?.model || finalModel;
+          finalProvider = debugData?.provider || finalProvider;
+
+          validation = await runDeterministicValidation(aiText, 'typescript');
+        }
+
+        if (validation.passed) {
+          aiText = `${aiText}\n\n---\n✅ **Deterministic Validation Passed** (Exit Code: 0 • ${validation.durationMs || 0}ms)${
+            validation.stdout ? `\n\`\`\`text\n${validation.stdout.trim().slice(0, 300)}\n\`\`\`` : ''
+          }`;
+        }
+      }
 
       setChatMessages((prev) => [
         ...prev,
@@ -598,8 +695,8 @@ export default function Home() {
           id: `ai-${Date.now()}`,
           role: 'assistant' as const,
           text: aiText,
-          model: data?.model,
-          provider: data?.provider,
+          model: finalModel,
+          provider: finalProvider,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isImplementCommand: isImplement,
           topRules: Array.isArray(data?.topRules) ? data.topRules : undefined,
@@ -792,7 +889,8 @@ export default function Home() {
         4
       );
 
-      // Step 4: /implement Ticket 1 (DBA + Security + Integration Agents)
+      // Step 4: /implement Ticket 1 - Deterministic-First, LLM-Fallback Architecture
+      // 1. Draft Phase: Call LLM to generate initial code (Tier 3)
       const step4Res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -803,13 +901,80 @@ export default function Home() {
         }),
       });
       const step4Data = await step4Res.json().catch(() => null);
-      const step4Text = sanitizeAiMessage(step4Data, !step4Res.ok ? new Error(`Status ${step4Res.status}`) : undefined);
-      updatePipelineStep(4, {
-        status: 'completed',
-        output: step4Text,
-        model: step4Data?.model,
-        provider: step4Data?.provider,
-      });
+      let step4Text = sanitizeAiMessage(step4Data, !step4Res.ok ? new Error(`Status ${step4Res.status}`) : undefined);
+      let step4Model = step4Data?.model;
+      let step4Provider = step4Data?.provider;
+
+      // 2. Deterministic Validation Phase: Run static linter + sandbox unit tests
+      let validation = await runDeterministicValidation(step4Text, 'typescript');
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      // 3. The "Fail" Branch (Debugging Loop): Only invoked if deterministic checks fail
+      while (!validation.passed && retryCount < maxRetries) {
+        retryCount++;
+        console.warn(
+          `[Deterministic-First SDLC] Step 4 check failed (${validation.stage}). Invoking LLM debugging loop (Attempt ${retryCount}/${maxRetries}). Error:`,
+          validation.error
+        );
+
+        const debugPrompt = `The code you provided failed the following deterministic test. Analyze the error and provide a corrected version.
+
+Original Code:
+\`\`\`${validation.language || 'typescript'}
+${validation.code || ''}
+\`\`\`
+
+Deterministic Test Error (${validation.stage.toUpperCase()}):
+${validation.error || 'Execution check failed.'}
+
+Strict Invariants to Maintain:
+- Analyze the error trace, delimiter balance, and assertion failure.
+- Fix the error completely so it executes without any syntax, runtime, or assertion errors.
+- Ensure all brackets, parentheses, and braces are strictly balanced.
+- Include executable verification assertions (e.g. console.assert) confirming the fix.
+- Return the corrected code inside a markdown code block (\`\`\`typescript or \`\`\`javascript or \`\`\`python).`;
+
+        const debugRes = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: debugPrompt,
+            contextNode: 'DB',
+            workflowCommand: '/implement',
+          }),
+        });
+        const debugData = await debugRes.json().catch(() => null);
+        step4Text = sanitizeAiMessage(debugData, !debugRes.ok ? new Error(`Status ${debugRes.status}`) : undefined);
+        step4Model = debugData?.model || step4Model;
+        step4Provider = debugData?.provider || step4Provider;
+
+        // Re-run deterministic checks
+        validation = await runDeterministicValidation(step4Text, 'typescript');
+      }
+
+      // 4. The "Pass" Branch: Finalize implementation with deterministic verification telemetry
+      if (validation.passed) {
+        const passTelemetry = `\n\n---\n✅ **Deterministic Validation Passed**\n- **Unit Tests:** Sandbox execution cleared (Exit Code: 0 • ${validation.durationMs || 0}ms)\n- **Static Linter:** Delimiters balanced • DB-13 atomic checks satisfied • SEC-14 safety confirmed\n- **Assertions Verified:** ${validation.checksSummary?.testAssertionsPresent ? 'Pass' : 'Skipped'}${
+          validation.stdout ? `\n\n**Sandbox Output:**\n\`\`\`text\n${validation.stdout.trim().slice(0, 400)}\n\`\`\`` : ''
+        }`;
+
+        updatePipelineStep(4, {
+          status: 'completed',
+          output: `${step4Text}${passTelemetry}`,
+          model: step4Model,
+          provider: step4Provider,
+        });
+      } else {
+        const failTelemetry = `\n\n---\n❌ **Deterministic Test Failed (${validation.stage.toUpperCase()} Phase)**\nError: \`${validation.error}\`\nMax debugging retries reached without zero-exit execution.`;
+        updatePipelineStep(4, {
+          status: 'error',
+          output: `${step4Text}${failTelemetry}`,
+          error: validation.error,
+          model: step4Model,
+          provider: step4Provider,
+        });
+      }
     } catch (err: any) {
       console.error('[Cortex Auto-Build Error]:', err);
       setChatMessages((prev) =>
