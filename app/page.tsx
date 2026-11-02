@@ -13,13 +13,11 @@ import {
   Check,
   ChevronDown,
   Copy,
-  Cpu,
   Download,
   ExternalLink,
   GitFork,
   Search,
   ShieldAlert,
-  ShieldCheck,
   Sparkles,
   Terminal,
   Users,
@@ -32,6 +30,9 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { BrainDocNode, getBrainData } from '../lib/brain-parser';
+import ExplodedView from '../components/landing/ExplodedView';
+import MinimalistData from '../components/landing/MinimalistData';
+import RouterFlow from '../components/landing/RouterFlow';
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
@@ -267,7 +268,7 @@ export default function LandingPage() {
           </div>
 
           {/* Main Headline with High-Contrast Text-Shadow Protection */}
-          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-slate-950 dark:text-white mb-6 leading-[1.08] drop-shadow-[0_4px_30px_rgba(0,0,0,0.85)] dark:drop-shadow-[0_0_50px_rgba(0,255,255,0.25)]">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-slate-950 dark:text-white mb-6 leading-[1.08] drop-shadow-[0_4px_30px_rgba(0,0,0,0.85)] dark:drop-shadow-[0_0_50px_rgba(0,255,255,0.25)]">
             Your Judgment, <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-500 via-sky-400 to-blue-600 dark:from-cyan-400 dark:via-sky-300 dark:to-blue-500">
               Encoded.
@@ -291,7 +292,7 @@ export default function LandingPage() {
           </button>
 
           {/* Telemetry Indicator */}
-          <div className="flex items-center gap-4 mt-12 text-xs font-mono text-slate-600 dark:text-zinc-300">
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-12 text-xs font-mono uppercase tracking-widest text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
               29 Domains &amp; 4 Clusters
@@ -321,95 +322,53 @@ export default function LandingPage() {
 
       {/* 5. Scrollable Sections (Glassmorphic containers over fixed 3D canvas) */}
       <div className="relative z-10 space-y-36 pb-32">
-        {/* SECTION 1: ARCHITECTURE (3 Pillars) */}
-        <section id="architecture" className="px-6 max-w-6xl mx-auto space-y-12">
+        {/* SECTION 1: EXPLODED VIEW ARCHITECTURE */}
+        <section id="architecture" className="px-6 max-w-6xl mx-auto space-y-14">
           <div className="text-center space-y-3">
-            <div className="text-xs font-mono text-cyan-600 dark:text-cyan-400 uppercase tracking-widest font-semibold">
-              // Three Foundational Pillars
+            <div className="font-mono text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-semibold">
+              {'//'} Anatomy
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-slate-950 dark:text-white">
-              Engineered for Invariant Governance
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
+              Three layers. One core.
             </h2>
-            <p className="text-sm md:text-base text-slate-600 dark:text-zinc-300 max-w-2xl mx-auto font-sans">
-              Unlike static wiki dumps or unstructured LLM chats, Cortex unites procedural 3D math,
-              runtime security invariants, and domain judgment.
+            <p className="text-sm text-slate-600 dark:text-zinc-400 max-w-xl mx-auto font-sans">
+              Markdown in, enforced judgment out.
             </p>
           </div>
+          <ExplodedView />
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-                  <Cpu className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                  The Synaptic Constellation
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  A 200+ node spatial WebGL graph. Every tacit rule, operational heuristic, and failure
-                  boundary (<code className="text-cyan-600 dark:text-cyan-300 font-mono font-bold">breaks:</code>) is mathematically
-                  anchored in 3D orbit around the central cognitive hub. Visualizes 4 distinct clusters: Engineering Core, Humanities, Global Society, and Frontier Science.
-                </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  200+ SYNAPTIC NODES • 4 SPATIAL CLUSTERS
-                </Badge>
-              </div>
+        {/* SECTION 1B: MINIMALIST DATA */}
+        <section id="scale" className="px-6 max-w-6xl mx-auto space-y-14">
+          <div className="text-center space-y-3">
+            <div className="font-mono text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-semibold">
+              {'//'} Scale &amp; Efficiency
             </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
+              Built to grow. Built to be cheap.
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-zinc-400 max-w-xl mx-auto font-sans">
+              Local-first routing keeps heavy models for heavy work.
+            </p>
+          </div>
+          <MinimalistData />
+        </section>
 
-            {/* Card 2 */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-cyan-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/25 dark:border-cyan-400/25 flex items-center justify-center text-cyan-600 dark:text-cyan-400">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                    The Multi-Agent Suite
-                  </h3>
-                  <Link
-                    href="/agents"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 rounded-md hover:bg-cyan-500/20 transition-colors font-mono cursor-pointer shrink-0"
-                  >
-                    <span>Directory</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  29 specialized domains across 4 clusters. Governed by 8 Core Agents and the Judgment Arbiter, they inspect PRs and API contracts in Gate Mode, outputting blocking{' '}
-                  <code className="text-red-500 font-mono font-bold">GATE: FAIL</code> on violations.
-                </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="outline" className="font-mono text-[10px] text-cyan-600 dark:text-cyan-300 font-semibold">
-                  29 EXECUTION DOMAINS • ZERO SLOP
-                </Badge>
-              </div>
+        {/* SECTION 1C: TIERED ROUTER FLOW */}
+        <section id="router" className="px-6 max-w-6xl mx-auto space-y-14">
+          <div className="text-center space-y-3">
+            <div className="font-mono text-xs uppercase tracking-widest text-cyan-600 dark:text-cyan-400 font-semibold">
+              {'//'} Tiered Router
             </div>
-
-            {/* Card 3 */}
-            <div className="rounded-2xl bg-white/85 dark:bg-black/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 p-8 space-y-4 hover:border-red-400/50 transition-all shadow-xl dark:shadow-2xl flex flex-col justify-between">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-500 dark:text-red-400">
-                  <ShieldAlert className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white font-mono">
-                  The BN-00 Invariant Fail-Safe
-                </h3>
-                <p className="text-xs md:text-sm text-slate-600 dark:text-zinc-300 leading-relaxed font-sans">
-                  Pre-flight security invariant ensuring all 8 agents and the Arbiter are present before boot. If anyone forks the repository and deletes even one
-                  agent gatekeeper, the system halts with a sci-fi system crash overlay. It refuses to
-                  operate in headless mode.
-                </p>
-              </div>
-              <div className="pt-4 border-t border-slate-200 dark:border-white/10">
-                <Badge variant="destructive" className="font-mono text-[10px] font-semibold">
-                  RULE BN-00 • FAIL-SAFE ENFORCED
-                </Badge>
-              </div>
-            </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
+              Every query takes the cheapest path.
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-zinc-400 max-w-xl mx-auto font-sans">
+              Rule IDs resolve locally. Only hard problems reach Tier 3.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-black/80 backdrop-blur-xl p-4 md:p-8">
+            <RouterFlow />
           </div>
         </section>
 
