@@ -14,7 +14,9 @@ const STATS = [
 /** Build an SVG polyline "points" string from y-values spread across a 400x160 plot. */
 function toPoints(values: number[], max: number): string {
   const step = 400 / (values.length - 1);
-  return values.map((v, i) => `${(i * step).toFixed(1)},${(160 - (v / max) * 150 - 5).toFixed(1)}`).join(' ');
+  return values
+    .map((v, i) => `${(i * step).toFixed(1)},${(160 - (v / max) * 150 - 5).toFixed(1)}`)
+    .join(' ');
 }
 
 interface ChartProps {
@@ -33,11 +35,18 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
   return (
     <div className="p-6 md:p-8">
       <div className="flex items-baseline justify-between mb-5">
-        <h3 className={`${monoLabel} text-slate-900 dark:text-white`}>{title}</h3>
-        <span className={`${monoLabel} text-slate-400 dark:text-zinc-500 !text-[10px]`}>{caption}</span>
+        <h3 className={`${monoLabel} text-slate-900 dark:text-white font-semibold`}>{title}</h3>
+        <span className={`${monoLabel} text-slate-500 dark:text-zinc-500 !text-[10px]`}>
+          {caption}
+        </span>
       </div>
 
-      <svg viewBox="0 0 400 180" className="w-full h-auto overflow-visible" fill="none" aria-hidden="true">
+      <svg
+        viewBox="0 0 400 180"
+        className="w-full h-auto overflow-visible"
+        fill="none"
+        aria-hidden="true"
+      >
         {/* grid */}
         {[0, 1, 2, 3].map((i) => (
           <line
@@ -46,8 +55,8 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
             x2={400}
             y1={5 + i * 50}
             y2={5 + i * 50}
-            strokeWidth={0.5}
-            className="stroke-slate-200 dark:stroke-white/10"
+            stroke="var(--svg-grid)"
+            strokeWidth={0.75}
           />
         ))}
 
@@ -55,10 +64,10 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
           <>
             <motion.polyline
               points={points}
-              strokeWidth={1.25}
+              stroke="var(--svg-label)"
+              strokeWidth={1.5}
               strokeLinejoin="round"
               strokeLinecap="round"
-              className="stroke-slate-900 dark:stroke-white"
               initial={{ pathLength: 0 }}
               whileInView={{ pathLength: 1 }}
               viewport={{ once: true }}
@@ -66,17 +75,14 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
             />
             {points.split(' ').map((p, i) => {
               const [cx, cy] = p.split(',');
+              const isLast = i === values.length - 1;
               return (
                 <circle
                   key={i}
                   cx={cx}
                   cy={cy}
-                  r={i === values.length - 1 ? 3.5 : 1.75}
-                  className={
-                    i === values.length - 1
-                      ? 'fill-cyan-500 dark:fill-cyan-300'
-                      : 'fill-slate-900 dark:fill-white'
-                  }
+                  r={isLast ? 4 : 2}
+                  fill={isLast ? 'var(--svg-pulse)' : 'var(--svg-label)'}
                 />
               );
             })}
@@ -84,6 +90,7 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
         ) : (
           values.map((v, i) => {
             const h = (v / max) * 150;
+            const isLast = i === values.length - 1;
             return (
               <motion.rect
                 key={i}
@@ -91,11 +98,7 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
                 width={barW * 0.4}
                 y={155 - h}
                 height={h}
-                className={
-                  i === values.length - 1
-                    ? 'fill-cyan-500 dark:fill-cyan-300'
-                    : 'fill-slate-300 dark:fill-white/30'
-                }
+                fill={isLast ? 'var(--svg-pulse)' : 'var(--svg-bar-muted)'}
                 initial={{ scaleY: 0 }}
                 whileInView={{ scaleY: 1 }}
                 viewport={{ once: true }}
@@ -110,11 +113,24 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
         {xLabels.map((l, i) => (
           <text
             key={l}
-            x={mode === 'bars' ? i * (400 / (xLabels.length)) + barW * 0.5 : (i * 400) / (xLabels.length - 1)}
+            x={
+              mode === 'bars'
+                ? i * (400 / xLabels.length) + barW * 0.5
+                : (i * 400) / (xLabels.length - 1)
+            }
             y={176}
-            textAnchor={mode === 'bars' ? 'middle' : i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}
+            textAnchor={
+              mode === 'bars'
+                ? 'middle'
+                : i === 0
+                  ? 'start'
+                  : i === xLabels.length - 1
+                    ? 'end'
+                    : 'middle'
+            }
             fontSize={9}
-            className="font-mono fill-slate-400 dark:fill-zinc-500"
+            fill="var(--svg-sub)"
+            className="font-mono"
           >
             {l}
           </text>
@@ -126,7 +142,7 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
 
 export default function MinimalistData() {
   return (
-    <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10 bg-white dark:bg-black">
+    <div className="rounded-2xl overflow-hidden border border-slate-300 dark:border-white/10 bg-white dark:bg-[#09090b] shadow-sm">
       {/* Big numbers */}
       <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/10">
         {STATS.map((s, i) => (
@@ -141,7 +157,7 @@ export default function MinimalistData() {
             <div className="text-7xl md:text-8xl font-black tracking-tighter text-slate-950 dark:text-white leading-none">
               {s.value}
             </div>
-            <div className={`${monoLabel} mt-4 text-slate-500 dark:text-zinc-400`}>{s.label}</div>
+            <div className={`${monoLabel} mt-4 text-slate-600 dark:text-zinc-400`}>{s.label}</div>
           </motion.div>
         ))}
       </div>
@@ -168,4 +184,3 @@ export default function MinimalistData() {
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
@@ -8,11 +9,31 @@
 :root {
   --background: #f8fafc;
   --foreground: #09090b;
+  --svg-trace: #334155;
+  --svg-connector: #334155;
+  --svg-box-fill: #ffffff;
+  --svg-box-stroke: #64748b;
+  --svg-diamond-stroke: #0284c7;
+  --svg-label: #0f172a;
+  --svg-sub: #475569;
+  --svg-pulse: #0284c7;
+  --svg-grid: #cbd5e1;
+  --svg-bar-muted: #cbd5e1;
 }
 
 .dark {
   --background: #050505;
   --foreground: #f4f4f5;
+  --svg-trace: rgba(34, 211, 238, 0.55);
+  --svg-connector: rgba(34, 211, 238, 0.65);
+  --svg-box-fill: #09090b;
+  --svg-box-stroke: rgba(255, 255, 255, 0.28);
+  --svg-diamond-stroke: #22d3ee;
+  --svg-label: #ffffff;
+  --svg-sub: #a1a1aa;
+  --svg-pulse: #22d3ee;
+  --svg-grid: rgba(255, 255, 255, 0.12);
+  --svg-bar-muted: rgba(255, 255, 255, 0.3);
 }
 
 * {
