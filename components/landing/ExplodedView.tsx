@@ -66,7 +66,7 @@ function Layer({ x, y, w, h, floatDelay, tag, title, blurb, icon, children }: La
       <motion.div
         whileHover={{ y: -10, scale: 1.01 }}
         transition={{ type: 'spring', stiffness: 220, damping: 18 }}
-        className="h-full rounded-2xl border border-slate-300 dark:border-white/10 bg-white/95 dark:bg-[#09090b]/90 backdrop-blur-xl p-5 shadow-lg dark:shadow-[0_0_40px_rgba(0,255,255,0.06)] flex flex-col justify-between cursor-default overflow-hidden"
+        className="h-full rounded-2xl border border-slate-300 dark:border-white/10 bg-white/95 dark:bg-[#09090b]/90 backdrop-blur-xl p-4 sm:p-5 shadow-lg dark:shadow-[0_0_40px_rgba(0,255,255,0.06)] flex flex-col justify-between cursor-default"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -80,7 +80,7 @@ function Layer({ x, y, w, h, floatDelay, tag, title, blurb, icon, children }: La
             {icon}
           </div>
         </div>
-        <div className="flex flex-wrap gap-1.5 overflow-hidden">{children}</div>
+        <div className="flex flex-wrap gap-1.5">{children}</div>
       </motion.div>
     </motion.div>
   );
@@ -187,9 +187,9 @@ export default function ExplodedView({
 
         <Layer
           x={350}
-          y={242}
+          y={225}
           w={580}
-          h={175}
+          h={195}
           floatDelay={0.8}
           tag="Layer 02"
           title={`The ${totalDomains} Domains`}
@@ -211,7 +211,7 @@ export default function ExplodedView({
 
         <Layer
           x={320}
-          y={460}
+          y={445}
           w={580}
           h={175}
           floatDelay={1.6}

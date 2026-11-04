@@ -54,6 +54,7 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from 'recharts';
+import { calculateCortexStats } from '@/lib/stats';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import CommandPalette from '../../components/CommandPalette';
 import ExportClaudeModal from '../../components/ExportClaudeModal';
@@ -186,9 +187,69 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   MED: <Heart className="w-5 h-5 text-rose-500 dark:text-rose-400" />,
 };
 
+const INITIAL_STATS: StatsPayload = (() => {
+  const base = calculateCortexStats([]);
+  return {
+    level: base.level,
+    totalAgents: base.totalAgents,
+    totalRules: base.totalRules,
+    totalClusters: base.totalClusters,
+    cognitiveStats: base.dimensions.map((d) => ({
+      subject: d.subject || d.label,
+      key: d.key,
+      cluster: d.cluster,
+      value: d.percentage,
+      count: d.count,
+      weightedScore: d.weightedScore,
+      displayScore: d.displayScore,
+      displayCount: d.displayCount,
+      target: d.target,
+      avgConfidence: d.avgConfidence,
+      isHighConfidence: d.isHighConfidence,
+      isOverclocked: d.isOverclocked,
+      isUnverified: d.isUnverified,
+      percentageText: d.percentageText,
+      fractionText: d.fractionText,
+      rawFractionText: d.rawFractionText,
+      prefixes: d.prefixes,
+      description: d.description,
+    })),
+    agentMastery: base.agentList.map((a) => ({
+      agent: a.agent || a.fullName || a.label,
+      fullName: a.fullName || a.label,
+      label: a.label,
+      id: a.id,
+      code: a.code || '',
+      cluster: a.cluster || 'Engineering',
+      file: a.file || '',
+      count: a.count,
+      weightedScore: a.weightedScore,
+      displayScore: a.displayScore,
+      displayCount: a.displayCount,
+      target: a.target,
+      percentage: a.percentage,
+      avgConfidence: a.avgConfidence,
+      description: a.description,
+      isHighConfidence: a.isHighConfidence,
+      isOverclocked: a.isOverclocked,
+      isUnverified: a.isUnverified,
+      isUnseeded: a.isUnseeded,
+      status: a.status,
+      percentageText: a.percentageText,
+      fractionText: a.fractionText,
+    })),
+    clusters: base.clusters as any,
+    clusterList: base.clusterList,
+    blindSpots: base.blindSpots,
+    prefixCounts: base.prefixCounts,
+    scannedFilesCount: 72,
+    timestamp: new Date().toISOString(),
+  };
+})();
+
 export default function ProfilePage() {
-  const [stats, setStats] = useState<StatsPayload | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [stats, setStats] = useState<StatsPayload>(INITIAL_STATS);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);

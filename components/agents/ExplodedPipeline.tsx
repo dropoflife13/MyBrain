@@ -434,34 +434,6 @@ export default function ExplodedPipeline() {
 
       {/* ── THE 3-TIER EXPLODED DEFENSE PIPELINE ── */}
       <div className="relative space-y-10">
-        {/* Animated Connecting Electrical SVG Traces */}
-        <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 -translate-x-1/2 w-4 pointer-events-none z-0">
-          <svg className="w-full h-full" preserveAspectRatio="none">
-            <line
-              x1="50%"
-              y1="0%"
-              x2="50%"
-              y2="100%"
-              stroke="rgba(34,211,238,0.25)"
-              strokeWidth="2"
-              strokeDasharray="4 4"
-            />
-            {simState === 'running' && (
-              <motion.line
-                x1="50%"
-                y1="0%"
-                x2="50%"
-                y2="100%"
-                stroke="#22d3ee"
-                strokeWidth="3"
-                animate={{ strokeDashoffset: [0, -100] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-                style={{ strokeDasharray: '8 8', filter: 'drop-shadow(0 0 6px #22d3ee)' }}
-              />
-            )}
-          </svg>
-        </div>
-
         {/* ── STEP 1: FLOATING PINNACLE (ARBITER APEX) ── */}
         <div className="relative z-10 flex flex-col items-center">
           <div className="text-center mb-3">
