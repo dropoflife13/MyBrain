@@ -194,15 +194,10 @@ export default function ProfilePage() {
   const [isExportClaudeOpen, setIsExportClaudeOpen] = useState<boolean>(false);
   const [isQuarantineOpen, setIsQuarantineOpen] = useState<boolean>(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-    fetchStats();
-  }, []);
-
   const fetchStats = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/stats');
+      const res = await fetch('/api/stats', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         setStats(data);
@@ -213,6 +208,14 @@ export default function ProfilePage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    setIsMounted(true);
+    fetchStats();
+    const handleFocus = () => fetchStats();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   const radarData = stats?.cognitiveStats.map((item) => {
     const weightedScore = item.weightedScore ?? item.count;

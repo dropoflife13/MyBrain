@@ -86,7 +86,19 @@ function Layer({ x, y, w, h, floatDelay, tag, title, blurb, icon, children }: La
   );
 }
 
-export default function ExplodedView() {
+interface ExplodedViewProps {
+  totalDomains?: number;
+  totalCoreAgents?: number;
+  totalClusters?: number;
+}
+
+export default function ExplodedView({
+  totalDomains = 29,
+  totalCoreAgents = 8,
+  totalClusters = 4,
+}: ExplodedViewProps = {}) {
+  const overflowDesktop = Math.max(0, totalDomains - DOMAIN_TAGS.length);
+  const overflowMobile = Math.max(0, totalDomains - 8);
   // Connector paths in viewBox space (1000 x 660), from the core (140, 330) to each layer's left edge.
   const paths = [
     'M140 330 C 260 330, 260 112, 380 112',
@@ -180,8 +192,8 @@ export default function ExplodedView() {
           h={175}
           floatDelay={0.8}
           tag="Layer 02"
-          title="The 29 Domains"
-          blurb="Four clusters of invariants."
+          title={`The ${totalDomains} Domains`}
+          blurb={`${totalClusters} clusters of invariants.`}
           icon={<Layers className="w-4 h-4" />}
         >
           {DOMAIN_TAGS.map((d, i) => (
@@ -194,7 +206,7 @@ export default function ExplodedView() {
               {d}
             </motion.span>
           ))}
-          <span className={`${chip} text-sky-700 dark:text-cyan-300 font-semibold`}>+15</span>
+          <span className={`${chip} text-sky-700 dark:text-cyan-300 font-semibold`}>+{overflowDesktop}</span>
         </Layer>
 
         <Layer
@@ -204,7 +216,7 @@ export default function ExplodedView() {
           h={175}
           floatDelay={1.6}
           tag="Layer 03"
-          title="8 Agents & the Arbiter"
+          title={`${totalCoreAgents} Agents & the Arbiter`}
           blurb="Gate Mode. Violations output GATE: FAIL."
           icon={<ShieldCheck className="w-4 h-4" />}
         >
@@ -257,13 +269,13 @@ export default function ExplodedView() {
             },
             {
               tag: 'Layer 02',
-              title: 'The 29 Domains',
-              blurb: 'Four clusters of invariants.',
-              items: [...DOMAIN_TAGS.slice(0, 8), '+21'],
+              title: `The ${totalDomains} Domains`,
+              blurb: `${totalClusters} clusters of invariants.`,
+              items: [...DOMAIN_TAGS.slice(0, 8), `+${overflowMobile}`],
             },
             {
               tag: 'Layer 03',
-              title: '8 Agents & the Arbiter',
+              title: `${totalCoreAgents} Agents & the Arbiter`,
               blurb: 'Gate Mode. Violations output GATE: FAIL.',
               items: AGENT_CODES,
             },

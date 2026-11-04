@@ -1,6 +1,6 @@
 ---
 type: scenarios
-version: 1
+version: 2
 status: active
 ---
 # Scenario Bank
@@ -86,4 +86,6 @@ Examiner-only keys. Do not show a key before the module ends (TE-02). Keys are s
 | DIAG-04 | Anti-Hallucination (The Research Agent): Macroeconomic query without real-time web access. | The "I Don't Know" Rule: State `"WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source."` Never speculate. | `RS-03` |
 | DIAG-05 | The Golden Path (SDLC): Interrogate problem & edge cases before writing the technical PRD. | Execute `/grill` first. Interrogate assumptions, failure modes, and user empathy through Product Manager (PM) gates before committing specifications. | `PM-01` |
 | DIAG-06 | Enterprise Hardening: CDN edge caching tenant-specific private API responses. | Set `Cache-Control: private, no-store, no-cache, must-revalidate` on all authenticated endpoints to prevent cross-tenant cache leaks. | `SEC-15` |
-
+| DIAG-07 | Deterministic Sandbox: An LLM generates an implementation ticket for financial ledger mutation using `UPDATE balances SET amount = amount + $1`. | The Lexical Static Gate intercepts the code in <1ms without calling another LLM. It detects violation of `DB-13` (immutable ledger, append-only) and immediately halts the pipeline, feeding the exact invariant failure back to the generator. | `OP-15`, `DB-13` |
+| DIAG-08 | Tiered Router Precedence: A user enters `/implement DB-13` to build a ledger module. | The Tiered Router must evaluate workflow triggers (`/implement`) BEFORE pure rule lookups. If it evaluated rule IDs first, `/implement DB-13` would be erroneously trapped as a Tier 1 ($0) rule lookup rather than launching the Tier 3 heavy multi-agent implementation pipeline. | `OP-16`, `SO-07` |
+| DIAG-09 | Arbiter Adjudication: Product growth requests frictionless 1-click checkout (`UX`), but Data Privacy law requires explicit consent (`LAW-01`) and Security demands re-authentication (`CS-01`). | The Arbiter applies `ARB-01` (Domain Separation) and `ARB-02` (Precautionary Principle): Security and statutory compliance strictly outrank operational convenience. The system halts or enforces the verification gate. | `ARB-01`, `ARB-02`, `LAW-01` |

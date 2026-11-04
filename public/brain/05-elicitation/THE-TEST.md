@@ -1,41 +1,59 @@
 ---
 type: test
-version: 2
+version: 3
 status: active
 ---
-# The Test — Fast Excavation Modes
+# The Test — Diagnostic Excavation Modules
 
-Purpose: surface tacit judgment, trade-off boundaries, and failure points (`breaks:`) without marathon sessions.
-Replaces the 100-minute test with **three 7-minute micro-triggers**.
+Purpose: surface tacit judgment, trade-off boundaries, and failure points (`breaks:`) without marathon sessions. Evaluates models and human practitioners across software engineering and the 29-Domain Global Knowledge Graph.
 
 ---
 
-## The 3 Fast Excavation Micro-Triggers
+## The 10 Diagnostic Test Modules (T1 to T10)
 
-### 1. Artifact Archaeology (7 Minutes) — Multi-Project Pattern & Boundary Probe
-- **Goal:** Uncover recurring technical choices across independent projects and determine their exact breaking point.
-- **Trigger:** Compare two real specs/schemas written across different projects (e.g. MerkadoTrack `A-01` vs Dugtong OJT `A-02`).
-- **Probe:** Identify the recurring pattern, then demand:
-  > *"When would this choice be wrong or break (`breaks:`), and what is the exact trigger where you would waive it?"*
-- **Output:** Candidates for `inbox.md` with `conf: 3`, concrete `ev:`, and an explicit `breaks:` condition.
+### T1 — Flash Judgment (≤ 30 Seconds)
+- **Format:** Immediate one-line decision under high time pressure.
+- **Probe:** *"What is your first move, and what is your one-line reason?"*
+- **Domains Covered:** Core Engineering (`CS`, `SO`, `BA`, `UI`), plus Global Domains (`LAW`, `FIN`, `PSY`).
 
-### 2. The Visceral Cringe Test (3 Minutes) — Taste & Red Flag Excavation
-- **Goal:** Surface unconscious visual, architectural, and security standards.
-- **Trigger:** Present a flawed code snippet, schema design, or UI component.
-- **Rules:** The practitioner has 3 minutes to call out every red flag in the order noticed.
-- **Probes:**
-  - *"Which flaw did you notice first, and why?"*
-  - *"What standard or invariant was violated?"*
-  - *"Is this a hard security/data violation (`RF-`), or an aesthetic/craft violation (`TASTE.md`)?"*
-- **Output:** Direct entries into `01-identity/TASTE.md` or `03-heuristics/RED-FLAGS.md`.
+### T2 — Flaw Hunt
+- **Format:** Present a realistic, seemingly complete architecture or policy document with subtle, lethal omissions.
+- **Probe:** *"Identify every architectural flaw, hidden vulnerability, or unhandled edge case in order of severity."*
 
-### 3. Forced Trade-Off Triads (30-Second Snap Decision) — Razor Excavation
-- **Goal:** Determine priority hierarchies when two valid principles collide under real-world pressure.
-- **Trigger:** Pit two stated principles against each other under an extreme constraint (e.g., tight deadline, degraded network, strict budget).
-- **Rules:**
-  - Practitioner must choose Option A or Option B in **30 seconds**. No "it depends" allowed initially.
-  - Examiner immediately probes: *"What factor would make you flip your choice?"*
-- **Output:** Extracts decision razors and priority weightings for `03-heuristics/PATTERNS.md` and `04-models/`.
+### T3 — Compliant-but-Wrong
+- **Format:** A solution that satisfies surface compliance (e.g. SOC 2 or regulatory checkboxes) but fails real operational invariants.
+- **Probe:** *"This passes standard regulatory review; explain why it is operationally or structurally flawed."*
+
+### T4 — Priority Ranking
+- **Format:** Forced ranking of 3–5 conflicting priorities under resource famine or active attack.
+- **Probe:** *"Rank these actions from 1 to 4; justify what you sacrifice first."*
+
+### T5 — Artifact Archaeology
+- **Format:** Comparison of two historical artifacts or code repositories across projects (`A-01` through `A-06`).
+- **Probe:** *"What invariant was carried over, and what was completely inverted based on learned failure boundaries?"*
+
+### T6 — Boundary Hunter (`breaks:`)
+- **Format:** Take a stated high-confidence rule (`conf: 5`) and demand its falsification condition.
+- **Probe:** *"Describe the exact real-world scenario where following this rule results in catastrophic failure or must be waived."*
+
+### T7 — The Visceral Cringe Test (3 Minutes)
+- **Format:** Fast aesthetic, architectural, and ethical smell-test.
+- **Probe:** *"Which anti-pattern or visual/code slop did you notice first, and why does it break high-craft standards?"*
+
+### T8 — Cross-Pollination & Domain Synthesis
+- **Format:** Evaluating a deliverable in one domain using the lens of an opposing domain.
+- **Probe:** *"Review this Business Analysis specification using a pure Cybersecurity lens (`CS`), or review this UI workflow using Cognitive Psychology (`PSY`). What does it flag?"*
+
+### T9 — Memory Excavation
+- **Format:** Retrieval of battle-tested heuristics from real-world project deployments.
+- **Probe:** *"When did you last say 'this will fail' and turn out right? What exact signal tipped you off?"*
+
+### T10 — Global Domain Benchmark
+- **Format:** Direct probing of non-software domains across the 4 Clusters:
+  - **Humanities:** Epistemic grounding in Philosophy (`PHI-01`), behavioral biases in Psychology (`PSY-01`), classical rhetoric framing (`RHE-01`).
+  - **Global & Society:** Contractual liability under Law (`LAW-01`), monetary dynamics in Economy (`ECO-01`), cryptographic consensus in Crypto (`CRY-01`).
+  - **Science:** Clinical evidence hierarchies in Medicine (`MED-01`), empirical falsifiability in Science (`SCI-01`).
+- **Probe:** *"Explain the first-principles invariant governing this situation outside software engineering."*
 
 ---
 
@@ -48,4 +66,3 @@ Replaces the 100-minute test with **three 7-minute micro-triggers**.
 - **TE-06** When answers are vague, probe for the exact tipping factor (EP-01).
 - **TE-07** Evaluation keys are diagnostic signals, not school answers; hunt the underlying razor.
 - **TE-08** Never promote rules during test execution; all extractions route to inbox.md.
-

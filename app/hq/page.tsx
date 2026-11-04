@@ -90,7 +90,7 @@ export default function PixelAgentHQPage() {
   const fetchStats = useCallback(async () => {
     setIsLoadingStats(true);
     try {
-      const res = await fetch('/api/stats');
+      const res = await fetch('/api/stats', { cache: 'no-store' });
       if (res.ok) {
         const data = await res.json();
         const masteryList: any[] = data.agentMastery || [];
@@ -128,6 +128,8 @@ export default function PixelAgentHQPage() {
 
   useEffect(() => {
     fetchStats();
+    window.addEventListener('focus', fetchStats);
+    return () => window.removeEventListener('focus', fetchStats);
   }, [fetchStats]);
 
   // Select a bot & dock to Mainframe

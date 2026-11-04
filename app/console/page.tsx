@@ -289,7 +289,7 @@ export default function Home() {
 
   const handleRecheckGate = () => {
     setIsCheckingGate(true);
-    fetch('/api/brain')
+    fetch('/api/brain', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
       .then((payload) => {
         if (payload) {
@@ -314,22 +314,27 @@ export default function Home() {
     return () => clearTimeout(fallback);
   }, []);
 
-  // Sync live markdown files from /api/brain on mount
+  // Sync live markdown files from /api/brain on mount and when window regains focus
   useEffect(() => {
     let active = true;
-    fetch('/api/brain')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((payload) => {
-        if (active && payload) {
-          setAssessedGraphData(payload);
-          if (payload.gateStatus && !payload.gateStatus.passed) {
-            setIsGraphReady(true);
+    const syncLiveBrain = () => {
+      fetch('/api/brain', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((payload) => {
+          if (active && payload) {
+            setAssessedGraphData(payload);
+            if (payload.gateStatus && !payload.gateStatus.passed) {
+              setIsGraphReady(true);
+            }
           }
-        }
-      })
-      .catch(() => {});
+        })
+        .catch(() => {});
+    };
+    syncLiveBrain();
+    window.addEventListener('focus', syncLiveBrain);
     return () => {
       active = false;
+      window.removeEventListener('focus', syncLiveBrain);
     };
   }, []);
 

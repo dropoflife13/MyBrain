@@ -140,12 +140,26 @@ function Chart({ title, caption, values, max, mode, xLabels }: ChartProps) {
   );
 }
 
-export default function MinimalistData() {
+interface MinimalistDataProps {
+  totalDomains?: number;
+  totalRules?: number;
+}
+
+export default function MinimalistData({
+  totalDomains = 29,
+  totalRules = 281,
+}: MinimalistDataProps = {}) {
+  const dynamicStats = [
+    { value: String(totalDomains), label: 'Domains' },
+    { value: `${totalRules}+`, label: 'Synaptic invariants' },
+    { value: '80%', label: 'Token cost reduction (target)' },
+  ];
+
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-300 dark:border-white/10 bg-white dark:bg-[#09090b] shadow-sm">
       {/* Big numbers */}
       <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-white/10">
-        {STATS.map((s, i) => (
+        {dynamicStats.map((s, i) => (
           <motion.div
             key={s.label}
             className="p-8 md:p-10"

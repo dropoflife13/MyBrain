@@ -1,6 +1,6 @@
 ---
 type: taste
-version: 4
+version: 5
 status: active
 ---
 # Taste — What I Call Good Work
@@ -15,11 +15,18 @@ Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`). Format: `- **TA-nn** <s
 - **TA-13** Video-editor pacing and storyboarding: enforce the 10-second rule (cut dead air, deliver the hook/payoff immediately like CITEMAS's 10s reel cut and Dugtong's 3-minute MVP flow) and structure every user flow as a storyboarded timeline (Problem → Friction → 'Aha' Action → Verified Outcome) | conf: 5 | ev: S-01 (Step 3), A-02 (Rule 3), A-03 (Sec 3), A-05 (Premiere Pro/CapCut) | status: active ^ta-13
 - **TA-14** Dual-mode spatial HUD precision: pair Obsidian Sci-Fi Dark Mode (`#050505` / `#00FFFF` glow, `6px` HUD scrollbar) with an Architectural Blueprint Light Mode (`#f0f4f8` canvas, `#1e3a8a` navy nodes, `#cbd5e1` links, frosted `bg-white/90` panels) and strict `grid-cols-[1fr_auto_1fr]` `h-10` command bar alignment | conf: 5 | ev: S-03, A-06 | status: active ^ta-14
 
+## The Agentic OS & Gamified Spatial Design (New v3.0)
+- **TA-15** **Isometric Sim-style realism:** When building the Agent HQ, agents must not float randomly in space. They must be anchored to logical workstations (desks, printers, research boards) on a structured isometric grid. Movement must follow a strict state machine (Working → Walking → Fetching → Returning) | conf: 5 | ev: S-04, A-06 | status: active ^ta-15
+- **TA-16** **Protected Reactor Hierarchy:** The core memory (Cortex Mainframe) must look like a protected, glowing glass reactor at the top of the station, establishing clear visual hierarchy over the worker agents below | conf: 5 | ev: S-04, A-06 | status: active ^ta-16
+- **TA-17** **High-Contrast Pixel Art:** Pixel bots must use clean, high-contrast palettes (distinct colors per agent) with subtle floating and typing animations, never muddy or low-resolution sprites | conf: 5 | ev: S-04, A-06 | status: active ^ta-17
+- **TA-18** **Deterministic Transparency:** The UI must expose the invisible system mechanics. If a Tiered Router selects a model, show the badge (e.g., `[TIER 2 // FAST LLM]`). If the sandbox runs a test, show the pass/fail trace. The user should never have to guess what the AI is doing | conf: 5 | ev: S-04, A-06 | status: active ^ta-18
+
 ## Bad work smells like
 - **TA-05** Generic "AI dashboard slop": purple/neon gradients, glowing borders, bouncy hover scaling (`scale-105`), and oversized decorative cards | conf: 5 | ev: S-01, A-02 (Sec 10) | status: active ^ta-05
 - **TA-06** Broken contrast and color-only states: raw `#2563EB` blue text on dark backgrounds, pale teal on white, or status pills without readable text labels | conf: 5 | ev: S-01, A-02 (Sec 10.4) | status: active ^ta-06
 - **TA-07** Arbitrary font sizes (11px, 13px, 44px), all-caps sentences, misaligned table numerics, and layout shift (CLS) when skeletons or media swap in | conf: 5 | ev: S-01, A-01 (UX-05), A-02 (Sec 10.5, 10.7) | status: active ^ta-07
 - **TA-08** Dead controls, decorative filters, fake sorting, or optimistic "fake saves" that lie about backend state | conf: 5 | ev: S-01, A-02 (Sec 10.1, 10.10) | status: active ^ta-08
+- **TA-19** **Physics-based chaos:** Do not use random `Math.random()` velocities for agents or SVGs that create disconnected, floating "spaghetti" lines. Intent and structure must always drive movement | conf: 5 | ev: S-04, A-06 | status: active ^ta-19
 
 ## Style defaults (docs, diagrams, naming, structure, code)
 - **TA-09** Composable, dumb prop-driven UI primitives (`shadcn/ui` foundation) cleanly separated from data-fetching containers and server contracts | conf: 5 | ev: S-01, A-02 (Sec 10.2, 12.3.1), A-05 (Godot data-driven systems) | status: active ^ta-09
@@ -28,3 +35,4 @@ Feeds `uiuxagent.md` (`UX`) and `growthagent.md` (`GR`). Format: `- **TA-nn** <s
 ## Work I admire, and why (cite A-nn)
 - **TA-11** Linear & Stripe interfaces for calm density, keyboard-first ergonomics, and disciplined token hierarchy (`A-02` Sec 10) | conf: 5 | ev: A-02 | status: active ^ta-11
 - **TA-12** Premiere Pro / studio telemetry HUDs and tactical game UIs for frame-accurate feedback (`00:0X / 00:10S CUT`, corner reticles, ScrollSpine gauges) (`A-03` Sec 3–4, `A-05`) | conf: 5 | ev: A-03, A-05 | status: active ^ta-12
+- **TA-20** Classic isometric simulation games (e.g., RollerCoaster Tycoon, Stardew Valley) for their satisfying spatial layouts, clear work states, and "living world" feel (`A-06` Pixel HQ) | conf: 5 | ev: A-06 | status: active ^ta-20

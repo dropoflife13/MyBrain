@@ -2,7 +2,7 @@
 
 This repository contains two cooperating layers that **cannot operate independently**:
 1. **The 8-Agent Suite (`agents/`):** The **execution layer** (`PM`, `UX`, `GR`, `SD`, `IR`, `DB`, `SEC`, `RS`) that enforces strict gates and reviews implementation tickets.
-2. **The Procedural Brain (`brain/`):** The **judgment layer** that stores tacit knowledge, trade-offs, and boundary conditions (`breaks:`) that feed into the 8 agents.
+2. **The Procedural Brain (`brain/`):** The **judgment layer** that stores tacit knowledge, trade-offs, and boundary conditions (`breaks:`) across 29 domains in 4 clusters that feed into the 8 agents.
 
 ---
 
@@ -38,8 +38,8 @@ When the user is **building, writing code, creating specs, reviewing PRs, or exe
   - `integrationagent.md` (`IR`) — Queues, offline sync, contracts, webhooks, idempotency.
   - `uiuxagent.md` (`UX`) — Components, tokens, accessible states, layout, no fake saves.
   - `growthagent.md` (`GR`) — SEO, metadata, analytics, discoverability, public performance.
-  - `securityagent.md` (`SEC`) — Threat models, RLS bypass testing, authz checks, secrets.
-  - `researchagent.md` (`RS`) — Epistemic rigor, source verification, anti-hallucination gates.
+  - `securityagent.md` (`SEC`) — Threat models, RLS bypass testing, authz checks, secrets, server redaction (`SEC-14`), cache headers (`SEC-15`).
+  - `researchagent.md` (`RS`) — Epistemologist, primary-source verification, anti-hallucination gates (`RS-03`), first-principles (`ARB-07`).
 - **Modes:**
   - **Gate Mode** (default on review/PR/merge): strictly evaluate rules. Any failure produces `GATE: FAIL <ID> <file:line> <required fix>` and blocks.
   - **Insight Mode** (on suggestions/explorations): non-blocking improvements and architectural observations.
@@ -52,16 +52,27 @@ When the user is **reflecting on a decision, debugging a contradiction, or runni
 
 ---
 
-## Golden Path 6-Commands Workflow
+## The Golden Path Pipeline & Slash Commands
 
 | Step | Command | Primary Agents | Purpose & Output |
 |---|---|---|---|
 | **1** | `/grill [idea]` | `[PM]` | Interrogate requirements, find unhandled edge cases, cut 30% scope, create Acceptance Criteria. |
-| **2** | `/to-spec [context]` | `[SD]` | Author Technical Requirements Doc (TRD), define SLOs, error budgets, contracts, and failure domains. |
-| **3** | `/to-tickets [spec]` | `[PM]` + `[SD]` | Decompose TRD into atomic, verifiable implementation tickets with explicit dependencies. |
-| **4** | `/implement [ticket]` | `[DB]` `[SEC]` `[UX]` `[IR]` | Write code under continuous gatekeeper review; enforce atomic transactions, RLS, and a11y. |
-| **5** | `/harden [target]` | `[SEC]` + `[DB]` | Adversarial audit: attack RLS policies, probe race conditions, check tenant isolation, test timing attacks. |
-| **6** | `/retro [session]` | `[RS]` + Meta | Post-implementation excavation: record tacit lessons, failure edges (`breaks:`), update brain vault. |
+| **2** | `/pitch [idea]` | `[GR]` + `[PM]` | Synthesize core value proposition and write a crisp 3-minute executive pitch. |
+| **3** | `/to-spec [context]` | `[SD]` + `[DB]` | Author Technical Requirements Document (TRD), define data contracts, RLS policies, and failure domains. |
+| **4** | `/to-tickets [spec]` | `[PM]` + `[SD]` | Decompose TRD into atomic, verifiable implementation tickets with explicit dependencies. |
+| **5** | `/implement [ticket]` | `[DB]` `[SEC]` `[UX]` `[IR]` | Write code under continuous gatekeeper review; enforce deterministic validation gates (lexical check + sandbox test). |
+| **6** | `/review [target]` | `[SEC]` + `[SD]` | Rigorous STRIDE security review, invariant verification, and check against `BN-00` rules. |
+| **7** | `/harden [target]` | `[SEC]` + `[DB]` | Adversarial audit: attack RLS policies, probe race conditions (`DB-13`), server-side redaction (`SEC-14`), cache control (`SEC-15`). |
+| **8** | `/research [topic]` | `[RS]` | Deep-dive research: verify primary sources, triangulate citations, enforce "I do not know" (`RS-03`), ground in first principles (`ARB-07`). |
+| **—** | `/retro [session]` | `[RS]` + Meta | Post-implementation excavation: record tacit lessons, failure edges (`breaks:`), update brain vault. |
+
+---
+
+## Cortex v3.0 Tooling & Portable Artifacts
+
+- **Export `CLAUDE.md` Feature:** Generates standalone context instructions via `components/ExportClaudeModal.tsx` for drop-in use across Cursor, Windsurf, or Claude Code.
+- **Fork This Brain Template:** Clean starter archive (`/brain-template.zip` on `/start`) with 0 personal rules, ready for new projects to earn their own graph.
+- **Tiered AI Router:** Evaluates workflow commands and vision first (Tier 3), direct rule lookups second (Tier 1: $0.00 local lookup, <10ms), and conversational queries third (Tier 2).
 
 ---
 
@@ -71,13 +82,14 @@ Active rules from `brain/02-domains/` feed directly into the execution checklist
 
 | Brain Source | Prefix | Feeds Agent | Role in Agent Suite |
 |---|---|---|---|
-| `01-identity/OPERATING-PRINCIPLES.md` | `OP` | **All 8 Agents** (Tier 0) | Overarching practitioner standards and non-negotiables |
-| `01-identity/TASTE.md` | `TA` | `uiuxagent.md` (`UX`), `growthagent.md` (`GR`) | Design refinement, restrained motion, clean visual heuristics |
+| `01-identity/OPERATING-PRINCIPLES.md` | `OP` | **All 8 Agents** (Tier 0) | Overarching practitioner standards and non-negotiables (`OP-01..19`) |
+| `01-identity/TASTE.md` | `TA` | `uiuxagent.md` (`UX`), `growthagent.md` (`GR`) | Design refinement, restrained motion, clean visual heuristics (`TA-01..20`) |
 | `02-domains/business-analysis.md` | `BA` | `productmanageragent.md` (`PM`) | Multi-actor boundaries, spec conflict checks, MVP scoping |
 | `02-domains/solutions.md` | `SO` | `systemsdesignagent.md` (`SD`), `dbaagent.md` (`DB`), `integrationagent.md` (`IR`) | Constraint-driven architecture, offline sync, write offloading |
-| `02-domains/cybersec.md` | `CS` | `securityagent.md` (`SEC`), `dbaagent.md` (`DB`) | DB-enforced RLS, untrusted client inputs, two-party authz |
+| `02-domains/cybersec.md` & `authorization.md` | `CS`, `AUTH` | `securityagent.md` (`SEC`), `dbaagent.md` (`DB`) | DB-enforced RLS, untrusted client inputs, two-party authz, PDP/PEP |
 | `02-domains/ui-frontend.md` | `UI` | `uiuxagent.md` (`UX`) | Dumb primitives, token strictness, role views, honest states |
-| `02-domains/research.md` / `agents/` | `RS` | `researchagent.md` (`RS`) | Multi-source triangulation, citation verification, "I don't know" threshold |
+| `02-domains/arbiter.md` | `ARB` | **Arbiter Rule Set** | Cross-domain conflict resolution, precaution, fact vs opinion |
+| `agents/researchagent.md` | `RS` | `researchagent.md` (`RS`) | Epistemic rigor, multi-source triangulation, citation verification, anti-hallucination |
 
 ### The Feedback Loop
 - **Brain → Agent:** Active domain rules define what agents enforce in Gate checklists.

@@ -18,6 +18,7 @@ export interface ScoredRuleMatch {
 
 let extractorPipeline: any = null;
 let cachedEmbeddings: RuleEmbeddingRecord[] | null = null;
+let cachedEmbeddingsMtimeMs: number = 0;
 
 /**
  * Initializes and caches the local ONNX feature extraction pipeline.
@@ -200,11 +201,41 @@ export async function generateAllEmbeddings(
   }
 
   console.log(`[Cortex Embedder] Found ${rawRules.length} canonical rules to vectorize.`);
+  const rootDir = process.cwd();
+  const outputPathRoot = path.join(rootDir, 'brain-embeddings.json');
+  const outputPathPublic = path.join(rootDir, 'public', 'brain-embeddings.json');
+
+  const existingByRuleId = new Map<string, RuleEmbeddingRecord>();
+  if (fs.existsSync(outputPathRoot)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(outputPathRoot, 'utf8'));
+      if (Array.isArray(parsed)) {
+        for (const rec of parsed) {
+          if (rec?.ruleId && Array.isArray(rec.embedding) && rec.embedding.length > 0) {
+            existingByRuleId.set(rec.ruleId, rec);
+          }
+        }
+      }
+    } catch {}
+  }
+
   const records: RuleEmbeddingRecord[] = [];
 
   for (let idx = 0; idx < rawRules.length; idx++) {
     const item = rawRules[idx];
     onProgress?.(idx + 1, rawRules.length, item.ruleId);
+
+    const prev = existingByRuleId.get(item.ruleId);
+    if (prev && prev.text === item.text) {
+      records.push({
+        ruleId: item.ruleId,
+        file: item.file,
+        line: item.line,
+        text: item.text,
+        embedding: prev.embedding,
+      });
+      continue;
+    }
 
     // Vectorize item text using all-MiniLM-L6-v2
     const embedding = await embedText(item.text);
@@ -218,10 +249,6 @@ export async function generateAllEmbeddings(
   }
 
   // Persist embeddings to JSON files
-  const rootDir = process.cwd();
-  const outputPathRoot = path.join(rootDir, 'brain-embeddings.json');
-  const outputPathPublic = path.join(rootDir, 'public', 'brain-embeddings.json');
-
   const jsonStr = JSON.stringify(records, null, 2);
   fs.writeFileSync(outputPathRoot, jsonStr, 'utf8');
 
@@ -234,18 +261,18 @@ export async function generateAllEmbeddings(
   } catch {}
 
   cachedEmbeddings = records;
+  try {
+    cachedEmbeddingsMtimeMs = fs.statSync(outputPathRoot).mtimeMs;
+  } catch {}
   console.log(`[Cortex Embedder] Successfully vectorized and saved ${records.length} rules to ${outputPathRoot}.`);
   return records;
 }
 
 /**
  * Loads pre-computed embeddings from brain-embeddings.json.
+ * Automatically invalidates in-memory cache if the file's mtimeMs on disk changed.
  */
 export function loadEmbeddings(): RuleEmbeddingRecord[] {
-  if (cachedEmbeddings && cachedEmbeddings.length > 0) {
-    return cachedEmbeddings;
-  }
-
   const candidatePaths = [
     resolveFilePath('brain-embeddings.json'),
     resolveFilePath('public/brain-embeddings.json'),
@@ -256,10 +283,15 @@ export function loadEmbeddings(): RuleEmbeddingRecord[] {
   for (const p of candidatePaths) {
     if (fs.existsSync(p)) {
       try {
+        const stat = fs.statSync(p);
+        if (cachedEmbeddings && cachedEmbeddings.length > 0 && stat.mtimeMs === cachedEmbeddingsMtimeMs) {
+          return cachedEmbeddings;
+        }
         const raw = fs.readFileSync(p, 'utf8');
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
           cachedEmbeddings = parsed;
+          cachedEmbeddingsMtimeMs = stat.mtimeMs;
           return cachedEmbeddings;
         }
       } catch (err) {
@@ -268,7 +300,7 @@ export function loadEmbeddings(): RuleEmbeddingRecord[] {
     }
   }
 
-  return [];
+  return cachedEmbeddings ?? [];
 }
 
 /**

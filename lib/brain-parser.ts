@@ -97,7 +97,10 @@ export const REQUIRED_SEVEN_AGENTS = [
   { id: 'integrationagent', code: 'IR', file: 'agents/integrationagent.md', filename: 'integrationagent.md' },
   { id: 'dbaagent', code: 'DB', file: 'agents/dbaagent.md', filename: 'dbaagent.md' },
   { id: 'securityagent', code: 'SEC', file: 'agents/securityagent.md', filename: 'securityagent.md' },
+  { id: 'researchagent', code: 'RS', file: 'agents/researchagent.md', filename: 'researchagent.md' },
 ] as const;
+
+export const REQUIRED_EIGHT_AGENTS = REQUIRED_SEVEN_AGENTS;
 
 export function verifySevenAgentsGate(nodes: BrainDocNode[]): {
   passed: boolean;
@@ -1230,6 +1233,7 @@ export function getBrainData(options?: {
   });
 
   const liveOverrides = options?.liveOverrides;
+  const knownSourceIds = new Set(VAULT_MARKDOWN_SOURCES.map((s) => s.id));
   const docNodes: BrainDocNode[] = VAULT_MARKDOWN_SOURCES.map((src) => {
     const live = liveOverrides?.get(src.id);
     const parsed = live ?? parseMarkdownNode(src.id, src.markdown, src.category);
@@ -1240,6 +1244,30 @@ export function getBrainData(options?: {
       fz: src.anchor[2],
     };
   });
+
+  // Dynamically include any newly added agent or domain .md files discovered on disk via liveOverrides
+  const dynamicAnchors = new Map<string, [number, number, number]>();
+  if (liveOverrides) {
+    let dynIdx = 0;
+    liveOverrides.forEach((liveNode, id) => {
+      if (!knownSourceIds.has(id)) {
+        const isAgent = liveNode.category === 'agent' || liveNode.group === 1;
+        const radius = isAgent ? 28 : 135;
+        const angle = (dynIdx * 2.399963229728653) % (Math.PI * 2);
+        const ax = Math.round(Math.cos(angle) * radius);
+        const ay = ((dynIdx % 5) - 2) * 4;
+        const az = Math.round(Math.sin(angle) * radius);
+        dynamicAnchors.set(id, [ax, ay, az]);
+        docNodes.push({
+          ...liveNode,
+          fx: ax,
+          fy: ay,
+          fz: az,
+        });
+        dynIdx++;
+      }
+    });
+  }
 
   interface RuleCatalogEntry {
     ruleId: string;
@@ -1459,6 +1487,9 @@ export function getBrainData(options?: {
   for (const src of VAULT_MARKDOWN_SOURCES) {
     anchorById.set(src.id, src.anchor);
   }
+  dynamicAnchors.forEach((anchor, id) => {
+    anchorById.set(id, anchor);
+  });
 
   // 3D Cosmic Galaxy Physics (d3.forceRadial + Galactic Disc Plane):
   // 1. The Core (Hub + 8 Core Agents + Judgment Arbiter + Engineering): forceRadial radius 0-30

@@ -76,7 +76,43 @@ export default function LandingPage() {
   const [copiedPluginSnippet, setCopiedPluginSnippet] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
+  const [liveTelemetry, setLiveTelemetry] = useState<{
+    totalDomains: number;
+    totalRules: number;
+    totalCoreAgents: number;
+    totalClusters: number;
+  }>({
+    totalDomains: 29,
+    totalRules: 281,
+    totalCoreAgents: 8,
+    totalClusters: 4,
+  });
   const graphData = useMemo(() => getBrainData({ nodeCount: 360 }), []);
+
+  useEffect(() => {
+    let active = true;
+    const syncStats = () => {
+      fetch('/api/stats', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (active && data) {
+            setLiveTelemetry({
+              totalDomains: data.totalDomains ?? 29,
+              totalRules: data.totalRules ?? 281,
+              totalCoreAgents: data.totalCoreAgents ?? 8,
+              totalClusters: data.totalClusters ?? 4,
+            });
+          }
+        })
+        .catch(() => {});
+    };
+    syncStats();
+    window.addEventListener('focus', syncStats);
+    return () => {
+      active = false;
+      window.removeEventListener('focus', syncStats);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,7 +215,7 @@ export default function LandingPage() {
                 CORTEX
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-[#00ffff] border border-cyan-500/20 dark:border-cyan-400/20 font-bold">
-                v2.4
+                v3.0
               </span>
             </div>
           </div>
@@ -276,7 +312,7 @@ export default function LandingPage() {
           {/* Sub-headline with High-Contrast Legibility */}
           <p className="text-lg md:text-xl text-slate-700 dark:text-white/85 max-w-2xl mx-auto mb-10 leading-relaxed font-sans font-medium drop-shadow-md">
             A 3D, AI-powered knowledge vault that doesn&apos;t just store your notes—it enforces your
-            engineering standards across 29 domains and 4 clusters.
+            engineering standards across {liveTelemetry.totalDomains} domains and {liveTelemetry.totalClusters} clusters.
           </p>
 
           {/* Giant Glowing CTA Button */}
@@ -293,12 +329,12 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-center gap-4 mt-12 text-xs font-mono uppercase tracking-widest text-slate-600 dark:text-zinc-300">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-cyan-500 dark:bg-cyan-400 shadow-[0_0_8px_#00ffff]" />
-              29 Domains Active
+              {liveTelemetry.totalDomains} Domains Active
             </span>
             <span>•</span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-900 dark:bg-white" />
-              280 Synaptic Invariants
+              {liveTelemetry.totalRules} Synaptic Invariants
             </span>
             <span>•</span>
             <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-semibold">
@@ -356,7 +392,11 @@ export default function LandingPage() {
               Markdown in, enforced judgment out.
             </p>
           </div>
-          <ExplodedView />
+          <ExplodedView
+            totalDomains={liveTelemetry.totalDomains}
+            totalCoreAgents={liveTelemetry.totalCoreAgents}
+            totalClusters={liveTelemetry.totalClusters}
+          />
         </section>
 
         {/* SECTION 1B: MINIMALIST DATA */}
@@ -372,7 +412,10 @@ export default function LandingPage() {
               Local-first routing keeps heavy models for heavy work.
             </p>
           </div>
-          <MinimalistData />
+          <MinimalistData
+            totalDomains={liveTelemetry.totalDomains}
+            totalRules={liveTelemetry.totalRules}
+          />
         </section>
 
         {/* SECTION 1C: TIERED ROUTER FLOW */}

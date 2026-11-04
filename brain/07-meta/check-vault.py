@@ -1,100 +1,122 @@
 #!/usr/bin/env python3
-"""Vault consistency check. Run from anywhere: python 07-meta/check-vault.py [vault_root]
-Read-only. Exit code 1 if any ERROR. Checks CV-01..CV-08 mechanics, not meaning."""
-import re, sys, glob, os
-try: sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-except Exception: pass
-root = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
-os.chdir(root)
-norm = lambda p: p.replace(os.sep, '/').replace('\\', '/')
-files = sorted(norm(f) for f in glob.glob('**/*.md', recursive=True))
-text = {f: open(f, encoding='utf-8-sig').read() for f in files}
-errors, warns = [], []
-E = lambda f, m: errors.append(f"ERROR {f}: {m}")
-W = lambda f, m: warns.append(f"WARN  {f}: {m}")
+"""
+Cortex vault linter.
 
-# 1. frontmatter (CV-04)
-for f, t in text.items():
-    m = re.match(r'---\n(.*?)\n---\n', t, re.S)
-    if not m: E(f, "missing frontmatter"); continue
-    keys = set(re.findall(r'^(\w+):', m.group(1), re.M))
-    if f.endswith('_TEMPLATE.md'): continue
-    if not {'version', 'status'} <= keys or not ({'type'} <= keys or 'domain' in keys):
-        E(f, "frontmatter needs type (or domain), version, status")
+Checks:
+  1. Rule line schema:  - **ID-##**: text [conf:1-5, src:...]
+  2. Duplicate rule IDs across the vault
+  3. Numbering gaps within each prefix
+  4. Relative markdown links resolve
+  5. BN-00: all 8 core agents exist in agents/
+  6. Mirror parity: public/agents and public/brain match their sources
 
-# 2. rule lines: grammar, uniqueness, block id, conf vs status (CV-02, CV-03, CV-08)
-seen = {}
-for f, t in text.items():
-    if f.endswith('_TEMPLATE.md'): continue
-    for n, line in enumerate(t.split('\n'), 1):
-        m = re.match(r'- \*\*([A-Z]{1,4})-(\d{2,3})\*\*', line)
-        if not m or ' | ' not in line: continue
-        rid = f"{m.group(1)}-{m.group(2)}"
-        if rid in seen: E(f"{f}:{n}", f"duplicate ID {rid} (also {seen[rid]})")
-        seen[rid] = f"{f}:{n}"
-        if 'status:' in line:
-            if not line.rstrip().endswith(f"^{rid.lower()}"): E(f"{f}:{n}", f"{rid} must end with block ID ^{rid.lower()}")
-            st = re.search(r'status: (\w+)', line).group(1)
-            if st not in ('candidate', 'active', 'superseded', 'retired'): E(f"{f}:{n}", f"{rid} bad status '{st}'")
-            c = re.search(r'conf: (\d)', line)
-            if st == 'active' and m.group(1) not in ('OP', 'TA') and (not c or int(c.group(1)) < 3):
-                E(f"{f}:{n}", f"{rid} is active with conf < 3 (CV-03)")
-            if st == 'active' and 'ev:' not in line: E(f"{f}:{n}", f"{rid} active without ev")
+Usage: python brain/07-meta/check-vault.py [repo_root]
+Exit code 0 = clean, 1 = errors found.
+"""
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
 
-# 3. defined IDs
-defined = set(seen)
-for f, t in text.items():
-    for m in re.finditer(r'\*\*([A-Z]{1,4}-\d{2,3})\*\*', t): defined.add(m.group(1))
-    for m in re.finditer(r'^\|\s*((?:TS|FL-[A-Z]{2}|CW-[A-Z]{2}|RS|RK|PRE|A)-\d+)\s*\|', t, re.M): defined.add(m.group(1))
-    for m in re.finditer(r'^#+\s*((?:FH-[A-Z]{2}|PRE|RS)-\d+)', t, re.M): defined.add(m.group(1))
-    for m in re.finditer(r'^- \*\*((?:RK|PRE|RS)-\d+)\*\*', t, re.M): defined.add(m.group(1))
-    for m in re.finditer(r'^## (L-\d\d)', t, re.M): defined.add(m.group(1))
-    for m in re.finditer(r'^## (T\d+) ', t, re.M): defined.add(m.group(1))
-    for m in re.finditer(r'^\|\s*(T\d+)\s*\|', t, re.M): defined.add(m.group(1))
+CORE_AGENTS = [
+    "productmanageragent.md", "uiuxagent.md", "growthagent.md", "systemsdesignagent.md",
+    "integrationagent.md", "dbaagent.md", "securityagent.md", "researchagent.md",
+]
 
-# 4. references (single IDs, ranges, scenario ranges)
-CHECK = r'(?:CV|EP|TE|BN|SP|AA|TS|Q|L)'
-for f, t in text.items():
-    if f.endswith('_TEMPLATE.md'): continue
-    body = re.sub(r'`[^`\n]*`', '', t)
-    for m in re.finditer(rf'\b({CHECK})-(\d{{2}})(?:\s*(?:…|–|to)\s*(?:{CHECK}-)?(\d{{2}}))?\b', body):
-        p, a = m.group(1), int(m.group(2)); b = int(m.group(3) or a)
-        for i in range(a, b + 1):
-            if f"{p}-{i:02d}" not in defined: E(f, f"references undefined {p}-{i:02d}")
-    for m in re.finditer(r'\b((?:FL|FH|CW)-[A-Z]{2}|RS)-(\d)(?:…(\d))?', body):
-        p, a = m.group(1), int(m.group(2)); b = int(m.group(3) or a)
-        for i in range(a, b + 1):
-            if f"{p}-{i}" not in defined and f"{p}-{i}".replace('RS-', 'RS-') not in defined: E(f, f"references undefined {p}-{i}")
+RULE_LINE = re.compile(r"^- \*\*([A-Z]{2,4})-(\d{2})\*\*:\s+(.+)$")
+RULE_STRICT = re.compile(r"^- \*\*[A-Z]{2,4}-\d{2}\*\*:\s+.+\s\[conf:([1-5]),\s*src:([^\]]+)\]\s*$")
+LINK = re.compile(r"\[[^\]]*\]\((?!https?://|mailto:|#)([^)#\s]+)(?:#[^)]*)?\)")
 
-# 5. wikilinks incl. block ids
-names = {os.path.splitext(os.path.basename(f))[0]: f for f in files}
-blocks = {f: set(re.findall(r'\^([a-z0-9-]+)\s*$', t, re.M)) for f, t in text.items()}
-for f, t in text.items():
-    if f.endswith('_TEMPLATE.md'): continue
-    for m in re.finditer(r'\[\[([^\]|#]+)(?:#\^([a-z0-9-]+))?', re.sub(r'`[^`\n]*`', '', t)):
-        n, blk = m.group(1), m.group(2)
-        if re.fullmatch(r'S-\d+', n): continue
-        if n not in names: E(f, f"broken wikilink [[{n}]]")
-        elif blk and blk not in blocks[names[n]]: E(f, f"broken block link [[{n}#^{blk}]]")
+errors: list[str] = []
+warnings: list[str] = []
 
-# 6. prefixes: domains must not use agent-suite prefixes (CV-07)
-conv = text.get('07-meta/CONVENTIONS.md', '')
-r = re.search(r'Reserved by the agent suite[^|]*\|\s*([A-Z ]+)\|', conv)
-reserved = set(r.group(1).split()) if r else set()
-used = re.search(r'Domains in use \| (.*)', conv); used = used.group(1) if used else ''
-for f in sorted(norm(x) for x in glob.glob('02-domains/*.md')):
-    m = re.search(r'^prefix: (\w+)', text[f], re.M)
-    if not m or '⟨' in m.group(0): continue
-    p = m.group(1)
-    if p in reserved: E(f, f"domain prefix {p} is reserved by the agent suite")
-    if p not in used: E(f, f"domain prefix {p} not listed under 'Domains in use' in CONVENTIONS")
 
-# 7. size caps (agent/protocol files <= 80 lines; others warn > 150)
-for f, t in text.items():
-    n = t.count('\n') + 1
-    if f.endswith('brainagent.md') and n > 80: E(f, f"{n} lines (cap 80)")
-    elif n > 150: W(f, f"{n} lines (split per EXTENDING.md)")
+def err(msg: str) -> None:
+    errors.append(msg)
 
-print('\n'.join(errors + warns))
-print(f"\n{len(files)} files | {len(errors)} errors | {len(warns)} warnings")
-sys.exit(1 if errors else 0)
+
+def check_rules(brain: Path, root: Path) -> None:
+    seen: dict[str, str] = {}
+    numbers: dict[str, list[int]] = defaultdict(list)
+
+    for md in sorted(brain.rglob("*.md")):
+        if md.name.startswith("_TEMPLATE"):
+            continue
+        rel = md.relative_to(root)
+        for n, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):
+            m = RULE_LINE.match(line)
+            if not m:
+                continue
+            prefix, num = m.group(1), int(m.group(2))
+            rid = f"{prefix}-{m.group(2)}"
+            if not RULE_STRICT.match(line):
+                err(f"{rel}:{n}: {rid} missing '[conf:1-5, src:...]' suffix")
+            if rid in seen:
+                err(f"{rel}:{n}: duplicate rule id {rid} (first in {seen[rid]})")
+            else:
+                seen[rid] = f"{rel}:{n}"
+                numbers[prefix].append(num)
+
+    for prefix, nums in numbers.items():
+        nums.sort()
+        missing = [i for i in range(nums[0], nums[-1] + 1) if i not in nums]
+        if missing:
+            warnings.append(f"{prefix}: numbering gaps at {missing}")
+
+
+def check_links(root: Path) -> None:
+    for base in (root / "brain", root / "agents"):
+        for md in base.rglob("*.md"):
+            text = md.read_text(encoding="utf-8")
+            for target in LINK.findall(text):
+                if not (md.parent / target).resolve().exists():
+                    err(f"{md.relative_to(root)}: broken link -> {target}")
+
+
+def check_bn00(root: Path) -> None:
+    agents = root / "agents"
+    for name in CORE_AGENTS:
+        if not (agents / name).is_file():
+            err(f"GATE: FAIL BN-00 {name} - Restore all 8 Core Agents before proceeding.")
+
+
+def check_mirrors(root: Path) -> None:
+    pairs = [(root / "agents", root / "public" / "agents"),
+             (root / "brain", root / "public" / "brain")]
+    for src, mirror in pairs:
+        if not mirror.is_dir():
+            err(f"missing mirror directory: {mirror.relative_to(root)}")
+            continue
+        src_files = {p.relative_to(src): p for p in src.rglob("*.md")}
+        mir_files = {p.relative_to(mirror): p for p in mirror.rglob("*.md")}
+        for rel in sorted(src_files.keys() - mir_files.keys()):
+            err(f"mirror missing: {mirror.relative_to(root) / rel}")
+        for rel in sorted(mir_files.keys() - src_files.keys()):
+            warnings.append(f"mirror has stray file: {mirror.relative_to(root) / rel}")
+        for rel in sorted(src_files.keys() & mir_files.keys()):
+            if src_files[rel].read_bytes() != mir_files[rel].read_bytes():
+                err(f"mirror out of date: {mirror.relative_to(root) / rel}")
+
+
+def main() -> int:
+    root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path.cwd()
+    brain = root / "brain"
+    if not brain.is_dir():
+        print(f"error: {brain} not found", file=sys.stderr)
+        return 1
+
+    check_bn00(root)
+    check_rules(brain, root)
+    check_links(root)
+    check_mirrors(root)
+
+    for w in warnings:
+        print(f"WARN  {w}")
+    for e in errors:
+        print(f"ERROR {e}")
+    print(f"\n{len(errors)} error(s), {len(warnings)} warning(s)")
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

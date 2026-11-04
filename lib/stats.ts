@@ -456,6 +456,8 @@ export interface CortexStatsResult {
     avgConfidence: number;
   };
   totalAgents: number;
+  totalCoreAgents: number;
+  totalDomains: number;
   totalRules: number;
   totalClusters: number;
   targetRulesPerAgent: number;
@@ -489,6 +491,9 @@ export type StatsCalculationInput =
       ruleWeights?: Map<string, number> | Record<string, number> | RuleWeightRecord[];
       uniqueRules?: Set<string> | string[];
       totalRules?: number;
+      totalDomains?: number;
+      totalCoreAgents?: number;
+      discoveredConfigs?: AgentStatConfig[];
       markdownContents?: string[];
     }
   | string[];
@@ -519,10 +524,19 @@ function extractRulesAndWeights(input: StatsCalculationInput): {
   prefixWeights: Record<string, number>;
 } {
   const ruleMap = new Map<string, { prefix: string; weight: number }>();
+  const dynamicValidPrefixes = new Set<string>(VALID_RULE_PREFIXES);
+  if (input && typeof input === 'object' && !Array.isArray(input) && Array.isArray(input.discoveredConfigs)) {
+    for (const cfg of input.discoveredConfigs) {
+      if (cfg.code) dynamicValidPrefixes.add(cfg.code.toUpperCase());
+      for (const p of cfg.prefixes || []) {
+        dynamicValidPrefixes.add(p.toUpperCase());
+      }
+    }
+  }
 
   const recordRule = (prefix: string, id: string, weight: number = 1) => {
     const cleanPrefix = prefix.toUpperCase();
-    if (!VALID_RULE_PREFIXES.has(cleanPrefix)) return;
+    if (!dynamicValidPrefixes.has(cleanPrefix)) return;
     const cleanId = id.toUpperCase();
     const cleanWeight = Math.max(1, Math.min(5, weight));
     const existing = ruleMap.get(cleanId);
@@ -679,11 +693,24 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
   const overallAvgConfidence =
     totalUniqueRules > 0 ? Number((totalWeightedScore / totalUniqueRules).toFixed(2)) : 0;
 
-  // 1. Calculate stats for the 7 Individual Agents
+  // 1. Calculate stats for all Configured + Dynamically Discovered Agents & Domains
   const agents: Record<string, StatMetric> = {};
   const agentList: StatMetric[] = [];
 
-  for (const cfg of AGENT_STAT_CONFIGS) {
+  const activeConfigs: AgentStatConfig[] = [...AGENT_STAT_CONFIGS];
+  if (input && typeof input === 'object' && !Array.isArray(input) && Array.isArray(input.discoveredConfigs)) {
+    const existingIds = new Set(activeConfigs.map((c) => c.id.toLowerCase()));
+    const existingCodes = new Set(activeConfigs.map((c) => c.code.toUpperCase()));
+    for (const extra of input.discoveredConfigs) {
+      if (!existingIds.has(extra.id.toLowerCase()) && !existingCodes.has(extra.code.toUpperCase())) {
+        activeConfigs.push(extra);
+        existingIds.add(extra.id.toLowerCase());
+        existingCodes.add(extra.code.toUpperCase());
+      }
+    }
+  }
+
+  for (const cfg of activeConfigs) {
     let count = 0;
     let weightedScore = 0;
 
@@ -920,6 +947,16 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
     }
   }
 
+  const dynamicCoreAgentsCount =
+    input && typeof input === 'object' && !Array.isArray(input) && typeof input.totalCoreAgents === 'number'
+      ? input.totalCoreAgents
+      : activeConfigs.filter((c) => c.file.startsWith('agents/')).length;
+
+  const dynamicDomainsCount =
+    input && typeof input === 'object' && !Array.isArray(input) && typeof input.totalDomains === 'number'
+      ? input.totalDomains
+      : 29 + activeConfigs.filter((c) => c.file.startsWith('brain/02-domains/') && !AGENT_STAT_CONFIGS.some((base) => base.id === c.id)).length;
+
   return {
     level: {
       levelNumber,
@@ -930,6 +967,8 @@ export function calculateCortexStats(input: StatsCalculationInput): CortexStatsR
       avgConfidence: overallAvgConfidence,
     },
     totalAgents: agentList.length,
+    totalCoreAgents: dynamicCoreAgentsCount,
+    totalDomains: dynamicDomainsCount,
     totalRules: totalUniqueRules,
     totalClusters: Object.keys(clusters).length,
     targetRulesPerAgent: TARGET_WEIGHTED_SCORE_PER_AGENT,

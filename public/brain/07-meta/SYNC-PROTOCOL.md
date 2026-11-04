@@ -1,6 +1,6 @@
 ---
 type: sync
-version: 2
+version: 3
 status: active
 ---
 # Sync Protocol — Brain ↔ Project Agents
@@ -11,7 +11,14 @@ status: active
 - **SP-03** Brain rule vs agent rule conflict → escalate to the human. If the brain rule should win, record a waiver in the project citing the brain ID.
 - **SP-04** The agent suite and brain are coupled via `/CLAUDE.md` at workspace root.
 - **SP-05** Only Tier 0/1 files leave the vault. Sessions, raw notes, and unvetted candidates stay internal to the brain.
-- **SP-06** Elicitation loop: gate failure or waiver in project → candidate logged in `06-raw/inbox.md` → fast micro-trigger excavation session → promoted rule into `02-domains/`.
+- **SP-06** (Global Pointer): To connect a new project to this vault, create a `CLAUDE.md` (or `.cursorrules`) file in the root of the new project.
+- **SP-07** (Absolute Path): Use an absolute path to point to this vault (e.g., `C:/Users/neil/brain-web/brain/`). Do not copy the Markdown files; link to them so the project always reads your latest rules.
+- **SP-08** Elicitation loop: gate failure or waiver in project → candidate logged in `06-raw/inbox.md` → fast micro-trigger excavation session → promoted rule into `02-domains/`.
+
+## Connecting a New Project to the Cortex
+- **Rule SP-06 (Global Pointer):** To connect a new project to this vault, create a `CLAUDE.md` (or `.cursorrules`) file in the root of the new project.
+- **Rule SP-07 (Absolute Path):** Use an absolute path to point to this vault (e.g., `C:/Users/neil/brain-web/brain/`). Do not copy the Markdown files; link to them so the project always reads your latest rules.
+- **Quick-Start Snippet:** Copy the template from `brain/07-meta/NEW-PROJECT-SNIPPET.md` into the new project's root `CLAUDE.md`.
 
 ## Brain ↔ Agent Suite Mapping
 | Brain Source | Prefix | Feeds Agent | Enforced Scope |

@@ -1,6 +1,6 @@
 ---
 type: questions
-version: 1
+version: 2
 status: active
 ---
 # Question Bank
@@ -58,10 +58,11 @@ IDs `Q-nn`, reused across sessions. Add a question when a gap opens.
 - **Q-67** What goes into the first five minutes of a handover?
 - **Q-68** When were you the calmest person in the room? Why?
 - **Q-69** What can you predict about projects that others cannot?
-- **Q-70** What would you check on day one at a new organization?
-- **Q-71** What did you used to believe that you no longer do?
 
-## Teach-back (T7)
-- **Q-80** Explain to a sharp junior, in five rules, how you review a system's security.
-- **Q-81** Explain, in five rules, how you scope a first slice of a solution.
-- **Q-82** Explain, in five rules, how you find out what a stakeholder actually needs.
+## Deterministic-First & System Invariants (T10)
+- **Q-70** When building an agentic AI system, what deterministic checks must run before allowing the model to answer or execute?
+- **Q-71** Where does your deterministic compiler end, and where does probabilistic LLM inference begin?
+- **Q-72** What is the cheapest test ($0 cost) you execute before invoking an expensive model API?
+- **Q-73** When an AI output fails a unit test or violates a database constraint, why feed the exact stderr rather than asking the LLM to rewrite everything?
+- **Q-74** How do you prevent an AI from hallucinating when domain context falls below your cosine similarity confidence threshold?
+- **Q-75** What is the single non-negotiable rule that causes your system to halt immediately with `GATE: FAIL`?
