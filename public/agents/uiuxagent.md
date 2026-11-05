@@ -24,9 +24,9 @@
 - **UX-11** Copy-to-clipboard: Clipboard API with selection fallback for insecure contexts; success via toast (UX-08) and button label swap with `aria-live`; never auto-copy; secrets are never rendered for copying.
 - **UX-12** Sync surfaces: persistent connectivity indicator; pending/synced/flagged/rejected badges render the states defined in IR-04 (never redefined here); flagged/rejected items show the reason and next step.
 - **UX-13** Baseline: WCAG 2.2 AA, complete keyboard path, `lang` attribute, no color-only meaning, usable at 320 px on low-end Android.
-- **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual. *breaks: expert tools where users are trained regularly (e.g., aviation software).*
-- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes. *breaks: developer-facing APIs where technical codes are expected.*
-- **UX-16** Gamified Knowledge Visuals: WHEN displaying stats or progress → DO use visual progress bars and "Overclocked" indicators (e.g., glowing purple when a user exceeds the target) rather than raw text. The UI must make growth feel rewarding. *breaks: for strictly functional, non-gamified enterprise dashboards.*
+- **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual. *breaks: expert tools where users are trained regularly (e.g., aviation software).* | conf: 1
+- **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes. *breaks: developer-facing APIs where technical codes are expected.* | conf: 1
+- **UX-16** Gamified Knowledge Visuals: WHEN displaying stats or progress → DO use visual progress bars and "Overclocked" indicators (e.g., glowing purple when a user exceeds the target) rather than raw text. The UI must make growth feel rewarding. *breaks: for strictly functional, non-gamified enterprise dashboards.* | conf: 1
 
 ## 4. Required Checks (Checklist)
 - [ ] Visual progress bars with overclocked states used for gamified knowledge stats (UX-16)
