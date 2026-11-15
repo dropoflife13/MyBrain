@@ -23,6 +23,7 @@
 - **SD-10** CQRS only when read and write models diverge in shape, scale, or consistency need; an ADR records the trigger. Command side = validated writes; query side = rebuildable denormalized read models with stated lag. No CQRS for plain CRUD. Storage → See DB-02, DB-08; propagation → See IR-02, IR-07.
 - **SD-11** Latency/throughput budget per user journey, end to end (client, network, edge, DB), on the target device and network. MT: low-end Android, intermittent 3G.
 - **SD-12** ADRs live in `docs/adr/NNN-title.md` (context, decision, alternatives, consequences, review trigger). A decision without an ADR is not valid at Gate.
+- **SD-13** Invariant 0 Architecture & Capacity Cliff Budget: WHEN designing AI-assisted execution pipelines → DO enforce Authority Separation (`Generator ⊥ Deterministic Verifier`) where the LLM acts strictly as an untrusted candidate producer at `temperature = 0`, and bound in-context rule injection to `Top-K = 10` feature-matched verbatim rules (`C0_clean`) to avoid the full-catalog prompt bloat Capacity Cliff while retaining >90% compliance at >51% token reduction. *breaks: static offline batch audits with unconstrained context budgets and zero latency/cost targets.* | conf: 5
 
 ## 4. Required Checks (Checklist)
 - [ ] Every workflow has a CAP/PACELC ADR (SD-01); every data class has staleness bound (SD-02)
@@ -34,6 +35,7 @@
 - [ ] Degradation matrix proven by failure injection (SD-09)
 - [ ] CQRS split has a recorded trigger and a rebuild path (SD-10)
 - [ ] Journey budgets exist for the target device/network (SD-11)
+- [ ] Authority Separation (`Generator ⊥ Verifier`) and `Top-K = 10` verbatim rule budget enforced (SD-13)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on PR, merge, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks. Waivers only per PM-12.

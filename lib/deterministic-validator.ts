@@ -18,8 +18,19 @@ export interface ValidationChecksSummary {
   syntaxBalance: boolean;
   db13Invariants: boolean;
   sec14Safety: boolean;
+  axiomSqlForensics: boolean;
   testAssertionsPresent: boolean;
   sandboxExitCodeZero: boolean;
+}
+
+export interface UtilityGateResult {
+  passed: boolean;
+  ruleId?: string;
+  stage: 'grammar' | 'verbatim_identifiers' | 'forensic_collision' | 'fixture_probe' | 'passed';
+  reason?: string;
+  extractedIdentifiers: string[];
+  persistedTo?: string;
+  quarantined?: boolean;
 }
 
 export interface DeterministicValidationResult {
@@ -63,10 +74,11 @@ export function runStaticLinter(
   const normLang = language.toLowerCase();
   const isJsTs = ['typescript', 'ts', 'tsx', 'javascript', 'js', 'jsx'].includes(normLang);
 
-  const checksSummary = {
+  const checksSummary: ValidationChecksSummary = {
     syntaxBalance: true,
     db13Invariants: true,
     sec14Safety: true,
+    axiomSqlForensics: true,
     testAssertionsPresent: true,
     sandboxExitCodeZero: false,
   };
@@ -157,6 +169,62 @@ export function runStaticLinter(
       error: 'Cortex SEC-14 Violation: Sensitive credential or service_role key exposed in client-facing response payload.',
       checksSummary,
     };
+  }
+
+  // 3.5 Axiom SQL Forensics Checks (Authority Separation — Invariant 0)
+  const isSql = normLang === 'sql' || normLang === 'pgsql' || /\bCREATE\s+TABLE\b/i.test(code);
+  if (isSql) {
+    const sqlClean = code
+      .replace(/--[^\n]*/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // Check 1: Duplicate PRIMARY KEY within a single CREATE TABLE block (GLM-5.3 defect)
+    const createTableBlocks = sqlClean.match(/CREATE\s+TABLE[\s\S]*?\);/gi) || [];
+    for (const block of createTableBlocks) {
+      const pkMatches = block.match(/\bPRIMARY\s+KEY\b/gi) || [];
+      if (pkMatches.length > 1) {
+        checksSummary.axiomSqlForensics = false;
+        return {
+          passed: false,
+          error:
+            'Axiom SQL Forensics Violation (F-01): Duplicate PRIMARY KEY clause detected inside a single CREATE TABLE statement.',
+          checksSummary,
+        };
+      }
+    }
+
+    // Check 2: F-16 / F-36 Inline REFERENCES collision on supersedes_id
+    if (/\bsupersedes_id\s+uuid\s+(?:NULL\s+)?REFERENCES\b/i.test(sqlClean) && !/\bCONSTRAINT\s+fk_[a-z0-9_]+_supersedes_id\b/i.test(sqlClean)) {
+      checksSummary.axiomSqlForensics = false;
+      return {
+        passed: false,
+        error:
+          'Axiom SQL Forensics Violation (F-16 / F-36): Anonymous inline REFERENCES on supersedes_id violates fk_<table>_<column> naming. Use explicit CONSTRAINT fk_<table>_supersedes_id FOREIGN KEY.',
+        checksSummary,
+      };
+    }
+
+    // Check 3: F-26 user_metadata tenant spoofing
+    if (/user_metadata\s*['"->>]+\s*tenant_id/i.test(sqlClean)) {
+      checksSummary.axiomSqlForensics = false;
+      return {
+        passed: false,
+        error:
+          "Axiom SQL Forensics Violation (F-26): Tenant RLS policy references untrusted user_metadata.tenant_id instead of auth.jwt() -> 'app_metadata' ->> 'tenant_id'.",
+        checksSummary,
+      };
+    }
+
+    // Check 4: F-31 SECURITY DEFINER without SET search_path
+    if (/\bSECURITY\s+DEFINER\b/i.test(sqlClean) && !/\bSET\s+search_path\s*=\s*(?:''|""|pg_catalog)/i.test(sqlClean)) {
+      checksSummary.axiomSqlForensics = false;
+      return {
+        passed: false,
+        error:
+          "Axiom SQL Forensics Violation (F-31): SECURITY DEFINER function missing explicit SET search_path = '' declaration.",
+        checksSummary,
+      };
+    }
   }
 
   // 4. Test Assertion & Driver Presence Check
@@ -290,3 +358,129 @@ export async function runDeterministicValidation(
     };
   }
 }
+
+/**
+ * CORTEX v3.0 // The Utility Gate (Rule RS-06 / IR-10 / Invariant 0)
+ * Deterministically verifies any newly proposed rule or lesson before it is allowed
+ * into the canonical Vault:
+ *   1. Grammar Gate: Must follow `- **<PREFIX>-<NN>** ... WHEN ... → DO ... | why: ... | breaks: ... | conf: ... | ev: ... | status: ... ^<anchor>`
+ *   2. Verbatim Identifier Gate (Anti-Distillation): Must include concrete backticked code/SQL/system identifiers (`...`)
+ *   3. Forensic Collision Gate: Rejects rules containing known self-colliding patterns (e.g. anonymous inline REFERENCES on supersedes_id or USING (true) on writes)
+ *   4. Executable Fixture Probe: If positive/negative code fixtures are supplied, verifies the rule's regex/AST probe passes positive and rejects negative fixtures.
+ */
+export function verifyCandidateRuleUtilityGate(
+  candidateLine: string,
+  options?: {
+    requireDomainPipes?: boolean;
+    positiveFixtureCode?: string;
+    negativeFixtureCode?: string;
+    probeRegex?: RegExp;
+  }
+): UtilityGateResult {
+  const clean = (candidateLine || '').trim();
+  const requirePipes = options?.requireDomainPipes ?? true;
+
+  // Stage 1: Grammar & Rule ID structure
+  const idMatch = clean.match(/^-\s+\*\*([A-Z]{2,5}-\d{2,3})\*\*\s*(.+)$/);
+  if (!idMatch) {
+    return {
+      passed: false,
+      stage: 'grammar',
+      reason: 'Rule must begin with `- **<PREFIX>-<NN>**` (e.g. `- **DB-15**` or `- **ARB-09**`).',
+      extractedIdentifiers: [],
+    };
+  }
+
+  const ruleId = idMatch[1];
+  if (!clean.includes('WHEN ') || !clean.includes('→ DO ')) {
+    return {
+      passed: false,
+      ruleId,
+      stage: 'grammar',
+      reason: `Rule ${ruleId} must contain deterministic trigger/action phrasing: 'WHEN <condition> → DO <action>'.`,
+      extractedIdentifiers: [],
+    };
+  }
+
+  if (requirePipes) {
+    const requiredPipes = ['| why:', '| breaks:', '| conf:', '| ev:', '| status:'];
+    for (const p of requiredPipes) {
+      if (!clean.includes(p)) {
+        return {
+          passed: false,
+          ruleId,
+          stage: 'grammar',
+          reason: `Rule ${ruleId} missing required domain grammar segment '${p}'.`,
+          extractedIdentifiers: [],
+        };
+      }
+    }
+    const expectedAnchor = `^${ruleId.toLowerCase()}`;
+    if (!clean.endsWith(expectedAnchor)) {
+      return {
+        passed: false,
+        ruleId,
+        stage: 'grammar',
+        reason: `Rule ${ruleId} must terminate with block anchor '${expectedAnchor}'.`,
+        extractedIdentifiers: [],
+      };
+    }
+  }
+
+  // Stage 2: Verbatim Identifier Gate (prevents the Distillation Penalty)
+  const backtickMatches = clean.match(/`([^`]+)`/g) || [];
+  const extractedIdentifiers = backtickMatches.map((m) => m.replace(/`/g, '').trim()).filter(Boolean);
+  if (extractedIdentifiers.length === 0) {
+    return {
+      passed: false,
+      ruleId,
+      stage: 'verbatim_identifiers',
+      reason: `Distillation Penalty Violation (ARB-10 / RS-05): Rule ${ruleId} contains zero backticked verbatim code/schema identifiers (e.g. \`app_metadata.tenant_id\`, \`supersedes_id\`, \`FORCE ROW LEVEL SECURITY\`). Vague natural-language rules are rejected.`,
+      extractedIdentifiers: [],
+    };
+  }
+
+  // Stage 3: Forensic Invariant Collision Gate (F-16 / F-36 & F-30)
+  if (
+    /supersedes_id\s+uuid\s+REFERENCES/i.test(clean) &&
+    !/CONSTRAINT\s+fk_<table>_supersedes_id/i.test(clean)
+  ) {
+    return {
+      passed: false,
+      ruleId,
+      stage: 'forensic_collision',
+      reason: `Forensic Collision Detected (F-16 vs F-36): Inline 'supersedes_id uuid REFERENCES' auto-generates '<table>_supersedes_id_fkey' in PostgreSQL 16, violating fk_<table>_<column>. Specify explicit CONSTRAINT fk_<table>_supersedes_id FOREIGN KEY.`,
+      extractedIdentifiers,
+    };
+  }
+
+  // Stage 4: Optional Positive & Negative Fixture Verification
+  if (options?.probeRegex) {
+    if (options.positiveFixtureCode && !options.probeRegex.test(options.positiveFixtureCode)) {
+      return {
+        passed: false,
+        ruleId,
+        stage: 'fixture_probe',
+        reason: `Rule ${ruleId} probe failed to match canonical positive fixture.`,
+        extractedIdentifiers,
+      };
+    }
+    if (options.negativeFixtureCode && options.probeRegex.test(options.negativeFixtureCode)) {
+      return {
+        passed: false,
+        ruleId,
+        stage: 'fixture_probe',
+        reason: `Rule ${ruleId} probe falsely passed negative violation fixture.`,
+        extractedIdentifiers,
+      };
+    }
+  }
+
+  return {
+    passed: true,
+    ruleId,
+    stage: 'passed',
+    extractedIdentifiers,
+  };
+}
+

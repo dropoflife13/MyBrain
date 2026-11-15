@@ -4,6 +4,8 @@ import path from 'path';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getBrainData } from '../../../lib/brain-parser';
 import { findTopRules, loadEmbeddings, type ScoredRuleMatch } from '../../../lib/embedder';
+import { extractTaskFeatureFlags } from '../../../lib/feature-flag-retrieval';
+import { verifyCandidateRuleUtilityGate } from '../../../lib/deterministic-validator';
 import {
   classifyTierLightweight,
   findRuleInVault,
@@ -798,26 +800,27 @@ export async function POST(req: Request) {
     );
 
     let prompt: string;
-    // 0. Semantic Vector RAG Retrieval (@xenova/transformers all-MiniLM-L6-v2)
+    // 0. Feature-Flag Deterministic Retrieval (Top-K = 10, Verbatim C0_clean + Identifier-Preserving C_ID)
+    const featureFlags = extractTaskFeatureFlags(query);
     let topRules: ScoredRuleMatch[] = [];
     let topRulesPrompt = '';
     try {
-      topRules = await findTopRules(query, 3);
+      topRules = await findTopRules(query, 10);
       if (topRules.length > 0) {
         topRulesPrompt = topRules
           .map(
             (r, i) =>
-              `### Rule ${i + 1}: [${r.ruleId}] (Cosine Similarity: ${r.score.toFixed(3)})\nSource: \`${r.file}\`\n${r.text}`
+              `### Rule ${i + 1}: [${r.ruleId}] (Mode: ${r.mode || 'C0_clean'} | Flags: ${(r.matchedFlags || ['universal']).join(', ')} | Score: ${r.score.toFixed(3)})\nSource: \`${r.file}\`\n- **Verbatim (C0_clean):** ${r.text}${r.cidText ? `\n- **Identifier Memory (C_ID):** ${r.cidText}` : ''}`
           )
           .join('\n\n');
         console.log(
-          `[Cortex Chat API] Vector RAG retrieved top ${topRules.length} rules: ${topRules
+          `[Cortex Chat API] Feature-Flag Deterministic Retrieval [Cell ${featureFlags.cellCode}] retrieved top ${topRules.length} rules: ${topRules
             .map((r) => `${r.ruleId} (${r.score.toFixed(3)})`)
             .join(', ')}`
         );
       }
     } catch (err: any) {
-      console.warn('[Cortex Chat API] Vector RAG retrieval failed, falling back:', err?.message);
+      console.warn('[Cortex Chat API] Feature-Flag retrieval failed, falling back:', err?.message);
     }
 
     // 1. RS-03 Epistemic Circuit Breaker: Halt if highest cosine similarity is < 0.28
@@ -1181,6 +1184,15 @@ OUTPUT INSTRUCTIONS:
       }
     }
 
+    // 3. Deterministic Utility Gate (Rule RS-06 / IR-10 / Invariant 0):
+    // If the response proposes any new candidate rule lines (- **PREFIX-NN** ...), test each against the local deterministic verifier.
+    const candidateRuleLines = succeededText
+      .split(/\r?\n/)
+      .filter((l) => /^-\s+\*\*[A-Z]{2,5}-\d{2,3}\*\*/.test(l.trim()) && l.includes('WHEN ') && l.includes('→ DO '));
+    const utilityGateReports = candidateRuleLines.map((line) =>
+      verifyCandidateRuleUtilityGate(line, { requireDomainPipes: line.includes('| why:') })
+    );
+
     return NextResponse.json(
       {
         text: succeededText,
@@ -1188,7 +1200,15 @@ OUTPUT INSTRUCTIONS:
         provider: succeededProvider,
         tier: tierDecision.tier,
         faithfulnessVerified,
-        topRules: topRules.map((r) => ({ ruleId: r.ruleId, file: r.file, score: r.score })),
+        featureFlags,
+        utilityGateReports,
+        topRules: topRules.map((r) => ({
+          ruleId: r.ruleId,
+          file: r.file,
+          score: r.score,
+          mode: r.mode || 'C0_clean',
+          matchedFlags: r.matchedFlags || ['universal'],
+        })),
       },
       { headers: CORS_HEADERS }
     );

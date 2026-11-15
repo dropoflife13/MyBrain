@@ -27,8 +27,10 @@
 - **UX-14** The "First 5 Seconds" Rule: WHEN designing a dashboard or landing page → DO assume the user is stressed, impatient, and doesn't know what to do. The primary action must be obvious within 5 seconds without reading a manual. *breaks: expert tools where users are trained regularly (e.g., aviation software).* | conf: 1
 - **UX-15** Error Empathy: WHEN writing an error message → DO tell the user what happened, why it happened, and what they can do next, in plain language. Never use raw stack traces or technical codes. *breaks: developer-facing APIs where technical codes are expected.* | conf: 1
 - **UX-16** Gamified Knowledge Visuals: WHEN displaying stats or progress → DO use visual progress bars and "Overclocked" indicators (e.g., glowing purple when a user exceeds the target) rather than raw text. The UI must make growth feel rewarding. *breaks: for strictly functional, non-gamified enterprise dashboards.* | conf: 1
+- **UX-17** Mission Control Glassmorphism & Verifier Telemetry: WHEN rendering system architecture or verification surfaces → DO enforce the Mission Control CAD blueprint aesthetic (`#050505` obsidian canvas, `backdrop-blur-xl`, `border-white/10`, 48px coordinate grid) with deterministic semantic state encoding: Cyan (`#22d3ee`) for `GATE: PASS` / Verbatim Oracle (`C0_clean`) and Magenta/Rose (`#d946ef` / `#f43f5e`) for `GATE: FAIL` / Quarantine (`BN-00`). *breaks: light-mode print exports or high-contrast paper stylesheets.* | conf: 5
 
 ## 4. Required Checks (Checklist)
+- [ ] Mission Control Glassmorphism (`#050505`, `backdrop-blur-xl`, `border-white/10`, Cyan/Magenta gate states) verified (UX-17)
 - [ ] Visual progress bars with overclocked states used for gamified knowledge stats (UX-16)
 - [ ] Primary action obvious within first 5 seconds (UX-14)
 - [ ] Error messages explain what, why, and next steps in plain human language (UX-15)

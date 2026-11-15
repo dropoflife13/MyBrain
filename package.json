@@ -2,6 +2,9 @@
   "name": "brain-web",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "cortex": "./bin/cortex.js"
+  },
   "scripts": {
     "predev": "node scripts/sync-vault.js",
     "dev": "next dev",
@@ -9,6 +12,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "verify": "node bin/cortex.js gate --verify-all",
+    "cortex": "node bin/cortex.js",
     "sync": "node scripts/sync-vault.js --embed",
     "embed": "node scripts/sync-vault.js --force-embed"
   },

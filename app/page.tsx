@@ -35,6 +35,7 @@ import MinimalistData from '../components/landing/MinimalistData';
 import RouterFlow from '../components/landing/RouterFlow';
 import RulePeeler from '../components/landing/RulePeeler';
 import ExecutionPipeline from '../components/landing/ExecutionPipeline';
+import HealingLoopTorus from '../components/landing/HealingLoopTorus';
 
 const SELF_ASSESSMENT_PROMPT = `Act as the Brain Agent (brain/07-meta/brainagent.md). Step 0 (Strict Gate BN-00): Verify that all 8 Core Agent files (PM, UX, GR, SD, IR, DB, SEC, RS) exist in /agents; if even one is missing, output GATE: FAIL BN-00 and refuse to start. Once all 8 agents are verified, read brain/01-identity/ABOUT-ME.md and brain/05-elicitation/THE-TEST.md, and run Launcher L-01 to assess my blank-slate vault (0 rules) one question at a time.`;
 
@@ -74,6 +75,8 @@ export default function LandingPage() {
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [copiedPrompt, setCopiedPrompt] = useState<boolean>(false);
   const [copiedPluginSnippet, setCopiedPluginSnippet] = useState<boolean>(false);
+  const [cliMode, setCliMode] = useState<'verify' | 'init'>('verify');
+  const [copiedCliCmd, setCopiedCliCmd] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [isCmdPaletteOpen, setIsCmdPaletteOpen] = useState<boolean>(false);
   const [liveTelemetry, setLiveTelemetry] = useState<{
@@ -223,7 +226,10 @@ export default function LandingPage() {
 
         {/* Center: Main Navigation (Desktop) */}
         <div className="hidden md:flex items-center justify-center pointer-events-auto">
-          <nav className="h-10 flex items-center justify-center gap-3 lg:gap-4 px-4 rounded-xl bg-white/80 dark:bg-[#09090b]/80 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-xl">
+          <nav className="h-10 flex items-center justify-center gap-3 lg:gap-4 px-4 rounded-xl bg-white/80 dark:bg-[#050505]/85 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-xl">
+            <a href="#healing-loop" className="hidden xl:inline-block hover:text-cyan-600 dark:hover:text-[#00ffff] transition-colors">
+              Mission Control
+            </a>
             <a href="#architecture" className="hidden xl:inline-block hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors">
               Architecture
             </a>
@@ -343,27 +349,57 @@ export default function LandingPage() {
             </span>
           </div>
 
-          {/* CLI Quick Action Pill */}
-          <div className="mt-6 flex items-center gap-2 p-1.5 px-3 rounded-full border border-slate-300 dark:border-white/10 bg-white/70 dark:bg-black/60 backdrop-blur-md text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-sm">
-            <span className="text-cyan-600 dark:text-cyan-400 font-bold">$</span>
-            <span>npx cortex gate --verify-all</span>
-            <button
-              onClick={() => {
-                if (navigator?.clipboard) {
-                  navigator.clipboard.writeText('npx cortex gate --verify-all');
-                  setCopiedPrompt(true);
-                  setTimeout(() => setCopiedPrompt(false), 2000);
-                }
-              }}
-              className="ml-2 hover:text-cyan-600 dark:hover:text-white transition-colors"
-              title="Copy Command"
-            >
-              {copiedPrompt ? (
-                <Check className="w-3 h-3 text-emerald-500" />
-              ) : (
-                <Copy className="w-3 h-3" />
-              )}
-            </button>
+          {/* CLI Quick Action Pill (Dual Mode: Verify & Init) */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center gap-2 p-1.5 px-3 rounded-2xl sm:rounded-full border border-slate-300 dark:border-white/10 bg-white/70 dark:bg-black/60 backdrop-blur-md text-xs font-mono text-slate-600 dark:text-zinc-400 shadow-sm">
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-slate-200/60 dark:bg-zinc-800/60 text-[10px] font-semibold">
+              <button
+                type="button"
+                onClick={() => setCliMode('verify')}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  cliMode === 'verify'
+                    ? 'bg-cyan-500 text-black font-bold shadow-xs'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Verify Gate
+              </button>
+              <button
+                type="button"
+                onClick={() => setCliMode('init')}
+                className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                  cliMode === 'init'
+                    ? 'bg-cyan-500 text-black font-bold shadow-xs'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Download / Init
+              </button>
+            </div>
+            <div className="flex items-center gap-2 pl-1">
+              <span className="text-cyan-600 dark:text-cyan-400 font-bold">$</span>
+              <span className="text-slate-900 dark:text-zinc-200 font-medium select-all">
+                {cliMode === 'verify' ? 'npx cortex gate --verify-all' : 'npx cortex init my-vault'}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  const cmd = cliMode === 'verify' ? 'npx cortex gate --verify-all' : 'npx cortex init my-vault';
+                  if (navigator?.clipboard) {
+                    navigator.clipboard.writeText(cmd);
+                    setCopiedCliCmd(true);
+                    setTimeout(() => setCopiedCliCmd(false), 2000);
+                  }
+                }}
+                className="ml-1 p-1 hover:text-cyan-600 dark:hover:text-white transition-colors cursor-pointer"
+                title="Copy Command"
+              >
+                {copiedCliCmd ? (
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5 text-slate-400 hover:text-cyan-500" />
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Down Scroll Indicator */}
@@ -379,6 +415,26 @@ export default function LandingPage() {
 
       {/* 5. Scrollable Sections (Glassmorphic containers over fixed 3D canvas) */}
       <div className="relative z-10 space-y-36 pb-32">
+        {/* SECTION 0: MISSION CONTROL — HEALING LOOP TORUSKNOT (AXIOM EMPIRICAL TRANSFER) */}
+        <section id="healing-loop" className="px-6 max-w-6xl mx-auto space-y-10">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#050505]/90 backdrop-blur-xl border border-white/10 font-mono text-[11px] uppercase tracking-widest text-[#22d3ee] shadow-[0_0_20px_rgba(34,211,238,0.18)]">
+              <span className="w-2 h-2 rounded-full bg-[#22d3ee] animate-pulse" />
+              <span>{'//'} Mission Control · Authority Separation (Invariant 0)</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-slate-950 dark:text-white">
+              Self-Healing Determinism vs.{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#22d3ee] via-cyan-300 to-[#d946ef]">
+                The Distillation Penalty
+              </span>
+            </h2>
+            <p className="text-sm md:text-base text-slate-600 dark:text-zinc-400 max-w-2xl mx-auto font-sans">
+              LLMs are untrusted candidate generators. Only deterministic AST, Regex, and PostgreSQL 16 verification gates hold authority—retaining 99.6% compliance at -52.5% prompt token cost via Verbatim Rule Retrieval (<code className="font-mono text-xs text-[#22d3ee]">C0_clean</code>) and Identifier-Preserving Memory (<code className="font-mono text-xs text-[#d946ef]">C_ID</code>).
+            </p>
+          </div>
+          <HealingLoopTorus />
+        </section>
+
         {/* SECTION 1: EXPLODED VIEW ARCHITECTURE */}
         <section id="architecture" className="px-6 max-w-6xl mx-auto space-y-14">
           <div className="text-center space-y-3">

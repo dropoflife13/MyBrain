@@ -20,6 +20,7 @@
 - **IR-07** Long-running jobs: work exceeding the request time budget (SD-11) goes to a queue + worker pool with job record (status, attempts), visibility timeout, concurrency cap, DLQ, alert on depth. Workflow engine only for ≥ 3 dependent steps needing timers or compensation. MT: matview refresh worker (DB-03) runs here.
 - **IR-08** Self-healing: health endpoint; stuck-job reaper; reconciliation sweep comparing client acks with server records; auto-reconnect; DLQ replay tooling; every healing action is logged.
 - **IR-09** Sync triggers: never rely solely on Background Sync (unsupported on iOS Safari); trigger on `online`, app foreground, post-write, and a visible-tab timer; single-flight via Web Locks across tabs.
+- **IR-10** Deterministic Utility Gate & Quarantine Ring Buffer: WHEN an autonomous workflow or reflexion loop generates a candidate lesson or migration → DO route the output through a two-tier deterministic crucible (`Tier 0` lexical/AST pre-screen → `Tier 1` isolated sandbox/container execution) before persistence; failed or unverified candidates are routed to quarantine (`brain/06-raw/inbox.md`), never auto-merged into active memory. *breaks: read-only telemetry ping endpoints that mutate zero state or memory.* | conf: 5
 
 ## 4. Required Checks (Checklist)
 - [ ] Kill network mid-batch: no loss, no duplicates (IR-03, IR-04)
@@ -30,6 +31,7 @@
 - [ ] Poison message lands in DLQ and raises an alert; replay works (IR-07, IR-08)
 - [ ] SSE/WS reconnect storm resumes from cursor without gaps (IR-02)
 - [ ] Webhook duplicate delivery processed once (IR-01)
+- [ ] Candidate lessons and migrations pass two-tier Utility Gate before vault persistence (IR-10)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on PR, merge, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks. Waivers only per PM-12.

@@ -291,22 +291,22 @@ export default function Brain3D({
     const starField = new THREE.Points(starGeo, starMat);
     environmentGroup.add(starField);
 
-    // Swirling Cosmic Nebula Dust Cloud (720 vertex-colored particles along galactic spiral arms)
-    const nebulaCount = 720;
+    // Swirling Volumetric Cosmic Nebula Dust Cloud (2,400 additive-blended volumetric particles along galactic spiral arms)
+    const nebulaCount = 2400;
     const nebulaPositions = new Float32Array(nebulaCount * 3);
     const nebulaColors = new Float32Array(nebulaCount * 3);
     const palette = [
-      new THREE.Color(0x00ffff), // Core Cyan
-      new THREE.Color(0xd946ef), // Inner Ring Magenta
-      new THREE.Color(0x8b5cf6), // Cosmic Violet
-      new THREE.Color(0x10b981), // Outer Ring Emerald
-      new THREE.Color(0xf59e0b), // Frontier Gold
+      new THREE.Color(0x22d3ee), // Core Volumetric Cyan
+      new THREE.Color(0xd946ef), // Inner Ring Neon Magenta
+      new THREE.Color(0xa855f7), // Axiom Executor Violet
+      new THREE.Color(0x34d399), // Crucible Emerald
+      new THREE.Color(0xfbbf24), // Reflexion Amber
     ];
     for (let i = 0; i < nebulaCount; i++) {
       const arm = i % 3;
-      const progress = Math.pow(Math.random(), 0.75); // Dense near core, sweeping out to r=220
-      const r = 12 + progress * 210;
-      const spiralAngle = arm * ((Math.PI * 2) / 3) + progress * 4.2 + (Math.random() - 0.5) * 0.65;
+      const progress = Math.pow(Math.random(), 0.72); // Dense near core, sweeping out to r=220
+      const r = 8 + progress * 212;
+      const spiralAngle = arm * ((Math.PI * 2) / 3) + progress * 4.4 + (Math.random() - 0.5) * 0.65;
       nebulaPositions[i * 3] = Math.cos(spiralAngle) * r + (Math.random() - 0.5) * 14;
       nebulaPositions[i * 3 + 1] = (Math.random() - 0.5) * (18 * (1 - progress * 0.5));
       nebulaPositions[i * 3 + 2] = Math.sin(spiralAngle) * r + (Math.random() - 0.5) * 14;
@@ -327,14 +327,48 @@ export default function Brain3D({
     nebulaGeo.setAttribute('position', new THREE.BufferAttribute(nebulaPositions, 3));
     nebulaGeo.setAttribute('color', new THREE.BufferAttribute(nebulaColors, 3));
     const nebulaMat = new THREE.PointsMaterial({
-      size: isLight ? 1.8 : 2.2,
+      size: isLight ? 1.9 : 2.4,
       vertexColors: true,
       transparent: true,
-      opacity: isLight ? 0.22 : 0.34,
+      opacity: isLight ? 0.28 : 0.52,
+      blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
     const nebulaField = new THREE.Points(nebulaGeo, nebulaMat);
     environmentGroup.add(nebulaField);
+
+    // Axiom Volumetric Toroidal Core Cloud (1,200 high-density glowing particles enveloping the 8 Core Agents)
+    const coreCloudCount = 1200;
+    const coreCloudPos = new Float32Array(coreCloudCount * 3);
+    const coreCloudCol = new Float32Array(coreCloudCount * 3);
+    for (let i = 0; i < coreCloudCount; i++) {
+      const u = Math.random() * Math.PI * 4;
+      const q = 1.5 * u;
+      const tr = (18 + Math.cos(q) * 7);
+      const vx = tr * Math.cos(u) + (Math.random() - 0.5) * 6;
+      const vy = Math.sin(q) * 9 + (Math.random() - 0.5) * 5;
+      const vz = tr * Math.sin(u) + (Math.random() - 0.5) * 6;
+      coreCloudPos[i * 3] = vx;
+      coreCloudPos[i * 3 + 1] = vy;
+      coreCloudPos[i * 3 + 2] = vz;
+      const cc = i % 3 === 0 ? palette[1] : palette[0];
+      coreCloudCol[i * 3] = cc.r;
+      coreCloudCol[i * 3 + 1] = cc.g;
+      coreCloudCol[i * 3 + 2] = cc.b;
+    }
+    const coreCloudGeo = new THREE.BufferGeometry();
+    coreCloudGeo.setAttribute('position', new THREE.BufferAttribute(coreCloudPos, 3));
+    coreCloudGeo.setAttribute('color', new THREE.BufferAttribute(coreCloudCol, 3));
+    const coreCloudMat = new THREE.PointsMaterial({
+      size: isLight ? 1.4 : 1.75,
+      vertexColors: true,
+      transparent: true,
+      opacity: isLight ? 0.3 : 0.65,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const coreCloud = new THREE.Points(coreCloudGeo, coreCloudMat);
+    environmentGroup.add(coreCloud);
 
     // 6. Build Synaptic Galaxy Nodes & Sweeping Cosmic Arms
     const brainGroup = new THREE.Group();
@@ -450,19 +484,22 @@ export default function Brain3D({
       const haloMat = new THREE.MeshBasicMaterial({
         color: isHub ? (isLight ? 0x0284c7 : 0x00ffff) : nodeColor,
         transparent: true,
+        blending: THREE.AdditiveBlending,
         opacity: isHub
           ? isLight
-            ? 0.45
-            : 0.42
+            ? 0.48
+            : 0.55
           : tier === 'core'
           ? isLight
             ? 0.46
-            : 0.44
+            : 0.52
           : isDomain
           ? isLight
-            ? 0.32
-            : 0.26
-          : 0.0,
+            ? 0.34
+            : 0.36
+          : isLight
+          ? 0.08
+          : 0.16,
         depthWrite: false,
       });
       const halo = new THREE.Mesh(haloGeo, haloMat);
@@ -758,12 +795,14 @@ export default function Brain3D({
 
       controls.update();
 
-      // Continuous subtle differential rotation for the Galaxy, Starfield, and Nebula Dust
+      // Continuous subtle differential rotation for the Galaxy, Starfield, Volumetric Core, and Nebula Dust
       if (!isLockedOnNode) {
         brainGroup.rotation.y += 0.0006;
       }
       starField.rotation.y += 0.00025;
       nebulaField.rotation.y -= 0.00045;
+      coreCloud.rotation.y += 0.0014;
+      coreCloud.rotation.x = Math.sin(now * 0.0005) * 0.12;
 
       renderer.render(scene, camera);
 

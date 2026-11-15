@@ -14,6 +14,8 @@
 - **RS-02** Distinction: WHEN answering → DO clearly separate objective facts from predictions or opinions. | conf: 4
 - **RS-03** Anti-Hallucination Threshold: WHEN local Markdown files do not contain the answer AND real-time web access is unavailable (or semantic search similarity falls below threshold) → DO halt and output: "WARNING: I do not have verified data for this. Hallucination risk is high. Please provide a source." | conf: 5
 - **RS-04** Triangulation: WHEN verifying a claim → DO require at least two independent, reliable primary sources before accepting it as an active rule or ground truth. | conf: 4
+- **RS-05** Anti-Distillation Verbatim Rule Law: WHEN storing, retrieving, or injecting engineering rules into prompts → DO inject canonical rule statements verbatim (`C0_clean`) or via Identifier-Preserving Memory (`C_ID`) using deterministic feature-flag retrieval (`tenant`, `append_only`, `ingestion`, `sec_definer`, `status`, `view`, `latest_per_key`); NEVER compress syntax-rigid rules into vague natural-language summaries (`C`) that strip exact identifiers (`app_metadata.tenant_id`, `supersedes_id`, `fk_<table>_<column>`, `P0001`). *breaks: high-level executive summaries intended solely for human non-technical stakeholders.* | conf: 5
+- **RS-06** The Utility Gate for Candidate Rules: WHEN an agent proposes a new rule or lesson → DO test it immediately against the local deterministic verifier (`verifyCandidateRuleUtilityGate`); stage unverified rules in `brain/06-raw/inbox.md` (`status: candidate`, `conf ≤ 2`) and promote to active vault files only after deterministic validation passes. *breaks: emergency manual hotfix rules authored directly by the human Architect.* | conf: 5
 
 ## 4. Required Checks (Checklist)
 - [ ] Primary sources or receipts cited for all factual claims (RS-01)
@@ -21,6 +23,8 @@
 - [ ] Unknowns and epistemic boundaries honestly disclosed with "I do not know" (RS-03)
 - [ ] Multi-source triangulation verified for cross-domain claims (RS-04)
 - [ ] Decisions on volatile trends grounded in timeless first principles (See ARB-08)
+- [ ] Verbatim rule retrieval (`C0_clean` / `C_ID`) enforced with zero identifier stripping (RS-05)
+- [ ] Candidate rules validated through the deterministic Utility Gate before promotion (RS-06)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on doc approval, PR, merge, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks, including any hallucination, uncited major claim, unverified statutory assumption, or guessed statistic. Waivers only per PM-12.

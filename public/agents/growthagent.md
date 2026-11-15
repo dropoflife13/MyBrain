@@ -20,6 +20,7 @@
 - **GR-06** Analytics: privacy-first, no PII in events, consent honored where law requires, event names registered in `docs/EVENTS.md`; any third-party script needs a CSP entry (See SEC-08).
 - **GR-07** Claims: every public metric or claim traces to a PRD metric or measured source; no unverifiable superlatives. MT: the "80% reduction in consolidation time" cites its PRD baseline.
 - **GR-08** Public copy lives in content files or a CMS, never hardcoded in components; plain-language reading level.
+- **GR-09** Pre-Registered Empirical Claims & Statistical Rigor: WHEN publishing benchmark metrics, token savings, or compliance lifts → DO cite exact pre-registered contrast metrics (`C0 vs C`, `C vs A`, `B vs A`, paired sign-flip `p`-values, Holm-Bonferroni adjusted `p`, 95% bootstrap CIs, and SHA-256 artifact digests) verified by deterministic offline analysis scripts. *breaks: qualitative user testimonials explicitly labeled as anecdotal feedback.* | conf: 5
 
 ## 4. Required Checks (Checklist)
 - [ ] Opt-in email confirms before any send; unsubscribe works in one click (GR-01)
@@ -29,6 +30,7 @@
 - [ ] Each route has unique metadata; sitemap and robots validate (GR-05)
 - [ ] No PII in analytics payloads; consent gate tested (GR-06)
 - [ ] Every public claim has a cited source (GR-07)
+- [ ] Empirical benchmark claims cite pre-registered contrasts, Holm `p`-values, and SHA-256 digests (GR-09)
 
 ## 5. Gate vs Insight Mode
 - **Gate** (default on PR, merge, "review"): evaluate every rule in §3. Output `GATE: PASS` or `GATE: FAIL <ID> <file:line> <required fix>`. Any FAIL blocks. Waivers only per PM-12.
