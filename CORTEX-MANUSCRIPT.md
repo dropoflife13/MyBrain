@@ -542,7 +542,7 @@ The visual design system of Cortex is engineered to resemble an elite aerospace 
 
 ## 11. Empirical Validation from Axiom
 
-Cortex's deterministic-first architecture is grounded in formal, pre-registered empirical evidence from the **Axiom Research Laboratory**—an controlled ablation study evaluating **3,600 independent model generations (4,320 scored trials in v2 and 960 trials across 8 conditions in v3)** across six open-weight and frontier model families (`nvidia/nemotron-3-ultra-550b`, `google/gemma-4-31b-it`, `zhipu/glm-5.3-flash`, `google/gemini-3.1-flash-lite`, `google/gemini-3.5-flash-lite`, and `qwen/qwen3.8-27b`) against 39 deterministic AST and PostgreSQL 16 execution probes (`F-01` through `F-39`).
+Cortex's deterministic-first architecture is grounded in formal, pre-registered empirical evidence from the **Axiom Research Laboratory**—a controlled ablation study evaluating **3,600 independent model generations (4,320 scored trials in v2)** and scaled in **Ablation v3 to 9 models and 8,640/8,640 confirmatory trials (`9/9` Validity Gate PASS)** with `REML+HKSJ` random-effects meta-analysis, `TOST` equivalence (`C0_clean` vs `C_ID`), CR2 LPMM sandwich variance, and blind manual-audit Cohen's $\kappa$ verification across 39 deterministic AST and PostgreSQL 16 execution probes (`F-01` through `F-39`).
 
 ### 11.1 Authority Separation (Invariant 0): Why LLMs Cannot Self-Evaluate
 

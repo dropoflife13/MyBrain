@@ -1,6 +1,6 @@
 ---
 type: inbox
-version: 7
+version: 8
 status: active
 ---
 # Inbox — Unprocessed Candidates
@@ -8,7 +8,11 @@ status: active
 Candidates only (`status: candidate`). Promotion is a human act (CV-03). Format: CV-02 with `CAND-nn` IDs. Every candidate at `conf ≥ 3` must have a concrete `breaks:` condition and real project `ev:`.
 
 ## Active Candidates
-_Inbox clear. All initial candidates (`CAND-01..13`) and Cortex v2.4 post-build candidates (`CAND-14..20`) have been promoted to `status: active`. Append new discoveries from future projects below starting at `CAND-21`._
+- **CAND-21** (Line-Ending Normalization & Blind Inter-Rater Audit): WHEN hashing, scoring, or auditing generated code/SQL across Windows/Linux pipelines → DO normalize line endings (`LF`) before comparison and validate deterministic oracle accuracy with blind human audit Cohen's $\kappa$ + `REML+HKSJ` random-effects meta-analysis | why: CRLF vs LF mismatches skew deterministic diff checks and unblinded audits inflate agreement | breaks: single-OS ephemeral scratch scripts not persisted or compared across environments | conf: 3 | ev: Axiom (0f9b63f, 1128e05, 8e9996b, f01cb56) | status: candidate #determinism #eval-rigor ^cand-21
+- **CAND-22** (Reasoning-Profile Cache Isolation): WHEN routing multiple reasoning/non-thinking model profiles (`cacheKeySuffix`) against a shared prompt-cache or artifact store → DO include the reasoning mode and profile identifier in the cache key | why: shared cache keys silently serve stale thinking/non-thinking responses across ablation conditions | breaks: single-model endpoints with immutable decoding parameters | conf: 3 | ev: Axiom (c32df6a, b17fe5e) | status: candidate #llm-routing #cache ^cand-22
+- **CAND-23** (Process-Tree Cleanup & Live PID Detection): WHEN pausing, resuming, or cancelling CLI/agent subprocesses in a desktop HUD (`Tauri` / `Node`) → DO terminate the full OS process tree (`kill_process_tree`) and probe live child PIDs before spawning replacement runs | why: killing only the wrapper shell leaves orphaned `node`/`npx` workers holding locks and RAM | breaks: stateless one-shot commands with no spawned child processes | conf: 3 | ev: DinoBuds/OJTpulse (f64667e, 6ed20d8) | status: candidate #desktop #process-lifecycle ^cand-23
+- **CAND-24** (Dynamic Runtime Env Resolution on Serverless Routes): WHEN reading sensitive server credentials (`process.env.SUPABASE_SERVICE_ROLE_KEY`) in Next.js App Router API routes → DO read `process.env` dynamically inside the request handler rather than caching at module top-level, and serve static 3D/image assets from `public/static/` | why: build-time module evaluation can capture `undefined` env vars on preview/edge cold starts and break static asset resolution on Vercel | breaks: purely static build-time SSG pages with zero runtime secrets | conf: 3 | ev: Public_Library (1c750f3, 7eb1dea) | status: candidate #nextjs #vercel #security ^cand-24
+- **CAND-25** (Proof-of-Work Telemetry & Non-Git Work Capture): WHEN tracking engineering productivity or OJT hours (`OJTpulse`) → DO pair Git commit hashes with BSSID/lunch-break state and verifiable non-Git work logs rather than relying on commit counts alone | why: UI/research/office work outside Git otherwise goes uncounted while unverified time logs invite audit disputes | breaks: automated CI-only pipelines with zero human timesheet reporting | conf: 3 | ev: DinoBuds/OJTpulse (33f1aa3, a638d29) | status: candidate #ojt #auditability ^cand-25
 
 ## Promotion Ledger (Session S-01 — 2026-10-27)
 - `CAND-01` → Promoted to **`CS-03`** (`02-domains/cybersec.md`)

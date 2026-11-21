@@ -1,6 +1,6 @@
 ---
 type: about
-version: 3
+version: 4
 status: active
 ---
 # About Me — Intake
@@ -38,20 +38,25 @@ Purpose: give the quiz author (AI) and 8-Agent Suite enough context to ground sc
 - **How I use it:** Expanding beyond software into Humanities (Psychology, Philosophy, Law), Global Society (Crypto, Finance, Politics), and Frontier Science (Data Science, Medicine) using a 29-domain taxonomy.
 - **The Arbiter (`ARB`):** A rule set that resolves conflicts between domains (e.g., Security > Growth) and enforces first-principles grounding (no volatile news, only timeless axioms).
 
-## 3. Projects (7 real ones, sanitized)
+## 3. Projects (Active & Historical, Sanitized)
 
 1. **Cortex v3.0 — The Global Agentic OS (`A-06`):** Next.js 16 + Three.js WebGL interactive knowledge vault.
-   - **Architecture:** 8 Core Agents (PM, UX, GR, SD, IR, DB, SEC, RS) + 1 Judgment Arbiter rule set.
-   - **Efficiency:** Built a **Tiered AI Router** (Tier 1 local regex lookup = $0 cost, Tier 2 fast LLM, Tier 3 heavy LLM).
-   - **Determinism:** Built a **Deterministic-First Sandbox** (lexical static gate + unit tests) so the LLM is only called for debugging *after* a test fails (saves 80% tokens).
-   - **Autonomy:** Built a **Research Radar** (Vercel Cron + GitHub API) that self-heals empty domains by committing new Markdown rules directly to the repo twice a month.
-   - **UX:** Pixel Agent HQ (2D isometric space station), Live WebGL Synaptic Constellation, Semantic Vector RAG, and `BN-00` fail-fast crash screens.
-2. **Dugtong OJT (`A-02`):** Multi-tenant OJT management SaaS. *Role:* UI/UX & Frontend Design System Lead. *Decisions:* Enforced dumb prop-driven `shadcn/ui` primitives, Coordinator-only journal approval, and strict `origin/neil` branch isolation.
-3. **CITEMAS Portal (`A-03`):** Full-stack creative studio & org portal. *Role:* Lead Architect & Org VP. *Decisions:* Procedural Three.js WebGL 3D logo, Premiere-inspired hover video showcase, strict RBAC (`super_admin`, `adviser` gate, `@phinmaed.com` regex).
-4. **MerkadoTrack & 7-Agent Suite (`A-01`):** Offline-first agricultural market price tracker. *Decisions:* Append-only `price_logs` (`DB-01`), derived `current_prices` view (`DB-02`), offline IndexedDB outbox (`DB-05`), z-score outlier quarantine (`SEC-05`).
-5. **FlexSpace Iloilo (Capstone):** Workspace discovery platform for Iloilo City. *Lesson:* Defending every schema column and scope boundary under tough panel questioning.
-6. **Agrivet:** Integrated retail operations platform for small businesses. *Lesson:* "Current stock" must be derived from batch/transaction logs with expiration dates—never a single mutable integer.
-7. **2D Top-Down Godot Roguelike:** Desktop game with stage progression. *Lesson:* Instilled composable data-driven design and strict finite state machine transitions.
+   - **Architecture:** 8 Core Agents (`PM`, `UX`, `GR`, `SD`, `IR`, `DB`, `SEC`, `RS`) + 10-rule Judgment Arbiter (`ARB-01..10`) across 29 domains.
+   - **Axiom Knowledge Transfer:** Replaced semantic vector retrieval with **Feature-Flag Deterministic Retrieval** ($2^3=8$ taxonomy, `C0_clean` + `C_ID`), added the **Deterministic Utility Gate** (`verifyCandidateRuleUtilityGate`), and integrated the **Healing Loop TorusKnot** Mission Control HUD.
+   - **Efficiency & Determinism:** Tiered AI Router (`Tier 1` $0 regex lookup, `Tier 2` fast LLM, `Tier 3` heavy workflow) + Deterministic-First Sandbox.
+2. **Axiom (`dropoflife13/Axiom`):** Deterministic verification & reflexion harness (`TypeScript`, `Zod`, **PostgreSQL 16 Docker Oracle**) with Next.js analysis dashboard.
+   - **Empirical Scale (Nov 2026):** Completed **9-model, 8,640-trial Ablation v3** (`9/9` Validity Gate PASS) with `REML+HKSJ` random-effects meta-analysis, `TOST` equivalence (`C0_clean` vs `C_ID`), and blind manual-audit Cohen's $\kappa$ verification.
+3. **VapeVault / VapeShop SaaS (`dropoflife13/VapeShop`):** Multi-tenant POS, inventory, and reservation SaaS (`Next.js`, `Supabase`, `Three.js`, `Framer Motion`, `QRCode`).
+   - **Architecture:** Shop self-registration, editable reservations with 1-hour auto-expiry, manufacturer serial + QR provenance, minimalist supplier ETA tracking, Philippine **RA 11900 / DTI** compliance gate, and an **8-model 3D showcase** with Color-Blocked "Product World" landing UI.
+4. **DinoBuds / OJTpulse (`dropoflife13/OJTpulse`):** Native Windows desktop HUD (`Rust`, `Tauri v2`, `React`, `Tailwind CSS`).
+   - **Capabilities:** Unified OJT DTR tracker (lunch breaks, non-Git office capture, BSSID stamp, journal exports, proof-of-work verification hashes), live AI agent/benchmark monitor, Windows **UIAutomation** workspace/chat switcher + pause/resume with process-tree kill, and System RAM Reaper.
+5. **Iloilo Public Library Management System (`iloilo-public-library/Public_Library`):** Cybersecurity-enhanced **Capstone Project** (*"Preventing Data Breaches and Record Inaccuracies in Public Libraries Through a Cybersecurity-Enhanced Management System"*).
+   - **Evolution:** Migrated from Python/Flask (`oldlibrary`) to **Next.js`, **React Three Fiber** (interactive 3D architect lamp login & reading-table hero), **Framer Motion**, **Supabase**, and `bcryptjs` with encrypted backup/ID-vault patterns and dynamic server-side `SUPABASE_SERVICE_ROLE_KEY` resolution.
+6. **CERBOS_BDO (`dropoflife13/CERBOS_BDO`):** Policy-as-code banking authorization architecture (`Cerbos` YAML policies + test suites for `bdo_fund_transfer`, `payment`, and `derived_roles_bdo`).
+7. **Bantay-Platform (`dropoflife13/Bantay-Platform`), `hksps` (with `josiahdev1`), & `HRIS`:** Offline-first LGU platform (`Next.js`, `Supabase`, `Dexie`, `Mapbox GL`) and PHINMA AI Builder Workshop Golden Path builds.
+8. **Dugtong OJT (`A-02`):** Multi-tenant OJT management SaaS. *Role:* UI/UX & Frontend Design System Lead. *Decisions:* Dumb prop-driven `shadcn/ui` primitives, Coordinator-only journal approval, strict branch isolation.
+9. **CITEMAS Portal (`A-03`):** Full-stack creative studio & org portal. *Role:* Lead Architect & Org VP. *Decisions:* Procedural Three.js WebGL 3D logo, Premiere-inspired hover video showcase, strict RBAC (`super_admin`, `adviser` gate, `@phinmaed.com` regex).
+10. **MerkadoTrack (`A-01`), FlexSpace Iloilo (`psa` / Capstone 1–2), Agrivet, & 2D Godot Roguelike:** Founding systems that forged append-only `price_logs` (`DB-01`), batch-derived stock (`DB-02`), offline IndexedDB outbox (`DB-05`), and finite state machine discipline.
 
 ## 4. How I work
 - **First move on a new task:** Define the roles, who owns what, and the hard boundaries (who is NOT allowed to do what—both among user roles and among teammates) before touching UI or code.

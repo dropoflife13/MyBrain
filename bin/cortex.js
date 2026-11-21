@@ -267,6 +267,19 @@ function verifyAll() {
   }
 }
 
+function copyMarkdownDir(srcDir, destDir, excludeFiles = []) {
+  fs.mkdirSync(destDir, { recursive: true });
+  if (!fs.existsSync(srcDir)) return 0;
+  let count = 0;
+  for (const f of fs.readdirSync(srcDir)) {
+    if (f.endsWith('.md') && !excludeFiles.includes(f)) {
+      fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));
+      count++;
+    }
+  }
+  return count;
+}
+
 function initVault(targetDirName) {
   banner();
   const pkgRoot = path.resolve(__dirname, '..');
@@ -302,54 +315,34 @@ function initVault(targetDirName) {
   console.log(`  ${c.emerald}✓${c.reset} Unpacked 8 Core Agent Gatekeepers -> ${c.cyan}agents/${c.reset}`);
 
   // 2. Copy brain/02-domains
-  const destDomains = path.join(targetDir, 'brain', '02-domains');
-  fs.mkdirSync(destDomains, { recursive: true });
-  const srcDomains = path.join(templateBrain, '02-domains');
-  if (fs.existsSync(srcDomains)) {
-    for (const f of fs.readdirSync(srcDomains)) {
-      if (f.endsWith('.md')) {
-        fs.copyFileSync(path.join(srcDomains, f), path.join(destDomains, f));
-      }
-    }
-  }
+  copyMarkdownDir(path.join(templateBrain, '02-domains'), path.join(targetDir, 'brain', '02-domains'));
   console.log(`  ${c.emerald}✓${c.reset} Unpacked 29 Procedural Knowledge Domains -> ${c.cyan}brain/02-domains/${c.reset}`);
 
   // 3. Copy brain/00-INDEX.md & 07-meta
-  const destMeta = path.join(targetDir, 'brain', '07-meta');
-  fs.mkdirSync(destMeta, { recursive: true });
   const srcIndex = path.join(templateBrain, '00-INDEX.md');
   if (fs.existsSync(srcIndex)) {
+    fs.mkdirSync(path.join(targetDir, 'brain'), { recursive: true });
     fs.copyFileSync(srcIndex, path.join(targetDir, 'brain', '00-INDEX.md'));
   }
-  const srcMeta = path.join(templateBrain, '07-meta');
-  if (fs.existsSync(srcMeta)) {
-    for (const f of fs.readdirSync(srcMeta)) {
-      if (f.endsWith('.md')) {
-        fs.copyFileSync(path.join(srcMeta, f), path.join(destMeta, f));
-      }
-    }
-  }
+  copyMarkdownDir(path.join(templateBrain, '07-meta'), path.join(targetDir, 'brain', '07-meta'));
   console.log(`  ${c.emerald}✓${c.reset} Unpacked Index & Meta Governance -> ${c.cyan}brain/07-meta/${c.reset}`);
 
-  // 4. Copy 01-identity (OPERATING-PRINCIPLES, TASTE)
-  const destIdentity = path.join(targetDir, 'brain', '01-identity');
-  fs.mkdirSync(destIdentity, { recursive: true });
-  const srcIdentity = path.join(templateBrain, '01-identity');
-  if (fs.existsSync(srcIdentity)) {
-    for (const f of fs.readdirSync(srcIdentity)) {
-      if (f.endsWith('.md')) {
-        fs.copyFileSync(path.join(srcIdentity, f), path.join(destIdentity, f));
-      }
-    }
-  }
+  // 4. Copy 01-identity (OPERATING-PRINCIPLES, TASTE — exclude ABOUT-ME.md per SP-05/BN-09)
+  copyMarkdownDir(path.join(templateBrain, '01-identity'), path.join(targetDir, 'brain', '01-identity'), ['ABOUT-ME.md']);
 
-  // 5. Create empty candidate inbox
+  // 5. Copy 03-heuristics, 04-models, and 08-workflows (Golden Path SIX-COMMANDS & STATS-ENGINE)
+  copyMarkdownDir(path.join(templateBrain, '03-heuristics'), path.join(targetDir, 'brain', '03-heuristics'));
+  copyMarkdownDir(path.join(templateBrain, '04-models'), path.join(targetDir, 'brain', '04-models'));
+  copyMarkdownDir(path.join(templateBrain, '08-workflows'), path.join(targetDir, 'brain', '08-workflows'));
+  console.log(`  ${c.emerald}✓${c.reset} Unpacked Heuristics, Models & Golden Path Workflows -> ${c.cyan}brain/03,04,08/${c.reset}`);
+
+  // 6. Create empty candidate inbox
   const destRaw = path.join(targetDir, 'brain', '06-raw');
   fs.mkdirSync(destRaw, { recursive: true });
   const inboxContent = `---\ntype: inbox\nversion: 1\nstatus: active\n---\n# Inbox — Candidate Staging\n\nAppend new rule candidates here in CV-02 format.\n`;
   fs.writeFileSync(path.join(destRaw, 'inbox.md'), inboxContent, 'utf8');
 
-  // 6. Write AGENTS.md & CLAUDE.md
+  // 7. Write AGENTS.md & CLAUDE.md
   const agentsMd = `# Cortex Multi-Agent Constitution\n\nBN-00 Invariant: All 8 core agents in agents/ must exist and cannot be bypassed.\nRules: Every architecture or code change must satisfy GATE: PASS across the 8 specialist agents.\n`;
   fs.writeFileSync(path.join(targetDir, 'AGENTS.md'), agentsMd, 'utf8');
 
@@ -382,7 +375,7 @@ function showStats() {
   console.log(`  • Core Agents:     8 Specialist Gatekeepers`);
   console.log(`  • Knowledge Vault: ${files.length} Domains across 4 Clusters`);
   console.log(`  • Synaptic Rules:  ${ruleCount} Active Rules`);
-  console.log(`  • Judgment Gate:   ARB-01..08 Enforced\n`);
+  console.log(`  • Judgment Gate:   ARB-01..10 Enforced\n`);
 }
 
 function showHelp() {
